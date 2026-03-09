@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --version)",
+      "Bash(npm --version)",
+      "Bash(pnpm --version)",
+      "Bash(npx create-next-app@latest apps/web --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --no-git --yes)",
+      "Bash(__NEW_LINE_b2b016f303ef5d6f__ cat)",
+      "Bash(npm install --workspace=apps/api)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/api/auth/me)",
+      "Bash(node -e \"require\\(''dotenv''\\).config\\(\\); require\\(''./dist/main''\\)\")",
+      "Bash(npx nest start)",
+      "Bash(./node_modules/.bin/nest build)",
+      "Bash(npm install --save-dev ts-node tsconfig-paths --workspace=apps/api)",
+      "Bash(npm run dev)",
+      "Bash(curl -s -w \"\\\\n%{http_code}\" http://localhost:3001/api/auth/me)",
+      "Bash(npm install --workspace=apps/web)",
+      "Bash(npm run build)",
+      "Bash(__NEW_LINE_375d9473097a9718__ cat)",
+      "Bash(__NEW_LINE_375d9473097a9718__ echo \"done\")",
+      "Bash(npm install katex @types/katex)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",
+      "C:\\Users\\einav\\clone_here\\Lambda",
+      "C:\\Users\\einav\\clone_here\\Lambda\\apps\\api",
+      "c:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\practice\\[versionId]",
+      "c:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\profile\\[username]"
+    ]
+  }
+}
