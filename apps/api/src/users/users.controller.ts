@@ -7,6 +7,14 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Get('by-id/:id')
+  @ApiOkResponse({ description: 'Get a public user profile by ID' })
+  async getProfileById(@Param('id') id: string) {
+    const user = await this.usersService.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
   @Get(':username')
   @ApiOkResponse({ description: 'Get a public user profile by username' })
   async getProfile(@Param('username') username: string) {

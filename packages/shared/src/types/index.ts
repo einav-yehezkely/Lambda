@@ -35,6 +35,7 @@ export interface CourseVersion {
   semester: string | null;
   description: string | null;
   author_id: string;
+  author?: { username: string; display_name: string | null; avatar_url: string | null };
   based_on_version_id: string | null;
   visibility: Visibility;
   is_recommended: boolean;
@@ -62,6 +63,7 @@ export interface AlgorithmMetadata {
   algorithm?: string;
   proof?: string;
   runtime?: string;
+  sections?: Array<{ label: string; content: string }>;
 }
 
 export interface ContentItem {

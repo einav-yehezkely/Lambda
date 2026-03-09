@@ -139,7 +139,7 @@ function valueToHtml(value: string): string {
     const latex = m[1];
     try {
       const rendered = katex.renderToString(latex, { throwOnError: false });
-      html += `<span data-latex="${latex.replace(/"/g, '&quot;')}" contenteditable="false" class="math-span">${rendered}</span>`;
+      html += `<span data-latex="${latex.replace(/"/g, '&quot;')}" contenteditable="false" dir="ltr" class="math-span">${rendered}</span>`;
     } catch {
       html += escHtml(m[0]);
     }
@@ -252,6 +252,7 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
     const span = document.createElement('span');
     span.setAttribute('data-latex', latex);
     span.setAttribute('contenteditable', 'false');
+    span.setAttribute('dir', 'ltr');
     span.className = 'math-span';
     try {
       span.innerHTML = katex.renderToString(latex, { throwOnError: false });

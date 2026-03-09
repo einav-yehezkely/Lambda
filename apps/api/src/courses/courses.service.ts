@@ -69,7 +69,7 @@ export class CoursesService {
   async listVersions(templateId: string): Promise<CourseVersion[]> {
     const { data, error } = await this.db
       .from('course_versions')
-      .select('*')
+      .select('*, author:users!course_versions_author_id_fkey(username, display_name, avatar_url)')
       .eq('template_id', templateId)
       .eq('visibility', 'public')
       .order('created_at', { ascending: false });
@@ -81,7 +81,7 @@ export class CoursesService {
   async getVersion(id: string): Promise<CourseVersion> {
     const { data, error } = await this.db
       .from('course_versions')
-      .select('*')
+      .select('*, author:users!course_versions_author_id_fkey(username, display_name, avatar_url)')
       .eq('id', id)
       .single();
 

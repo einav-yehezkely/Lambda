@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Topic, VersionContentItem } from '@lambda/shared';
+import type { Topic, VersionContentItem, AlgorithmMetadata } from '@lambda/shared';
 
 export const topicsApi = {
   getByVersion: (versionId: string) =>
@@ -27,10 +27,11 @@ export const contentApi = {
   updateItem: (id: string, body: {
     title?: string;
     content?: string;
-    solution?: string;
+    solution?: string | null;
     difficulty?: string;
     tags?: string[];
-    metadata?: Record<string, string>;
+    metadata?: AlgorithmMetadata;
+    topic_id?: string | null;
   }) => api.put<void>(`/api/content/${id}`, body),
 
   deleteItem: (contentItemId: string, versionId: string) =>
@@ -45,6 +46,6 @@ export const contentApi = {
     solution?: string;
     difficulty?: string;
     tags?: string[];
-    metadata?: Record<string, string>;
+    metadata?: AlgorithmMetadata;
   }) => api.post<VersionContentItem>('/api/content', body),
 };

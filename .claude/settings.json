@@ -19,7 +19,8 @@
       "Bash(npm run build)",
       "Bash(__NEW_LINE_375d9473097a9718__ cat)",
       "Bash(__NEW_LINE_375d9473097a9718__ echo \"done\")",
-      "Bash(npm install katex @types/katex)"
+      "Bash(npm install katex @types/katex)",
+      "Bash(git config core.autocrlf false)"
     ],
     "additionalDirectories": [
       "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",

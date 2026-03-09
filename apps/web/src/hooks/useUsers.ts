@@ -9,6 +9,14 @@ export function useUserProfile(username: string) {
   });
 }
 
+export function useUserProfileById(id: string) {
+  return useQuery({
+    queryKey: ['user-profile-by-id', id],
+    queryFn: () => usersApi.getProfileById(id),
+    enabled: !!id,
+  });
+}
+
 export function useUserVersions(username: string) {
   return useQuery({
     queryKey: ['user-versions', username],

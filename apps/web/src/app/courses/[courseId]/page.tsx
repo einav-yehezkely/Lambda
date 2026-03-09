@@ -3,7 +3,7 @@
 import { use, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCourse, useCourseVersions, useCreateVersion, useDeleteVersion, useDeleteCourse } from '@/hooks/useCourses';
+import { useCourse, useCourseVersions, useCreateVersion, useDeleteCourse } from '@/hooks/useCourses';
 import { useAuth } from '@/hooks/useAuth';
 import { Modal } from '@/components/ui/modal';
 import type { CourseVersion } from '@lambda/shared';
@@ -27,15 +27,12 @@ function VersionCard({
   courseId,
   userId,
   onFork,
-  onDelete,
 }: {
   version: CourseVersion;
   courseId: string;
   userId?: string;
   onFork: (v: CourseVersion) => void;
-  onDelete: (v: CourseVersion) => void;
 }) {
-  const isAuthor = !!userId && userId === version.author_id;
   return (
     <div className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
       <div className="flex items-start justify-between gap-2">
@@ -60,18 +57,18 @@ function VersionCard({
           >
             Fork →
           </button>
-          {isAuthor && (
-            <button
-              onClick={() => onDelete(version)}
-              className="text-xs text-red-400 hover:text-red-600 mt-1"
-            >
-              Delete
-            </button>
-          )}
         </div>
       </div>
       {version.description && (
-        <p className="mt-2 text-sm text-gray-500 line-clamp-2">{version.description}</p>
+        <p className="mt-2 text-sm text-gray-500 whitespace-pre-wrap">{version.description}</p>
+      )}
+      {version.author && (
+        <p className="mt-2 text-xs text-gray-400">
+          by{' '}
+          <Link href={`/profile/${version.author.username}`} className="hover:text-gray-600 underline underline-offset-2">
+            {version.author.display_name ?? version.author.username}
+          </Link>
+        </p>
       )}
     </div>
   );
@@ -84,13 +81,8 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
   const { data: course, isLoading: courseLoading } = useCourse(courseId);
   const { data: versions, isLoading: versionsLoading } = useCourseVersions(courseId);
   const createVersion = useCreateVersion();
-  const deleteVersion = useDeleteVersion();
-  const deleteCourse = useDeleteCourse();
 
-  const handleDeleteVersion = async (v: CourseVersion) => {
-    if (!window.confirm(`Delete version "${formatVersionLabel(v)}"? This cannot be undone.`)) return;
-    await deleteVersion.mutateAsync({ id: v.id, templateId: courseId });
-  };
+  const deleteCourse = useDeleteCourse();
 
   const handleDeleteCourse = async () => {
     if (!window.confirm(`Delete course "${course?.title}"? This will not delete existing versions.`)) return;
@@ -213,7 +205,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         {versions && versions.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {versions.map((v) => (
-              <VersionCard key={v.id} version={v} courseId={courseId} userId={user?.id} onFork={openFork} onDelete={handleDeleteVersion} />
+              <VersionCard key={v.id} version={v} courseId={courseId} userId={user?.id} onFork={openFork} />
             ))}
           </div>
         )}

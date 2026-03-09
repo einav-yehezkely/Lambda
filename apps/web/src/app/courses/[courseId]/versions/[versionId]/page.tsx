@@ -1,11 +1,12 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useVersion, useVersionProgress, useDeleteVersion, useUpdateVersion } from '@/hooks/useCourses';
+import { useCourse, useVersion, useVersionProgress, useDeleteVersion, useUpdateVersion } from '@/hooks/useCourses';
 import { useTopics, useVersionContent, useCreateContent, useCreateTopic, useDeleteTopic } from '@/hooks/useTopics';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserProfileById } from '@/hooks/useUsers';
 import { ContentItemCard } from '@/components/content/content-item-card';
 import { Modal } from '@/components/ui/modal';
 import { LatexEditor } from '@/components/ui/latex-editor';
@@ -204,23 +205,46 @@ function AddContentModal({
   const createContent = useCreateContent();
   const [type, setType] = useState<'proof' | 'exam_question' | 'coding_question' | 'algorithm'>('proof');
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [solution, setSolution] = useState('');
   const [difficulty, setDifficulty] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [topicId, setTopicId] = useState('');
   const [formError, setFormError] = useState('');
-  // Algorithm-specific fields
-  const [algoSteps, setAlgoSteps] = useState('');
-  const [algoProof, setAlgoProof] = useState('');
-  const [algoRuntime, setAlgoRuntime] = useState('');
+  const [sections, setSections] = useState<Array<{ label: string; content: string }>>([
+    { label: 'Content', content: '' },
+    { label: 'Proof Sketch', content: '' },
+  ]);
+  const addSection = () => setSections((s) => [...s, { label: '', content: '' }]);
+  const removeSection = (i: number) => {
+    if (!window.confirm('Remove this section?')) return;
+    setSections((s) => s.filter((_, idx) => idx !== i));
+  };
+  const updateSection = (i: number, field: 'label' | 'content', value: string) =>
+    setSections((s) => s.map((sec, idx) => idx === i ? { ...sec, [field]: value } : sec));
+  const moveSection = (i: number, dir: -1 | 1) =>
+    setSections((s) => { const a = [...s]; [a[i], a[i + dir]] = [a[i + dir], a[i]]; return a; });
 
   const isAlgorithm = type === 'algorithm';
+
+  useEffect(() => {
+    if (type === 'algorithm') {
+      setSections([
+        { label: 'Problem', content: '' },
+        { label: 'Algorithm', content: '' },
+        { label: 'Proof', content: '' },
+        { label: 'Runtime', content: '' },
+      ]);
+    } else {
+      setSections([
+        { label: 'Content', content: '' },
+        { label: type === 'proof' ? 'Proof Sketch' : 'Solution', content: '' },
+      ]);
+    }
+  }, [type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) { setFormError('Title is required'); return; }
-    if (!isAlgorithm && !content.trim()) { setFormError('Content is required'); return; }
+    if (!sections[0]?.content.trim()) { setFormError('Content is required'); return; }
     setFormError('');
     try {
       await createContent.mutateAsync({
@@ -228,15 +252,12 @@ function AddContentModal({
         topic_id: topicId || undefined,
         type,
         title: title.trim(),
-        content: isAlgorithm ? (content.trim() || title.trim()) : content.trim(),
-        solution: !isAlgorithm && solution.trim() ? solution.trim() : undefined,
+        content: sections[0]?.content.trim() || title.trim(),
         difficulty: difficulty || undefined,
         tags: tagsInput ? tagsInput.split(',').map((t) => t.trim()).filter(Boolean) : [],
-        metadata: isAlgorithm ? {
-          ...(algoSteps.trim() && { algorithm: algoSteps.trim() }),
-          ...(algoProof.trim() && { proof: algoProof.trim() }),
-          ...(algoRuntime.trim() && { runtime: algoRuntime.trim() }),
-        } : undefined,
+        metadata: {
+          sections: sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: s.content.trim() })),
+        },
       });
       onClose();
     } catch (e) {
@@ -245,7 +266,6 @@ function AddContentModal({
   };
 
   const INPUT_CLS = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900';
-  const TEXTAREA_CLS = `${INPUT_CLS} resize-none font-mono text-xs`;
 
   return (
     <Modal title="Add Content Item" onClose={onClose}>
@@ -298,51 +318,36 @@ function AddContentModal({
           </div>
         )}
 
-        {isAlgorithm ? (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Problem</label>
-              <LatexEditor value={content} onChange={setContent} rows={2} placeholder="What problem does this solve?" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Algorithm</label>
-              <LatexEditor value={algoSteps} onChange={setAlgoSteps} rows={4} placeholder="Algorithm steps." />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Proof</label>
-              <LatexEditor value={algoProof} onChange={setAlgoProof} rows={3} placeholder="Correctness proof. Optional." />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Runtime</label>
-              <LatexEditor value={algoRuntime} onChange={setAlgoRuntime} rows={1} placeholder="e.g. $O(V + E)$" />
-            </div>
-          </>
-        ) : (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Content *</label>
-              <LatexEditor value={content} onChange={setContent} rows={4} placeholder="Use $...$ for inline LaTeX, $$...$$ for block." />
-            </div>
-            <div>
-              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
-                {type === 'proof' ? (
-                  <>
-                    Proof Sketch
-                    <span className="relative group cursor-help inline-flex">
-                      <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
-                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs bg-gray-800 text-white rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10">
-                        A condensed outline of the main proof steps
-                      </span>
-                    </span>
-                  </>
-                ) : 'Solution'}
-              </label>
-              <LatexEditor value={solution} onChange={setSolution} rows={3} placeholder="Optional." />
-            </div>
-          </>
-        )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Sections</label>
+          <div className="space-y-3">
+            {sections.map((sec, i) => (
+              <div key={i} className="border border-gray-200 rounded-md p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-0.5 shrink-0">
+                    <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▲</button>
+                    <button type="button" onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▼</button>
+                  </div>
+                  <input
+                    type="text"
+                    value={sec.label}
+                    onChange={(e) => updateSection(i, 'label', e.target.value)}
+                    placeholder="Section name"
+                    dir="auto"
+                    className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  />
+                  <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 hover:text-red-500 shrink-0">
+                    Remove
+                  </button>
+                </div>
+                <LatexEditor value={sec.content} onChange={(v) => updateSection(i, 'content', v)} rows={3} placeholder="Use $...$ for inline LaTeX." />
+              </div>
+            ))}
+            <button type="button" onClick={addSection} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
+              + Add Section
+            </button>
+          </div>
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
@@ -363,6 +368,19 @@ function AddContentModal({
   );
 }
 
+function VersionAuthor({ authorId }: { authorId: string }) {
+  const { data: author } = useUserProfileById(authorId);
+  if (!author) return null;
+  return (
+    <p className="mt-2 text-xs text-gray-400">
+      by{' '}
+      <Link href={`/profile/${author.username}`} className="hover:text-gray-600 underline underline-offset-2">
+        {author.display_name ?? author.username}
+      </Link>
+    </p>
+  );
+}
+
 export default function VersionPage({
   params,
 }: {
@@ -373,11 +391,13 @@ export default function VersionPage({
   const { user } = useAuth();
   const [selectedTopic, setSelectedTopic] = useState('');
   const [selectedType, setSelectedType] = useState('');
+  const [selectedTag, setSelectedTag] = useState('');
   const [showAddContent, setShowAddContent] = useState(false);
   const [showManageTopics, setShowManageTopics] = useState(false);
   const [showEditVersion, setShowEditVersion] = useState(false);
   const deleteVersion = useDeleteVersion();
 
+  const { data: course } = useCourse(courseId);
   const { data: version, isLoading: versionLoading } = useVersion(versionId);
   const { data: topics } = useTopics(versionId);
   const { data: items, isLoading: itemsLoading } = useVersionContent({
@@ -388,6 +408,9 @@ export default function VersionPage({
 
   const isAuthor = !!user && !!version && user.id === version.author_id;
 
+  const allTags = Array.from(new Set(items?.flatMap((i) => i.content_item.tags) ?? [])).sort();
+  const visibleItems = selectedTag ? (items ?? []).filter((i) => i.content_item.tags.includes(selectedTag)) : (items ?? []);
+
   if (versionLoading) return <div className="text-sm text-gray-400">Loading...</div>;
   if (!version) return <div className="text-sm text-red-500">Version not found.</div>;
 
@@ -396,13 +419,16 @@ export default function VersionPage({
       <div className="text-sm text-gray-400 mb-4">
         <Link href="/" className="hover:text-gray-600">Home</Link>
         <span className="mx-2">/</span>
-        <Link href={`/courses/${courseId}`} className="hover:text-gray-600">Course</Link>
+        <Link href={`/courses/${courseId}`} className="hover:text-gray-600">{course?.title ?? 'Course'}</Link>
         <span className="mx-2">/</span>
         <span>{[version.institution, version.year].filter(Boolean).join(' · ') || version.title}</span>
       </div>
 
       <div className="mb-6 flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
+          {course && (
+            <p className="text-base text-gray-500 mb-1" dir="auto">{course.title}</p>
+          )}
           <h1 className="text-2xl font-bold text-gray-900">
             {[
               version.institution,
@@ -410,7 +436,8 @@ export default function VersionPage({
               version.semester ? (SEMESTER_LABEL[version.semester] ?? `Semester ${version.semester}`) : null,
             ].filter(Boolean).join(' · ') || version.title}
           </h1>
-          {version.description && <p className="mt-2 text-gray-500 text-sm" dir={/[\u0590-\u05FF]/.test(version.description) ? 'rtl' : undefined}>{version.description}</p>}
+          {version.description && <p className="mt-2 text-gray-500 text-sm whitespace-pre-wrap" dir={/[\u0590-\u05FF]/.test(version.description) ? 'rtl' : undefined}>{version.description}</p>}
+          <VersionAuthor authorId={version.author_id} />
           {user && <ProgressBar versionId={versionId} userId={user.id} />}
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -468,24 +495,39 @@ export default function VersionPage({
         )}
 
         <div className="flex-1 min-w-0">
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4">
             {CONTENT_TYPES.map((t) => (
               <button key={t.value} onClick={() => setSelectedType(t.value)} className={`text-sm px-3 py-1.5 rounded-md border transition-colors ${selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}>
                 {t.label}
               </button>
             ))}
+            {allTags.length > 0 && (
+              <>
+                <span className="text-gray-300 self-center">|</span>
+                {allTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
+                    className={`text-xs px-2.5 py-1.5 rounded-md border transition-colors ${selectedTag === tag ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'}`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </>
+            )}
           </div>
           {itemsLoading && <div className="text-sm text-gray-400">Loading content...</div>}
-          {items && items.length === 0 && <div className="text-sm text-gray-400">No content items yet.</div>}
-          {items && items.length > 0 && (
-            <div className="space-y-3">
-              {items.map((item) => (
+          {!itemsLoading && visibleItems.length === 0 && <div className="text-sm text-gray-400">No content items yet.</div>}
+          {visibleItems.length > 0 && (
+            <div className="flex flex-wrap gap-3">
+              {visibleItems.map((item) => (
                 <ContentItemCard
                   key={item.content_item_id}
                   item={item}
                   userId={user?.id}
                   versionId={versionId}
                   isVersionAuthor={isAuthor}
+                  topics={topics ?? []}
                 />
               ))}
             </div>
