@@ -23,6 +23,11 @@ export class UpdateVersionDto {
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
+  semester?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
   description?: string;
 
   @ApiPropertyOptional({ enum: ['public', 'private'] })

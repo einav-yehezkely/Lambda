@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Difficulty } from '@lambda/shared';
 
@@ -38,4 +38,9 @@ export class UpdateContentDto {
   @IsUUID()
   @IsOptional()
   topic_id?: string;
+
+  @ApiPropertyOptional()
+  @IsObject()
+  @IsOptional()
+  metadata?: Record<string, string>;
 }

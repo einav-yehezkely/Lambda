@@ -26,7 +26,7 @@ export class ContentService {
   }): Promise<VersionContentItem[]> {
     let query = this.db
       .from('version_content_items')
-      .select('version_id, content_item_id, topic_id, content_items(*)')
+      .select('version_id, content_item_id, topic_id, content_item:content_items(*)')
       .eq('version_id', filters.version_id);
 
     if (filters.topic_id) {
@@ -84,7 +84,7 @@ export class ContentService {
         content_item_id: item.id,
         topic_id: topic_id ?? null,
       })
-      .select('version_id, content_item_id, topic_id, content_items(*)')
+      .select('version_id, content_item_id, topic_id, content_item:content_items(*)')
       .single();
 
     if (junctionError) throw new InternalServerErrorException(junctionError.message);

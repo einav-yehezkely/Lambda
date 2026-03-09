@@ -24,6 +24,11 @@ export class CreateVersionDto {
   @IsOptional()
   year?: number;
 
+  @ApiPropertyOptional({ example: 'א' })
+  @IsString()
+  @IsOptional()
+  semester?: string;
+
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()

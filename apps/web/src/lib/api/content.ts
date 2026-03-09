@@ -24,6 +24,18 @@ export const contentApi = {
     return api.get<VersionContentItem[]>(`/api/content?${query}`);
   },
 
+  updateItem: (id: string, body: {
+    title?: string;
+    content?: string;
+    solution?: string;
+    difficulty?: string;
+    tags?: string[];
+    metadata?: Record<string, string>;
+  }) => api.put<void>(`/api/content/${id}`, body),
+
+  deleteItem: (contentItemId: string, versionId: string) =>
+    api.delete<void>(`/api/content/${contentItemId}/from/${versionId}`),
+
   createItem: (body: {
     version_id: string;
     topic_id?: string;
@@ -33,5 +45,6 @@ export const contentApi = {
     solution?: string;
     difficulty?: string;
     tags?: string[];
+    metadata?: Record<string, string>;
   }) => api.post<VersionContentItem>('/api/content', body),
 };

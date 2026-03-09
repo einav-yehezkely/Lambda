@@ -51,7 +51,7 @@ export function LatexContent({ content, className }: LatexContentProps) {
   const segments = useMemo(() => parseSegments(content), [content]);
 
   return (
-    <span className={className}>
+    <span className={className} dir="auto">
       {segments.map((seg, i) => {
         if (seg.type === 'text') {
           return (

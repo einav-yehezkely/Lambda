@@ -51,6 +51,37 @@ export function useCreateCourse() {
   });
 }
 
+export function useUpdateVersion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof coursesApi.updateVersion>[1] }) =>
+      coursesApi.updateVersion(id, body),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['version', variables.id] });
+    },
+  });
+}
+
+export function useDeleteVersion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string; templateId: string }) => coursesApi.deleteVersion(id),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['course-versions', variables.templateId] });
+    },
+  });
+}
+
+export function useDeleteCourse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: coursesApi.deleteCourse,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+    },
+  });
+}
+
 export function useCreateVersion() {
   const queryClient = useQueryClient();
   return useMutation({

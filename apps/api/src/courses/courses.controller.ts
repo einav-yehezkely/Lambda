@@ -3,11 +3,13 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   Query,
   UseGuards,
   ParseUUIDPipe,
+  HttpCode,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -90,5 +92,21 @@ export class CoursesController {
     @CurrentUser() user: User,
   ) {
     return this.coursesService.updateVersion(id, dto, user.id);
+  }
+
+  @Delete('versions/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(204)
+  deleteVersion(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.coursesService.deleteVersion(id, user.id);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(204)
+  deleteCourse(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.coursesService.deleteCourse(id, user.id);
   }
 }

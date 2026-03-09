@@ -2,6 +2,7 @@ import {
   IsArray,
   IsEnum,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -19,16 +20,16 @@ export class CreateContentDto {
   @IsOptional()
   topic_id?: string;
 
-  @ApiProperty({ enum: ['proof', 'exam_question', 'coding_question'] })
-  @IsEnum(['proof', 'exam_question', 'coding_question'])
+  @ApiProperty({ enum: ['proof', 'exam_question', 'coding_question', 'algorithm'] })
+  @IsEnum(['proof', 'exam_question', 'coding_question', 'algorithm'])
   type!: ContentType;
 
-  @ApiProperty({ example: 'Prove that there are infinitely many primes' })
+  @ApiProperty({ example: 'BFS' })
   @IsString()
   @IsNotEmpty()
   title!: string;
 
-  @ApiProperty({ description: 'Supports LaTeX syntax', example: 'Let $p_1, p_2, \\ldots, p_n$ be all primes...' })
+  @ApiProperty({ description: 'Problem statement. Supports LaTeX syntax.' })
   @IsString()
   @IsNotEmpty()
   content!: string;
@@ -48,4 +49,9 @@ export class CreateContentDto {
   @IsString({ each: true })
   @IsOptional()
   tags?: string[];
+
+  @ApiPropertyOptional({ description: 'Type-specific fields (algorithm: { algorithm, proof, runtime })' })
+  @IsObject()
+  @IsOptional()
+  metadata?: Record<string, string>;
 }

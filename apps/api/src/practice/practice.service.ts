@@ -25,7 +25,7 @@ export class PracticeService {
     // Load all items for this version (+ optional topic filter)
     let query = this.db
       .from('version_content_items')
-      .select('version_id, content_item_id, topic_id, content_items(*)')
+      .select('version_id, content_item_id, topic_id, content_item:content_items(*)')
       .eq('version_id', params.version_id);
 
     if (params.topic_id) {

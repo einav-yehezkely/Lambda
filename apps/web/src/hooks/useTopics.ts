@@ -42,6 +42,29 @@ export function useCreateTopic() {
   });
 }
 
+export function useUpdateContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof contentApi.updateItem>[1] }) =>
+      contentApi.updateItem(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['content'] });
+    },
+  });
+}
+
+export function useDeleteContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ contentItemId, versionId }: { contentItemId: string; versionId: string }) =>
+      contentApi.deleteItem(contentItemId, versionId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['content', { version_id: variables.versionId }] });
+      queryClient.invalidateQueries({ queryKey: ['content'] });
+    },
+  });
+}
+
 export function useDeleteTopic(versionId: string) {
   const queryClient = useQueryClient();
   return useMutation({

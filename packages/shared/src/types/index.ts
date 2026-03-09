@@ -32,6 +32,7 @@ export interface CourseVersion {
   title: string;
   institution: string | null;
   year: number | null;
+  semester: string | null;
   description: string | null;
   author_id: string;
   based_on_version_id: string | null;
@@ -54,8 +55,14 @@ export interface Topic {
 
 // ─── Content Items ────────────────────────────────────────────────────────────
 
-export type ContentType = 'proof' | 'exam_question' | 'coding_question';
+export type ContentType = 'proof' | 'exam_question' | 'coding_question' | 'algorithm';
 export type Difficulty = 'easy' | 'medium' | 'hard';
+
+export interface AlgorithmMetadata {
+  algorithm?: string;
+  proof?: string;
+  runtime?: string;
+}
 
 export interface ContentItem {
   id: string;
@@ -65,6 +72,7 @@ export interface ContentItem {
   solution: string | null; // LaTeX-supported
   difficulty: Difficulty | null;
   tags: string[];
+  metadata: AlgorithmMetadata | null;
   author_id: string;
   is_published: boolean;
   created_at: string;

@@ -131,6 +131,24 @@ export class CoursesService {
     return data as CourseVersion;
   }
 
+  async deleteVersion(id: string, userId: string): Promise<void> {
+    const version = await this.getVersion(id);
+    if (version.author_id !== userId) {
+      throw new ForbiddenException('Only the author can delete this version');
+    }
+    const { error } = await this.db.from('course_versions').delete().eq('id', id);
+    if (error) throw new InternalServerErrorException(error.message);
+  }
+
+  async deleteCourse(id: string, userId: string): Promise<void> {
+    const course = await this.getCourse(id);
+    if (course.created_by !== userId) {
+      throw new ForbiddenException('Only the creator can delete this course');
+    }
+    const { error } = await this.db.from('course_templates').delete().eq('id', id);
+    if (error) throw new InternalServerErrorException(error.message);
+  }
+
   // ─── Fork Logic ─────────────────────────────────────────────────────────────
   //
   // When forking version A → version B:

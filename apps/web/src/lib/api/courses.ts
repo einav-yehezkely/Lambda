@@ -20,11 +20,24 @@ export const coursesApi = {
   createCourse: (body: { title: string; subject: string; description?: string }) =>
     api.post<CourseTemplate>('/api/courses', body),
 
+  updateVersion: (id: string, body: {
+    institution?: string;
+    year?: number;
+    semester?: string;
+    description?: string;
+    visibility?: string;
+  }) => api.put<CourseVersion>(`/api/courses/versions/${id}`, body),
+
+  deleteVersion: (id: string) => api.delete<void>(`/api/courses/versions/${id}`),
+
+  deleteCourse: (id: string) => api.delete<void>(`/api/courses/${id}`),
+
   createVersion: (body: {
     template_id: string;
     title: string;
     institution?: string;
     year?: number;
+    semester?: string;
     description?: string;
     visibility?: string;
     based_on_version_id?: string;

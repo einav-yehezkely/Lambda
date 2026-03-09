@@ -79,6 +79,7 @@ export default function CoursesPage() {
           placeholder="Search courses..."
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
+          dir="auto"
           className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
         />
         <div className="flex gap-2">
@@ -120,6 +121,7 @@ export default function CoursesPage() {
                 value={courseTitle}
                 onChange={(e) => setCourseTitle(e.target.value)}
                 placeholder="e.g. Algorithms"
+                dir="auto"
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
               />
             </div>
@@ -142,6 +144,7 @@ export default function CoursesPage() {
                 onChange={(e) => setCourseDesc(e.target.value)}
                 rows={2}
                 placeholder="Optional"
+                dir="auto"
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
               />
             </div>

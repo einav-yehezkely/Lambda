@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
 
 export function useAuth() {
+  const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +45,7 @@ export function useAuth() {
   const signOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    router.push('/');
   };
 
   return { session, user, loading, signInWithGoogle, signOut };
