@@ -8,7 +8,6 @@ import type { User as LambdaUser } from '@lambda/shared';
 export function Navbar() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
   const [profile, setProfile] = useState<LambdaUser | null>(null);
-  // Cached username so profile link works even if backend is temporarily down
   const [cachedUsername, setCachedUsername] = useState<string | null>(null);
 
   useEffect(() => {
@@ -35,7 +34,7 @@ export function Navbar() {
           setCachedUsername(data.username);
         }
       })
-      .catch(() => {}); // backend may not be running yet
+      .catch(() => {});
   }, [user]);
 
   const profileUsername = profile?.username ?? cachedUsername;
@@ -43,57 +42,66 @@ export function Navbar() {
     ?? user?.user_metadata?.full_name ?? user?.email;
 
   return (
-    <nav className="sticky top-0 z-40 glass border-b border-white/30 shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="font-bold text-lg tracking-tight text-[#1A365D]">
-          λ Lambda
-        </Link>
-
-        <div className="flex items-center gap-4">
-          <Link
-            href="/courses"
-            className="text-sm text-[#1A365D]/70 hover:text-[#1A365D] transition-colors"
-          >
-            Courses
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-[#f8f9fa]/80 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        {/* Logo + Nav */}
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-2xl font-bold text-[#1e3a8a]">λ</span>
+            <span className="text-xl font-bold tracking-tight text-slate-900">Lambda</span>
           </Link>
 
+          <nav className="hidden md:flex items-center gap-6">
+            <Link
+              href="/courses"
+              className="text-sm font-medium text-slate-600 hover:text-[#1e3a8a] transition-colors"
+            >
+              Courses
+            </Link>
+          </nav>
+        </div>
+
+        {/* Right side */}
+        <div className="flex items-center gap-4">
           {loading ? null : user ? (
-            <div className="flex items-center gap-3">
-              {user.user_metadata?.avatar_url && (
-                <img
-                  src={user.user_metadata.avatar_url}
-                  alt="avatar"
-                  referrerPolicy="no-referrer"
-                  className="w-7 h-7 rounded-full ring-2 ring-[#6366F1]/20"
-                />
-              )}
+            <>
               {profileUsername ? (
                 <Link
                   href={`/profile/${profileUsername}`}
-                  className="text-sm text-[#1A365D]/80 hover:text-[#1A365D] transition-colors"
+                  className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
                 >
                   {displayName}
                 </Link>
               ) : (
-                <span className="text-sm text-[#1A365D]/80">{displayName}</span>
+                <span className="text-sm font-medium text-slate-600">{displayName}</span>
               )}
+              {user.user_metadata?.avatar_url ? (
+                <div className="w-9 h-9 rounded-full border-2 border-[#1e3a8a]/20 overflow-hidden">
+                  <img
+                    src={user.user_metadata.avatar_url}
+                    alt="avatar"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : null}
               <button
                 onClick={signOut}
-                className="text-sm text-[#1A365D]/50 hover:text-[#1A365D] transition-colors"
+                className="text-sm text-slate-400 hover:text-slate-700 transition-colors"
               >
                 Sign out
               </button>
-            </div>
+            </>
           ) : (
             <button
               onClick={signInWithGoogle}
-              className="text-sm bg-[#6366F1] text-white px-3 py-1.5 rounded-md hover:bg-indigo-700 transition-colors"
+              className="text-sm bg-[#1e3a8a] text-white px-4 py-2 rounded-lg hover:bg-blue-900 transition-colors font-medium"
             >
               Sign in
             </button>
           )}
         </div>
       </div>
-    </nav>
+    </header>
   );
 }

@@ -11,7 +11,7 @@ export interface User {
 
 // ─── Course Templates ─────────────────────────────────────────────────────────
 
-export type Subject = 'cs' | 'math' | 'other';
+export type Subject = string;
 
 export interface CourseTemplate {
   id: string;
@@ -114,6 +114,18 @@ export interface Attempt {
 }
 
 // ─── Progress Summary ─────────────────────────────────────────────────────────
+
+export interface ActiveVersionProgress {
+  version_id: string;
+  version_title: string;
+  course_id: string;
+  course_title: string;
+  subject: string;
+  total: number;
+  solved: number;
+  last_attempt_at: string | null;
+  enrolled: boolean;
+}
 
 export interface VersionProgressSummary {
   version_id: string;

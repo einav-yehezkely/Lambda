@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { coursesApi } from '@/lib/api/courses';
 import { progressApi } from '@/lib/api/progress';
+import type { ActiveVersionProgress } from '@lambda/shared';
 
 export function useCourses(filters?: { subject?: string; search?: string; sort?: string }) {
   return useQuery({
@@ -38,6 +39,56 @@ export function useVersionProgress(versionId: string, enabled: boolean) {
     queryKey: ['version-progress', versionId],
     queryFn: () => progressApi.getVersionProgress(versionId),
     enabled: !!versionId && enabled,
+  });
+}
+
+export function useActiveVersions(enabled: boolean) {
+  return useQuery({
+    queryKey: ['active-versions'],
+    queryFn: () => progressApi.getActiveVersions(),
+    enabled,
+  });
+}
+
+export function useEnrollCourse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (versionId: string) => progressApi.enroll(versionId),
+    onMutate: async (versionId) => {
+      await queryClient.cancelQueries({ queryKey: ['active-versions'] });
+      const snapshot = queryClient.getQueryData<ActiveVersionProgress[]>(['active-versions']);
+      queryClient.setQueryData<ActiveVersionProgress[]>(['active-versions'], (old) =>
+        (old ?? []).map((v) => v.version_id === versionId ? { ...v, enrolled: true } : v),
+      );
+      return { snapshot };
+    },
+    onError: (_err, _versionId, ctx) => {
+      if (ctx?.snapshot) queryClient.setQueryData(['active-versions'], ctx.snapshot);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['active-versions'] });
+    },
+  });
+}
+
+export function useUnenrollCourse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (versionId: string) => progressApi.unenroll(versionId),
+    onMutate: async (versionId) => {
+      await queryClient.cancelQueries({ queryKey: ['active-versions'] });
+      const snapshot = queryClient.getQueryData<ActiveVersionProgress[]>(['active-versions']);
+      queryClient.setQueryData<ActiveVersionProgress[]>(['active-versions'], (old) =>
+        (old ?? []).map((v) => v.version_id === versionId ? { ...v, enrolled: false } : v),
+      );
+      return { snapshot };
+    },
+    onError: (_err, _versionId, ctx) => {
+      if (ctx?.snapshot) queryClient.setQueryData(['active-versions'], ctx.snapshot);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['active-versions'] });
+    },
   });
 }
 

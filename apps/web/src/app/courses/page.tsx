@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCourses, useCreateCourse } from '@/hooks/useCourses';
+import { useCourses, useCreateCourse, useActiveVersions } from '@/hooks/useCourses';
 import { useAuth } from '@/hooks/useAuth';
 import { CourseCard } from '@/components/course/course-card';
 import { Modal } from '@/components/ui/modal';
@@ -23,7 +23,8 @@ export default function CoursesPage() {
   const [showModal, setShowModal] = useState(false);
 
   const [courseTitle, setCourseTitle] = useState('');
-  const [courseSubject, setCourseSubject] = useState<'cs' | 'math' | 'other'>('cs');
+  const [courseSubject, setCourseSubject] = useState('cs');
+  const [courseSubjectCustom, setCourseSubjectCustom] = useState('');
   const [courseDesc, setCourseDesc] = useState('');
   const [formError, setFormError] = useState('');
 
@@ -34,6 +35,8 @@ export default function CoursesPage() {
   });
 
   const createCourse = useCreateCourse();
+  const { data: activeVersions } = useActiveVersions(!!user);
+  const progressByCourseId = new Map((activeVersions ?? []).map((v) => [v.course_id, v]));
 
   const handleSearch = (value: string) => {
     setSearch(value);
@@ -46,13 +49,17 @@ export default function CoursesPage() {
     if (!courseTitle.trim()) { setFormError('Title is required'); return; }
     setFormError('');
     try {
+      const subject = courseSubject === 'custom'
+        ? courseSubjectCustom.trim()
+        : courseSubject;
+      if (!subject) { setFormError('Subject is required'); return; }
       const course = await createCourse.mutateAsync({
         title: courseTitle.trim(),
-        subject: courseSubject,
+        subject,
         description: courseDesc.trim() || undefined,
       });
       setShowModal(false);
-      setCourseTitle(''); setCourseSubject('cs'); setCourseDesc('');
+      setCourseTitle(''); setCourseSubject('cs'); setCourseSubjectCustom(''); setCourseDesc('');
       router.push(`/courses/${course.id}`);
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Failed to create course');
@@ -61,16 +68,8 @@ export default function CoursesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Courses</h1>
-        {user && (
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-gray-900 text-white text-sm px-4 py-2 rounded-md hover:bg-gray-700"
-          >
-            + New Course
-          </button>
-        )}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Courses</h1>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -105,8 +104,27 @@ export default function CoursesPage() {
       {courses && courses.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {courses.map((course) => (
-            <CourseCard key={course.id} course={course} />
+            <CourseCard
+              key={course.id}
+              course={course}
+              progress={progressByCourseId.get(course.id)}
+            />
           ))}
+        </div>
+      )}
+
+      {/* Create course CTA */}
+      {user && !isLoading && (
+        <div className="mt-16 text-center">
+          <p className="text-sm text-slate-500">
+            Didn&apos;t find the course you were looking for?{' '}
+            <button
+              onClick={() => setShowModal(true)}
+              className="text-[#1e3a8a] font-semibold hover:underline"
+            >
+              Create a new course
+            </button>
+          </p>
         </div>
       )}
 
@@ -126,16 +144,33 @@ export default function CoursesPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
-              <select
-                value={courseSubject}
-                onChange={(e) => setCourseSubject(e.target.value as 'cs' | 'math' | 'other')}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              >
-                <option value="cs">Computer Science</option>
-                <option value="math">Mathematics</option>
-                <option value="other">Other</option>
-              </select>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Subject *</label>
+              <div className="flex gap-2 mb-2">
+                {[{ value: 'cs', label: 'Computer Science' }, { value: 'math', label: 'Mathematics' }, { value: 'custom', label: 'Other...' }].map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => setCourseSubject(s.value)}
+                    className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
+                      courseSubject === s.value
+                        ? 'bg-[#1e3a8a] text-white border-[#1e3a8a]'
+                        : 'border-slate-300 text-slate-600 hover:border-slate-400'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              {courseSubject === 'custom' && (
+                <input
+                  type="text"
+                  value={courseSubjectCustom}
+                  onChange={(e) => setCourseSubjectCustom(e.target.value)}
+                  placeholder="e.g. Physics, Biology, Economics..."
+                  dir="auto"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]"
+                />
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>

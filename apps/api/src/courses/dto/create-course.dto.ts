@@ -1,6 +1,5 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Subject } from '@lambda/shared';
 
 export class CreateCourseDto {
   @ApiProperty({ example: 'Algorithms' })
@@ -8,9 +7,10 @@ export class CreateCourseDto {
   @IsNotEmpty()
   title!: string;
 
-  @ApiProperty({ enum: ['cs', 'math', 'other'] })
-  @IsEnum(['cs', 'math', 'other'])
-  subject!: Subject;
+  @ApiProperty({ example: 'cs' })
+  @IsString()
+  @IsNotEmpty()
+  subject!: string;
 
   @ApiPropertyOptional()
   @IsString()

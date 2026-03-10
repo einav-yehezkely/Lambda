@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCourse, useVersion, useVersionProgress, useDeleteVersion, useUpdateVersion } from '@/hooks/useCourses';
+import { useCourse, useVersion, useVersionProgress, useDeleteVersion, useUpdateVersion, useEnrollCourse, useActiveVersions } from '@/hooks/useCourses';
 import { useTopics, useVersionContent, useCreateContent, useCreateTopic, useDeleteTopic } from '@/hooks/useTopics';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfileById } from '@/hooks/useUsers';
@@ -408,6 +408,17 @@ export default function VersionPage({
 
   const isAuthor = !!user && !!version && user.id === version.author_id;
 
+  const { data: activeVersions } = useActiveVersions(!!user);
+  const enrollCourse = useEnrollCourse();
+  const isEnrolled = (activeVersions ?? []).some((v) => v.version_id === versionId && v.enrolled);
+
+  const handlePractice = async () => {
+    if (user && !isEnrolled) {
+      await enrollCourse.mutateAsync(versionId).catch(() => {});
+    }
+    router.push(`/practice/${versionId}`);
+  };
+
   const allTags = Array.from(new Set(items?.flatMap((i) => i.content_item.tags) ?? [])).sort();
   const visibleItems = selectedTag ? (items ?? []).filter((i) => i.content_item.tags.includes(selectedTag)) : (items ?? []);
 
@@ -467,9 +478,13 @@ export default function VersionPage({
               + Add Content
             </button>
           )}
-          <Link href={`/practice/${versionId}`} className="text-sm bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-700">
-            Practice →
-          </Link>
+          <button
+            onClick={handlePractice}
+            disabled={enrollCourse.isPending}
+            className="text-sm bg-[#1e3a8a] text-white px-4 py-2 rounded-md hover:bg-blue-900 disabled:opacity-50"
+          >
+            {enrollCourse.isPending ? 'Enrolling...' : 'Practice →'}
+          </button>
         </div>
       </div>
 

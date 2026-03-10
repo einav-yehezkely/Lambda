@@ -1,33 +1,31 @@
 @import "tailwindcss";
 
-:root {
-  --color-primary: #1A365D;
-  --color-accent: #6366F1;
-  --color-canvas: #F8FAFC;
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-foreground: #1A365D;
-}
-
-@theme inline {
-  --color-background: var(--color-canvas);
-  --color-foreground: var(--color-foreground);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-geist-mono);
+@theme {
+  --color-primary: #1e3a8a;
+  --color-primary-light: #2563eb;
+  --color-canvas: #f8f9fa;
+  --color-canvas-dark: #0a0a10;
+  --font-display: "Public Sans", system-ui, sans-serif;
 }
 
 body {
   background: var(--color-canvas);
-  color: var(--color-foreground);
-  font-family: var(--font-inter), Inter, system-ui, sans-serif;
-}
-
-.katex-display {
-  margin: 0.1em 0 !important;
+  font-family: "Public Sans", Inter, system-ui, sans-serif;
 }
 
 .glass {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(30, 58, 138, 0.1);
+}
+
+.katex-display {
+  margin: 0.1em 0 !important;
 }
