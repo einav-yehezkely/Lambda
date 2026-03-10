@@ -63,6 +63,7 @@ export function Navbar() {
                 <img
                   src={user.user_metadata.avatar_url}
                   alt="avatar"
+                  referrerPolicy="no-referrer"
                   className="w-7 h-7 rounded-full ring-2 ring-[#6366F1]/20"
                 />
               )}
