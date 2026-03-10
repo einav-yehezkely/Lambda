@@ -7,6 +7,7 @@ import { TopicsModule } from './topics/topics.module';
 import { ContentModule } from './content/content.module';
 import { PracticeModule } from './practice/practice.module';
 import { ProgressModule } from './progress/progress.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ProgressModule } from './progress/progress.module';
     ContentModule,
     PracticeModule,
     ProgressModule,
+    FeedbackModule,
   ],
 })
 export class AppModule {}

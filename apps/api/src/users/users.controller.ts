@@ -7,6 +7,12 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Get('leaderboard')
+  @ApiOkResponse({ description: 'Top 10 contributors by number of public course versions' })
+  getLeaderboard() {
+    return this.usersService.getLeaderboard(10);
+  }
+
   @Get('by-id/:id')
   @ApiOkResponse({ description: 'Get a public user profile by ID' })
   async getProfileById(@Param('id') id: string) {

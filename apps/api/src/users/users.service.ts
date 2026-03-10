@@ -87,6 +87,32 @@ export class UsersService {
     return data ?? [];
   }
 
+  async getLeaderboard(limit = 10): Promise<{ username: string; display_name: string | null; avatar_url: string | null; version_count: number }[]> {
+    const { data, error } = await this.db
+      .from('course_versions')
+      .select('author_id, author:users!course_versions_author_id_fkey(username, display_name, avatar_url)')
+      .eq('visibility', 'public');
+
+    if (error || !data) return [];
+
+    const counts = new Map<string, { username: string; display_name: string | null; avatar_url: string | null; count: number }>();
+    for (const row of data as any[]) {
+      const author = row.author;
+      if (!author?.username) continue;
+      const existing = counts.get(author.username);
+      if (existing) {
+        existing.count++;
+      } else {
+        counts.set(author.username, { username: author.username, display_name: author.display_name, avatar_url: author.avatar_url, count: 1 });
+      }
+    }
+
+    return Array.from(counts.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit)
+      .map(({ username, display_name, avatar_url, count }) => ({ username, display_name, avatar_url, version_count: count }));
+  }
+
   private async resolveUniqueUsername(base: string): Promise<string> {
     let candidate = base;
     let attempt = 0;

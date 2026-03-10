@@ -7,6 +7,7 @@ import { useCourses, useCreateCourse, useActiveVersions } from '@/hooks/useCours
 import { useAuth } from '@/hooks/useAuth';
 import { CourseCard } from '@/components/course/course-card';
 import { Modal } from '@/components/ui/modal';
+import { LeaderboardPanel } from '@/components/ui/leaderboard-panel';
 
 const SUBJECTS = [
   { value: '', label: 'All' },
@@ -70,9 +71,9 @@ export default function HomePage() {
   };
 
   return (
-    <div>
-      {/* Hero / Search Section */}
-      <div className="flex flex-col items-center text-center mb-14">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_256px] gap-x-8">
+      {/* Hero / Search Section - spans both columns */}
+      <div className="lg:col-span-2 flex flex-col items-center text-center mb-14">
         <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
           What will you master today?
         </h1>
@@ -110,6 +111,8 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Course content - left column */}
+      <div className="min-w-0">
       {/* In Progress Section */}
       {user && activeVersions && activeVersions.some((v) => v.enrolled) && (
         <section className="mb-16">
@@ -198,6 +201,11 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      </div>
+
+      {/* Leaderboard - right column */}
+      <LeaderboardPanel />
 
       {/* New Course Modal */}
       {showModal && (

@@ -20,7 +20,9 @@
       "Bash(__NEW_LINE_375d9473097a9718__ cat)",
       "Bash(__NEW_LINE_375d9473097a9718__ echo \"done\")",
       "Bash(npm install katex @types/katex)",
-      "Bash(git config core.autocrlf false)"
+      "Bash(git config core.autocrlf false)",
+      "Bash(npm install nodemailer --workspace=@lambda/api)",
+      "Bash(npm install @types/nodemailer --workspace=@lambda/api --save-dev)"
     ],
     "additionalDirectories": [
       "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",
