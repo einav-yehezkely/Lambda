@@ -195,7 +195,6 @@ export default function HomePage() {
               <CourseCard
                 key={course.id}
                 course={course}
-                progress={progressByCourseId.get(course.id)}
               />
             ))}
           </div>

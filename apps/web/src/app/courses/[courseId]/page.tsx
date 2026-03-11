@@ -22,7 +22,7 @@ function formatVersionLabel(version: CourseVersion): string {
   return parts.join(' · ') || version.title;
 }
 
-function VersionCard({
+function VersionRow({
   version,
   courseId,
   onFork,
@@ -30,7 +30,6 @@ function VersionCard({
   onEnroll,
   onUnenroll,
   enrolling,
-  enrollError,
 }: {
   version: CourseVersion;
   courseId: string;
@@ -39,53 +38,57 @@ function VersionCard({
   onEnroll?: () => void;
   onUnenroll?: () => void;
   enrolling?: boolean;
-  enrollError?: string | null;
 }) {
   return (
-    <div className="glass-card border border-slate-200 rounded-xl p-4 hover:shadow-md transition-all">
-      <div className="flex items-start justify-between gap-2">
-        <Link href={`/courses/${courseId}/versions/${version.id}`} className="flex-1 min-w-0">
-          <h3 className="font-semibold text-slate-900 hover:text-[#1e3a8a] transition-colors">
-            {formatVersionLabel(version)}
-          </h3>
-        </Link>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          {version.is_recommended && (
-            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-              Recommended
+    <div className="bg-white border border-gray-200 rounded-xl hover:shadow-sm hover:border-gray-300 transition-all">
+      <div className="px-5 py-4 flex items-start gap-4">
+        {/* Left: info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href={`/courses/${courseId}/versions/${version.id}`}
+              className="font-semibold text-gray-900 hover:text-[#1e3a8a] transition-colors"
+            >
+              {formatVersionLabel(version)}
+            </Link>
+            {version.is_recommended && (
+              <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
+                Recommended
+              </span>
+            )}
+            {version.based_on_version_id && (
+              <span className="text-xs bg-gray-50 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full">
+                Fork
+              </span>
+            )}
+            <span className={`text-xs px-2 py-0.5 rounded-full border ${version.visibility === 'public' ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500'}`}>
+              {version.visibility === 'public' ? 'Public' : 'Private'}
             </span>
+          </div>
+
+          {version.author && (
+            <p className="text-xs text-gray-400 mt-1">
+              by{' '}
+              <Link href={`/profile/${version.author.username}`} className="hover:text-gray-600 underline underline-offset-2">
+                {version.author.display_name ?? version.author.username}
+              </Link>
+            </p>
           )}
-          {version.based_on_version_id && (
-            <span className="text-xs text-slate-400">Fork</span>
+
+          {version.description && (
+            <p className="text-sm text-gray-500 mt-1.5 line-clamp-2" dir={/[\u0590-\u05FF]/.test(version.description) ? 'rtl' : undefined}>
+              {version.description}
+            </p>
           )}
         </div>
-      </div>
 
-      {version.description && (
-        <p className="mt-2 text-sm text-slate-500 whitespace-pre-wrap">{version.description}</p>
-      )}
-      {version.author && (
-        <p className="mt-2 text-xs text-slate-400">
-          by{' '}
-          <Link href={`/profile/${version.author.username}`} className="hover:text-slate-600 underline underline-offset-2">
-            {version.author.display_name ?? version.author.username}
-          </Link>
-        </p>
-      )}
-
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 gap-2">
-        <button
-          onClick={() => onFork(version)}
-          className="text-xs text-slate-400 hover:text-slate-700 transition-colors"
-        >
-          Fork →
-        </button>
-        <div className="flex flex-col items-end gap-1">
+        {/* Right: actions */}
+        <div className="shrink-0 flex flex-col items-end gap-2">
           {(onEnroll || onUnenroll) && (
             <button
               onClick={isEnrolled ? onUnenroll : onEnroll}
               disabled={enrolling}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 whitespace-nowrap ${
                 isEnrolled
                   ? 'border-green-200 text-green-600 bg-green-50 hover:bg-red-50 hover:text-red-500 hover:border-red-200'
                   : 'border-[#1e3a8a] text-[#1e3a8a] hover:bg-[#1e3a8a] hover:text-white'
@@ -94,9 +97,12 @@ function VersionCard({
               {enrolling ? '...' : isEnrolled ? 'Enrolled ✓' : 'Enroll'}
             </button>
           )}
-          {enrollError && (
-            <span className="text-[10px] text-red-500 max-w-[160px] text-right">{enrollError}</span>
-          )}
+          <button
+            onClick={() => onFork(version)}
+            className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+          >
+            Fork →
+          </button>
         </div>
       </div>
     </div>
@@ -125,7 +131,6 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
   const [showModal, setShowModal] = useState(false);
   const [forkFrom, setForkFrom] = useState<CourseVersion | null>(null);
 
-  // Version form state
   const [vInstitution, setVInstitution] = useState('');
   const [vYear, setVYear] = useState('');
   const [vSemester, setVSemester] = useState('');
@@ -138,11 +143,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     setFormError('');
   };
 
-  const openNewVersion = () => {
-    setForkFrom(null);
-    resetForm();
-    setShowModal(true);
-  };
+  const openNewVersion = () => { setForkFrom(null); resetForm(); setShowModal(true); };
 
   const openFork = (v: CourseVersion) => {
     setForkFrom(v);
@@ -181,63 +182,92 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     }
   };
 
+  const INPUT_CLS = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900';
+
   if (courseLoading) return <div className="text-sm text-gray-400">Loading...</div>;
   if (!course) return <div className="text-sm text-red-500">Course not found.</div>;
 
   return (
     <div>
       {/* Breadcrumb */}
-      <div className="text-sm text-gray-400 mb-4">
+      <div className="text-sm text-gray-400 mb-5">
         <Link href="/" className="hover:text-gray-600">Home</Link>
         <span className="mx-2">/</span>
         <span>{course.title}</span>
       </div>
 
-      {/* Course header */}
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{course.title}</h1>
-          {course.description && (
-            <p className="mt-2 text-gray-500" dir={/[\u0590-\u05FF]/.test(course.description) ? 'rtl' : undefined}>{course.description}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {user?.id === course.created_by && (
-            <button
-              onClick={handleDeleteCourse}
-              disabled={deleteCourse.isPending}
-              className="text-sm border border-red-200 text-red-500 px-3 py-2 rounded-md hover:border-red-400 hover:text-red-700 disabled:opacity-40"
-            >
-              Delete Course
-            </button>
-          )}
-          {user && (
-            <button
-              onClick={openNewVersion}
-              className="bg-gray-900 text-white text-sm px-4 py-2 rounded-md hover:bg-gray-700"
-            >
-              + New Version
-            </button>
-          )}
+      {/* Course header card */}
+      <div className="mb-6 border border-gray-200 rounded-xl bg-white shadow-sm">
+        <div className="px-6 py-6">
+          <div className="flex items-start gap-5">
+            {/* Course icon */}
+            <div className="shrink-0 w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-500">
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="4 17 10 11 4 5" />
+                <line x1="12" y1="19" x2="20" y2="19" />
+              </svg>
+            </div>
+
+            {/* Title + meta */}
+            <div className="flex-1 min-w-0">
+              {course.subject && (
+                <p className="text-sm text-gray-400 mb-1">{course.subject}</p>
+              )}
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{course.title}</h1>
+              {course.description && (
+                <p className="text-sm text-gray-500 mb-2" dir={/[\u0590-\u05FF]/.test(course.description) ? 'rtl' : undefined}>
+                  {course.description}
+                </p>
+              )}
+              {!versionsLoading && (
+                <p className="text-sm text-gray-400">
+                  {versions?.length ?? 0} {versions?.length === 1 ? 'version' : 'versions'}
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="shrink-0 flex flex-col items-end gap-2">
+              {user && (
+                <button
+                  onClick={openNewVersion}
+                  className="flex items-center gap-1.5 bg-[#1e3a8a] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-900 transition-colors whitespace-nowrap"
+                >
+                  <span className="text-base leading-none">+</span> New Version
+                </button>
+              )}
+              {user?.id === course.created_by && (
+                <button
+                  onClick={handleDeleteCourse}
+                  disabled={deleteCourse.isPending}
+                  className="text-xs text-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
+                >
+                  {deleteCourse.isPending ? 'Deleting...' : 'Delete course'}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Versions */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Versions {versions && `(${versions.length})`}
-        </h2>
+      {/* Versions list */}
+      {versionsLoading && <div className="text-sm text-gray-400">Loading versions...</div>}
 
-        {versionsLoading && <div className="text-sm text-gray-400">Loading versions...</div>}
+      {!versionsLoading && versions && versions.length === 0 && (
+        <div className="text-center py-16 text-gray-400">
+          <p className="text-sm">No versions yet.</p>
+          {user && (
+            <button onClick={openNewVersion} className="mt-2 text-sm text-gray-600 hover:text-gray-900 underline underline-offset-2">
+              Create the first version
+            </button>
+          )}
+        </div>
+      )}
 
-        {versions && versions.length === 0 && (
-          <div className="text-sm text-gray-400">No versions yet.</div>
-        )}
-
-        {versions && versions.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {versions.map((v) => (
-              <VersionCard
+      {versions && versions.length > 0 && (
+        <div className="space-y-2">
+          {versions.map((v) => (
+            <VersionRow
               key={v.id}
               version={v}
               courseId={courseId}
@@ -246,12 +276,10 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
               onEnroll={user ? () => enrollCourse.mutate(v.id) : undefined}
               onUnenroll={user ? () => unenrollCourse.mutate(v.id) : undefined}
               enrolling={enrollCourse.isPending || unenrollCourse.isPending}
-              enrollError={(enrollCourse.error || unenrollCourse.error) instanceof Error ? (enrollCourse.error || unenrollCourse.error as Error)?.message : null}
             />
-            ))}
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* New Version / Fork Modal */}
       {showModal && (
@@ -263,35 +291,16 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Institution</label>
-                <input
-                  autoFocus
-                  type="text"
-                  value={vInstitution}
-                  onChange={(e) => setVInstitution(e.target.value)}
-                  placeholder="e.g. HUJI"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                />
+                <input autoFocus type="text" value={vInstitution} onChange={(e) => setVInstitution(e.target.value)} placeholder="e.g. HUJI" className={INPUT_CLS} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                <input
-                  type="number"
-                  value={vYear}
-                  onChange={(e) => setVYear(e.target.value)}
-                  placeholder="2025"
-                  min={2000}
-                  max={2100}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                />
+                <input type="number" value={vYear} onChange={(e) => setVYear(e.target.value)} placeholder="2025" min={2000} max={2100} className={INPUT_CLS} />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
-              <select
-                value={vSemester}
-                onChange={(e) => setVSemester(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              >
+              <select value={vSemester} onChange={(e) => setVSemester(e.target.value)} className={INPUT_CLS}>
                 <option value="">—</option>
                 <option value="A">Semester A</option>
                 <option value="B">Semester B</option>
@@ -300,22 +309,11 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea
-                value={vDesc}
-                onChange={(e) => setVDesc(e.target.value)}
-                rows={2}
-                placeholder="Optional"
-                dir="auto"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
-              />
+              <textarea value={vDesc} onChange={(e) => setVDesc(e.target.value)} rows={2} placeholder="Optional" dir="auto" className={`${INPUT_CLS} resize-none`} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
-              <select
-                value={vVisibility}
-                onChange={(e) => setVVisibility(e.target.value as 'public' | 'private')}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              >
+              <select value={vVisibility} onChange={(e) => setVVisibility(e.target.value as 'public' | 'private')} className={INPUT_CLS}>
                 <option value="public">Public</option>
                 <option value="private">Private</option>
               </select>
@@ -327,18 +325,8 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
             )}
             {formError && <p className="text-sm text-red-500">{formError}</p>}
             <div className="flex justify-end gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={createVersion.isPending}
-                className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
-              >
+              <button type="button" onClick={() => setShowModal(false)} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">Cancel</button>
+              <button type="submit" disabled={createVersion.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
                 {createVersion.isPending ? 'Creating...' : forkFrom ? 'Fork' : 'Create'}
               </button>
             </div>
