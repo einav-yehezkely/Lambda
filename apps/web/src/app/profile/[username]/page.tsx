@@ -163,7 +163,7 @@ export default function ProfilePage({
       </div>
 
       {/* Versions */}
-      <div>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-4">
         <h2 className="text-base font-semibold text-gray-900 mb-4">
           Versions {versions && `(${versions.length})`}
         </h2>
@@ -184,7 +184,7 @@ export default function ProfilePage({
       </div>
 
       {/* Solutions */}
-      <div className="mt-8">
+      <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-4">
         <h2 className="text-base font-semibold text-gray-900 mb-4">
           Solutions {solutions && solutions.length > 0 && `(${solutions.length})`}
         </h2>

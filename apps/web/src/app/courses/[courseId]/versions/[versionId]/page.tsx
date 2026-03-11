@@ -891,7 +891,7 @@ export default function VersionPage({
         {/* Type + tag filters */}
         <div className="flex flex-wrap items-center gap-2 mb-5">
           {[{ value: '', label: 'All' }, ...getActiveTypes(version)].map((t) => (
-            <button key={t.value} onClick={() => setSelectedType(t.value)} className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+            <button key={t.value} onClick={() => setSelectedType(t.value)} className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}>
               {t.label}
             </button>
           ))}
@@ -902,7 +902,7 @@ export default function VersionPage({
                 <button
                   key={tag}
                   onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
-                  className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${selectedTag === tag ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'}`}
+                  className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${selectedTag === tag ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-400'}`}
                 >
                   {tag}
                 </button>

@@ -83,7 +83,7 @@ export default function CoursesPage() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           dir="auto"
-          className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+          className="flex-1 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
         />
         <div className="flex flex-wrap gap-2">
           <button
@@ -91,7 +91,7 @@ export default function CoursesPage() {
             className={`text-sm px-3 py-2 rounded-md border transition-colors ${
               subject === ''
                 ? 'bg-gray-900 text-white border-gray-900'
-                : 'border-gray-300 text-gray-600 hover:border-gray-500'
+                : 'bg-white border-gray-300 text-gray-600 hover:border-gray-500'
             }`}
           >
             All
@@ -103,7 +103,7 @@ export default function CoursesPage() {
               className={`text-sm px-3 py-2 rounded-md border transition-colors ${
                 subject === s
                   ? 'bg-gray-900 text-white border-gray-900'
-                  : 'border-gray-300 text-gray-600 hover:border-gray-500'
+                  : 'bg-white border-gray-300 text-gray-600 hover:border-gray-500'
               }`}
             >
               {formatSubject(s)}
