@@ -20,9 +20,10 @@ export class CreateContentDto {
   @IsOptional()
   topic_id?: string;
 
-  @ApiProperty({ enum: ['proof', 'exam_question', 'coding_question', 'algorithm'] })
-  @IsEnum(['proof', 'exam_question', 'coding_question', 'algorithm'])
-  type!: ContentType;
+  @ApiProperty({ description: 'Content type (built-in or custom)' })
+  @IsString()
+  @IsNotEmpty()
+  type!: string;
 
   @ApiProperty({ example: 'BFS' })
   @IsString()

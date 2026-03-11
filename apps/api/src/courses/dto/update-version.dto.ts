@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Visibility } from '@lambda/shared';
 
@@ -39,4 +39,9 @@ export class UpdateVersionDto {
   @IsBoolean()
   @IsOptional()
   is_recommended?: boolean;
+
+  @ApiPropertyOptional({ description: 'Custom content types for this version' })
+  @IsArray()
+  @IsOptional()
+  content_types?: { label: string; value: string }[];
 }

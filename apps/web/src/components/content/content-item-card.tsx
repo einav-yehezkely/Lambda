@@ -10,15 +10,25 @@ import { useUpdateContent, useDeleteContent } from '@/hooks/useTopics';
 const TYPE_LABEL: Record<string, string> = {
   proof: 'Proof',
   exam_question: 'Exam',
-  coding_question: 'Code',
+  exercise_question: 'Exercise',
   algorithm: 'Algorithm',
+  other: 'Other',
 };
 
 const TYPE_COLOR: Record<string, string> = {
   proof: 'bg-purple-100 text-purple-700',
   exam_question: 'bg-blue-100 text-blue-700',
-  coding_question: 'bg-orange-100 text-orange-700',
+  exercise_question: 'bg-orange-100 text-orange-700',
   algorithm: 'bg-teal-100 text-teal-700',
+  other: 'bg-gray-100 text-gray-600',
+};
+
+const TYPE_STRIP: Record<string, string> = {
+  proof: 'bg-purple-400',
+  exam_question: 'bg-blue-400',
+  exercise_question: 'bg-orange-400',
+  algorithm: 'bg-teal-400',
+  other: 'bg-gray-300',
 };
 
 const DIFFICULTY_COLOR: Record<string, string> = {
@@ -232,8 +242,8 @@ function ViewModal({ item, onClose }: {
       <div ref={contentRef} className="text-sm">
         {/* Type + difficulty */}
         <div className="flex items-center gap-2 mb-4">
-          <span className={`text-xs px-2 py-0.5 rounded-full ${TYPE_COLOR[content_item.type]}`}>
-            {TYPE_LABEL[content_item.type]}
+          <span className={`text-xs px-2 py-0.5 rounded-full ${TYPE_COLOR[content_item.type] ?? 'bg-gray-100 text-gray-600'}`}>
+            {TYPE_LABEL[content_item.type] ?? content_item.type}
           </span>
           {content_item.difficulty && (
             <span className={`text-xs font-medium ${DIFFICULTY_COLOR[content_item.difficulty]}`}>
@@ -347,8 +357,9 @@ export function ContentItemCard({
   return (
     <>
       <div
-        className="w-64 border border-gray-200 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors flex flex-col"
+        className="border border-gray-200 rounded-lg hover:shadow-sm hover:border-gray-300 transition-all flex flex-col overflow-hidden"
       >
+        <div className={`h-1 ${TYPE_STRIP[content_item.type] ?? 'bg-gray-300'}`} />
         {/* Clickable area */}
         <button
           type="button"

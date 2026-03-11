@@ -32,7 +32,7 @@ export class PracticeController {
   @ApiOkResponse({ description: 'Returns an ordered list of content items for practice' })
   @ApiQuery({ name: 'version_id', required: true })
   @ApiQuery({ name: 'topic_id', required: false })
-  @ApiQuery({ name: 'type', required: false, enum: ['proof', 'exam_question', 'coding_question'] })
+  @ApiQuery({ name: 'type', required: false, enum: ['proof', 'exam_question', 'exercise_question'] })
   @ApiQuery({ name: 'mode', required: true, enum: ['random', 'topic', 'exam', 'spaced_repetition'] })
   getSession(
     @Query('version_id') version_id: string,

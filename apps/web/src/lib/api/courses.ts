@@ -26,6 +26,7 @@ export const coursesApi = {
     semester?: string;
     description?: string;
     visibility?: string;
+    content_types?: { label: string; value: string }[];
   }) => api.put<CourseVersion>(`/api/courses/versions/${id}`, body),
 
   deleteVersion: (id: string) => api.delete<void>(`/api/courses/versions/${id}`),

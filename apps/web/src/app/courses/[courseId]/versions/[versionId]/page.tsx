@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCourse, useVersion, useVersionProgress, useDeleteVersion, useUpdateVersion, useEnrollCourse, useActiveVersions } from '@/hooks/useCourses';
@@ -93,13 +93,6 @@ function EditVersionModal({ version, onClose }: { version: CourseVersion; onClos
   );
 }
 
-const CONTENT_TYPES = [
-  { value: '', label: 'All' },
-  { value: 'proof', label: 'Proofs' },
-  { value: 'exam_question', label: 'Exam Questions' },
-  { value: 'coding_question', label: 'Coding' },
-  { value: 'algorithm', label: 'Algorithms' },
-];
 
 function ProgressBar({ versionId, userId }: { versionId: string; userId: string }) {
   const { data: progress } = useVersionProgress(versionId, !!userId);
@@ -193,17 +186,188 @@ function ManageTopicsModal({
   );
 }
 
+const BUILT_IN_TYPES = [
+  { value: 'proof', label: 'Proof' },
+  { value: 'exam_question', label: 'Exam Question' },
+  { value: 'exercise_question', label: 'Exercise' },
+  { value: 'algorithm', label: 'Algorithm' },
+  { value: 'other', label: 'Other' },
+];
+
+const PROTECTED_TYPES = new Set(['exam_question', 'exercise_question']);
+
+function getActiveTypes(version: CourseVersion) {
+  const types = version.content_types;
+  return types && types.length > 0 ? types : BUILT_IN_TYPES;
+}
+
+function ManageTypesModal({
+  version,
+  onClose,
+}: {
+  version: CourseVersion;
+  onClose: () => void;
+}) {
+  const updateVersion = useUpdateVersion();
+  const [orderedTypes, setOrderedTypes] = useState(() => getActiveTypes(version));
+  const [label, setLabel] = useState('');
+  const [error, setError] = useState('');
+  const dragIndex = useRef<number | null>(null);
+
+  // Sync when version data changes (e.g. after add/remove)
+  useEffect(() => {
+    setOrderedTypes(getActiveTypes(version));
+  }, [version.content_types]);
+
+  const save = (types: typeof orderedTypes) =>
+    updateVersion.mutateAsync({ id: version.id, body: { content_types: types } });
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = label.trim();
+    if (!trimmed) { setError('Label is required'); return; }
+    const value = trimmed.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    if (!value) { setError('Invalid label'); return; }
+    if (orderedTypes.some((t) => t.value === value)) {
+      setError('Type already exists'); return;
+    }
+    setError('');
+    try {
+      await save([...orderedTypes, { label: trimmed, value }]);
+      setLabel('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to add type');
+    }
+  };
+
+  const handleRemove = async (value: string) => {
+    try {
+      await save(orderedTypes.filter((t) => t.value !== value));
+    } catch {
+      setError('Failed to remove type');
+    }
+  };
+
+  const [editingValue, setEditingValue] = useState<string | null>(null);
+  const [editingLabel, setEditingLabel] = useState('');
+
+  const startEdit = (t: { label: string; value: string }) => {
+    setEditingValue(t.value);
+    setEditingLabel(t.label);
+  };
+
+  const handleRename = async (value: string) => {
+    const trimmed = editingLabel.trim();
+    setEditingValue(null);
+    if (!trimmed || trimmed === orderedTypes.find((t) => t.value === value)?.label) return;
+    try {
+      await save(orderedTypes.map((t) => t.value === value ? { ...t, label: trimmed } : t));
+    } catch {
+      setError('Failed to rename type');
+    }
+  };
+
+  const handleDragStart = (i: number) => { dragIndex.current = i; };
+  const handleDragOver = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    const from = dragIndex.current;
+    if (from === null || from === i) return;
+    const next = [...orderedTypes];
+    const [item] = next.splice(from, 1);
+    next.splice(i, 0, item);
+    dragIndex.current = i;
+    setOrderedTypes(next);
+  };
+  const handleDrop = async () => {
+    dragIndex.current = null;
+    try {
+      await save(orderedTypes);
+    } catch {
+      setError('Failed to reorder types');
+    }
+  };
+
+  return (
+    <Modal title="Manage Content Types" onClose={onClose}>
+      <div className="space-y-4">
+        <ul className="space-y-1">
+          {orderedTypes.map((t, i) => (
+            <li
+              key={t.value}
+              draggable={editingValue !== t.value}
+              onDragStart={() => handleDragStart(i)}
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDrop={handleDrop}
+              className="flex items-center gap-2 py-1.5 border-b border-gray-100 last:border-0 cursor-grab active:cursor-grabbing select-none"
+            >
+              <span className="text-gray-300 text-sm">⠿</span>
+              {editingValue === t.value ? (
+                <input
+                  autoFocus
+                  value={editingLabel}
+                  onChange={(e) => setEditingLabel(e.target.value)}
+                  onBlur={() => handleRename(t.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleRename(t.value); } if (e.key === 'Escape') setEditingValue(null); }}
+                  className="flex-1 text-sm border border-gray-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-text select-text"
+                />
+              ) : (
+                <span
+                  className="text-sm text-gray-700 flex-1"
+                  onDoubleClick={() => !PROTECTED_TYPES.has(t.value) && startEdit(t)}
+                  title={PROTECTED_TYPES.has(t.value) ? undefined : 'Double-click to rename'}
+                >{t.label}</span>
+              )}
+              {PROTECTED_TYPES.has(t.value) ? (
+                <span className="text-xs text-gray-300">protected</span>
+              ) : (
+                <button
+                  onClick={() => handleRemove(t.value)}
+                  disabled={updateVersion.isPending}
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
+                >
+                  Remove
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+        <form onSubmit={handleAdd} className="flex gap-2 pt-2 border-t border-gray-100">
+          <input
+            autoFocus
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="New type label..."
+            dir="auto"
+            className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+          />
+          <button
+            type="submit"
+            disabled={updateVersion.isPending}
+            className="text-sm px-3 py-1.5 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
+          >
+            Add
+          </button>
+        </form>
+        {error && <p className="text-sm text-red-500">{error}</p>}
+      </div>
+    </Modal>
+  );
+}
+
 function AddContentModal({
   versionId,
   topics,
+  activeTypes = BUILT_IN_TYPES,
   onClose,
 }: {
   versionId: string;
   topics: Topic[];
+  activeTypes?: { label: string; value: string }[];
   onClose: () => void;
 }) {
   const createContent = useCreateContent();
-  const [type, setType] = useState<'proof' | 'exam_question' | 'coding_question' | 'algorithm'>('proof');
+  const [type, setType] = useState('proof');
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState('');
   const [tagsInput, setTagsInput] = useState('');
@@ -273,11 +437,10 @@ function AddContentModal({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-            <select value={type} onChange={(e) => setType(e.target.value as typeof type)} className={INPUT_CLS}>
-              <option value="proof">Proof</option>
-              <option value="exam_question">Exam Question</option>
-              <option value="coding_question">Coding Question</option>
-              <option value="algorithm">Algorithm</option>
+            <select value={type} onChange={(e) => setType(e.target.value)} className={INPUT_CLS}>
+              {activeTypes.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -394,6 +557,7 @@ export default function VersionPage({
   const [selectedTag, setSelectedTag] = useState('');
   const [showAddContent, setShowAddContent] = useState(false);
   const [showManageTopics, setShowManageTopics] = useState(false);
+  const [showManageTypes, setShowManageTypes] = useState(false);
   const [showEditVersion, setShowEditVersion] = useState(false);
   const deleteVersion = useDeleteVersion();
 
@@ -427,7 +591,8 @@ export default function VersionPage({
 
   return (
     <div>
-      <div className="text-sm text-gray-400 mb-4">
+      {/* Breadcrumb */}
+      <div className="text-sm text-gray-400 mb-5">
         <Link href="/" className="hover:text-gray-600">Home</Link>
         <span className="mx-2">/</span>
         <Link href={`/courses/${courseId}`} className="hover:text-gray-600">{course?.title ?? 'Course'}</Link>
@@ -435,95 +600,127 @@ export default function VersionPage({
         <span>{[version.institution, version.year].filter(Boolean).join(' · ') || version.title}</span>
       </div>
 
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          {course && (
-            <p className="text-base text-gray-500 mb-1" dir="auto">{course.title}</p>
-          )}
-          <h1 className="text-2xl font-bold text-gray-900">
-            {[
-              version.institution,
-              version.year,
-              version.semester ? (SEMESTER_LABEL[version.semester] ?? `Semester ${version.semester}`) : null,
-            ].filter(Boolean).join(' · ') || version.title}
-          </h1>
-          {version.description && <p className="mt-2 text-gray-500 text-sm whitespace-pre-wrap" dir={/[\u0590-\u05FF]/.test(version.description) ? 'rtl' : undefined}>{version.description}</p>}
-          <VersionAuthor authorId={version.author_id} />
-          {user && <ProgressBar versionId={versionId} userId={user.id} />}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {isAuthor && (
-            <>
-              <button onClick={() => setShowManageTopics(true)} className="text-sm border border-gray-300 text-gray-700 px-3 py-2 rounded-md hover:border-gray-500">
-                Topics
-              </button>
-              <button onClick={() => setShowEditVersion(true)} className="text-sm border border-gray-300 text-gray-700 px-3 py-2 rounded-md hover:border-gray-500">
-                Edit Version
-              </button>
-              <button
-                onClick={async () => {
-                  if (!window.confirm('Delete this version? This cannot be undone.')) return;
-                  await deleteVersion.mutateAsync({ id: versionId, templateId: courseId });
-                  router.push(`/courses/${courseId}`);
-                }}
-                disabled={deleteVersion.isPending}
-                className="text-sm border border-red-200 text-red-500 px-3 py-2 rounded-md hover:border-red-400 hover:text-red-700 disabled:opacity-40"
-              >
-                Delete Version
-              </button>
-            </>
-          )}
-          {user && (
-            <button onClick={() => setShowAddContent(true)} className="text-sm border border-gray-300 text-gray-700 px-3 py-2 rounded-md hover:border-gray-500">
-              + Add Content
+      {/* Version header card */}
+      <div className="mb-8 border border-gray-200 rounded-xl p-6 bg-white">
+        {course && <p className="text-sm text-gray-500 mb-1.5">{course.title}</p>}
+        <div className="flex items-start justify-between gap-6">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">
+              {[
+                version.institution,
+                version.year,
+                version.semester ? (SEMESTER_LABEL[version.semester] ?? `Semester ${version.semester}`) : null,
+              ].filter(Boolean).join(' · ') || version.title}
+            </h1>
+
+            {/* Meta badges */}
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {version.institution && (
+                <span className="text-xs border border-gray-200 text-gray-600 px-2.5 py-0.5 rounded-full">{version.institution}</span>
+              )}
+              {version.year && (
+                <span className="text-xs border border-gray-200 text-gray-600 px-2.5 py-0.5 rounded-full">{version.year}</span>
+              )}
+              {version.semester && (
+                <span className="text-xs border border-gray-200 text-gray-600 px-2.5 py-0.5 rounded-full">{SEMESTER_LABEL[version.semester] ?? version.semester}</span>
+              )}
+              <span className={`text-xs px-2.5 py-0.5 rounded-full border ${version.visibility === 'public' ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500'}`}>
+                {version.visibility === 'public' ? 'Public' : 'Private'}
+              </span>
+            </div>
+
+            {version.description && (
+              <p className="text-gray-500 text-sm whitespace-pre-wrap mb-3" dir={/[\u0590-\u05FF]/.test(version.description) ? 'rtl' : undefined}>{version.description}</p>
+            )}
+            <VersionAuthor authorId={version.author_id} />
+            {user && <ProgressBar versionId={versionId} userId={user.id} />}
+          </div>
+
+          <div className="flex flex-col items-end gap-3 shrink-0">
+            {/* Primary CTA */}
+            <button
+              onClick={handlePractice}
+              disabled={enrollCourse.isPending}
+              className="bg-[#1e3a8a] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50 whitespace-nowrap"
+            >
+              {enrollCourse.isPending ? 'Enrolling...' : 'Practice →'}
             </button>
-          )}
-          <button
-            onClick={handlePractice}
-            disabled={enrollCourse.isPending}
-            className="text-sm bg-[#1e3a8a] text-white px-4 py-2 rounded-md hover:bg-blue-900 disabled:opacity-50"
-          >
-            {enrollCourse.isPending ? 'Enrolling...' : 'Practice →'}
-          </button>
+
+            {/* Author actions */}
+            {isAuthor && (
+              <div className="flex flex-col items-end gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => setShowAddContent(true)} className="text-sm border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-colors whitespace-nowrap">
+                    + Add Content
+                  </button>
+                  <button onClick={() => setShowManageTopics(true)} className="text-sm border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-colors">
+                    Topics
+                  </button>
+                  <button onClick={() => setShowManageTypes(true)} className="text-sm border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-colors">
+                    Types
+                  </button>
+                  <button onClick={() => setShowEditVersion(true)} className="text-sm border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-colors">
+                    Edit Version
+                  </button>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('Delete this version? This cannot be undone.')) return;
+                    await deleteVersion.mutateAsync({ id: versionId, templateId: courseId });
+                    router.push(`/courses/${courseId}`);
+                  }}
+                  disabled={deleteVersion.isPending}
+                  className="text-xs text-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
+                >
+                  {deleteVersion.isPending ? 'Deleting...' : 'Delete version'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Content area */}
       <div className="flex gap-6">
         {topics && topics.length > 0 && (
-          <aside className="w-48 shrink-0">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Topics</h2>
-            <ul className="space-y-1">
-              <li>
-                <button onClick={() => setSelectedTopic('')} className={`w-full text-left text-sm px-2 py-1.5 rounded-md ${selectedTopic === '' ? 'bg-gray-100 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  All topics
-                </button>
-              </li>
+          <aside className="w-52 shrink-0">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Topics</p>
+            <nav className="space-y-0.5">
+              <button
+                onClick={() => setSelectedTopic('')}
+                className={`w-full text-left text-sm px-3 py-2 rounded-lg transition-colors ${selectedTopic === '' ? 'bg-gray-900 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+              >
+                All
+              </button>
               {topics.map((t) => (
-                <li key={t.id}>
-                  <button onClick={() => setSelectedTopic(t.id)} className={`w-full text-left text-sm px-2 py-1.5 rounded-md ${selectedTopic === t.id ? 'bg-gray-100 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    {t.title}
-                  </button>
-                </li>
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTopic(t.id)}
+                  className={`w-full text-left text-sm px-3 py-2 rounded-lg transition-colors ${selectedTopic === t.id ? 'bg-gray-900 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                  {t.title}
+                </button>
               ))}
-            </ul>
+            </nav>
           </aside>
         )}
 
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap gap-2 mb-4">
-            {CONTENT_TYPES.map((t) => (
-              <button key={t.value} onClick={() => setSelectedType(t.value)} className={`text-sm px-3 py-1.5 rounded-md border transition-colors ${selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}>
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 mb-5">
+            {[{ value: '', label: 'All' }, ...getActiveTypes(version)].map((t) => (
+              <button key={t.value} onClick={() => setSelectedType(t.value)} className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
                 {t.label}
               </button>
             ))}
             {allTags.length > 0 && (
               <>
-                <span className="text-gray-300 self-center">|</span>
+                <span className="text-gray-200 self-center">|</span>
                 {allTags.map((tag) => (
                   <button
                     key={tag}
                     onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
-                    className={`text-xs px-2.5 py-1.5 rounded-md border transition-colors ${selectedTag === tag ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'}`}
+                    className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${selectedTag === tag ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'}`}
                   >
                     {tag}
                   </button>
@@ -531,10 +728,20 @@ export default function VersionPage({
               </>
             )}
           </div>
+
           {itemsLoading && <div className="text-sm text-gray-400">Loading content...</div>}
-          {!itemsLoading && visibleItems.length === 0 && <div className="text-sm text-gray-400">No content items yet.</div>}
+          {!itemsLoading && visibleItems.length === 0 && (
+            <div className="text-center py-16 text-gray-400">
+              <p className="text-sm">No content items yet.</p>
+              {isAuthor && (
+                <button onClick={() => setShowAddContent(true)} className="mt-2 text-sm text-gray-600 hover:text-gray-900 underline underline-offset-2">
+                  Add the first item
+                </button>
+              )}
+            </div>
+          )}
           {visibleItems.length > 0 && (
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {visibleItems.map((item) => (
                 <ContentItemCard
                   key={item.content_item_id}
@@ -551,7 +758,8 @@ export default function VersionPage({
       </div>
 
       {showManageTopics && <ManageTopicsModal versionId={versionId} topics={topics ?? []} onClose={() => setShowManageTopics(false)} />}
-      {showAddContent && <AddContentModal versionId={versionId} topics={topics ?? []} onClose={() => setShowAddContent(false)} />}
+      {showManageTypes && version && <ManageTypesModal version={version} onClose={() => setShowManageTypes(false)} />}
+      {showAddContent && <AddContentModal versionId={versionId} topics={topics ?? []} activeTypes={getActiveTypes(version)} onClose={() => setShowAddContent(false)} />}
       {showEditVersion && version && <EditVersionModal version={version} onClose={() => setShowEditVersion(false)} />}
     </div>
   );

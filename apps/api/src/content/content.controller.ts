@@ -37,7 +37,7 @@ export class ContentController {
   @ApiOkResponse({ description: 'List content items for a version' })
   @ApiQuery({ name: 'version_id', required: true })
   @ApiQuery({ name: 'topic_id', required: false })
-  @ApiQuery({ name: 'type', required: false, enum: ['proof', 'exam_question', 'coding_question'] })
+  @ApiQuery({ name: 'type', required: false, enum: ['proof', 'exam_question', 'exercise_question'] })
   @ApiQuery({ name: 'difficulty', required: false, enum: ['easy', 'medium', 'hard'] })
   listByVersion(
     @Query('version_id') version_id: string,

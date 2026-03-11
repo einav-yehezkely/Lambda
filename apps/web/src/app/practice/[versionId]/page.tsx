@@ -17,13 +17,17 @@ const MODES: { value: PracticeMode; label: string; description: string }[] = [
 const TYPE_LABEL: Record<string, string> = {
   proof: 'Proof',
   exam_question: 'Exam',
-  coding_question: 'Code',
+  exercise_question: 'Exercise',
+  algorithm: 'Algorithm',
+  other: 'Other',
 };
 
 const TYPE_COLOR: Record<string, string> = {
   proof: 'bg-purple-100 text-purple-700',
   exam_question: 'bg-blue-100 text-blue-700',
-  coding_question: 'bg-orange-100 text-orange-700',
+  exercise_question: 'bg-orange-100 text-orange-700',
+  algorithm: 'bg-teal-100 text-teal-700',
+  other: 'bg-gray-100 text-gray-600',
 };
 
 const DIFFICULTY_COLOR: Record<string, string> = {

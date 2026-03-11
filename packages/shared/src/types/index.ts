@@ -39,6 +39,7 @@ export interface CourseVersion {
   based_on_version_id: string | null;
   visibility: Visibility;
   is_recommended: boolean;
+  content_types: { label: string; value: string }[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -56,7 +57,7 @@ export interface Topic {
 
 // ─── Content Items ────────────────────────────────────────────────────────────
 
-export type ContentType = 'proof' | 'exam_question' | 'coding_question' | 'algorithm';
+export type ContentType = 'proof' | 'exam_question' | 'exercise_question' | 'algorithm' | 'other';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export interface AlgorithmMetadata {
