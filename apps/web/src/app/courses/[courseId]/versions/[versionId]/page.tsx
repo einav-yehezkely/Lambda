@@ -355,6 +355,54 @@ function ManageTypesModal({
   );
 }
 
+const EXAM_QUESTION_FORMATS = [
+  { value: 'open', label: 'Open-ended' },
+  { value: 'multiple_choice', label: 'Multiple Choice' },
+];
+
+const EXERCISE_QUESTION_FORMATS = [
+  { value: 'open', label: 'Open-ended' },
+  { value: 'multiple_choice', label: 'Multiple Choice' },
+  { value: 'flashcard', label: 'Flashcard' },
+  { value: 'other', label: 'Other' },
+];
+
+function getDefaultSections(type: string, format: string): Array<{ label: string; content: string }> {
+  if (type === 'algorithm') {
+    return [
+      { label: 'Problem', content: '' },
+      { label: 'Algorithm', content: '' },
+      { label: 'Proof', content: '' },
+      { label: 'Runtime', content: '' },
+    ];
+  }
+  if (type === 'exam_question' || type === 'exercise_question') {
+    if (format === 'multiple_choice') {
+      return [
+        { label: 'Content', content: '' },
+        { label: 'Option A', content: '' },
+        { label: 'Option B', content: '' },
+        { label: 'Option C', content: '' },
+        { label: 'Option D', content: '' },
+      ];
+    }
+    if (format === 'flashcard') {
+      return [
+        { label: 'Front', content: '' },
+        { label: 'Back', content: '' },
+      ];
+    }
+    return [
+      { label: 'Content', content: '' },
+      { label: 'Solution', content: '' },
+    ];
+  }
+  return [
+    { label: 'Content', content: '' },
+    { label: type === 'proof' ? 'Proof Sketch' : 'Solution', content: '' },
+  ];
+}
+
 function AddContentModal({
   versionId,
   topics,
@@ -368,6 +416,8 @@ function AddContentModal({
 }) {
   const createContent = useCreateContent();
   const [type, setType] = useState('proof');
+  const [questionFormat, setQuestionFormat] = useState('open');
+  const [correctOption, setCorrectOption] = useState<'A' | 'B' | 'C' | 'D' | ''>('');
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState('');
   const [tagsInput, setTagsInput] = useState('');
@@ -388,27 +438,37 @@ function AddContentModal({
     setSections((s) => { const a = [...s]; [a[i], a[i + dir]] = [a[i + dir], a[i]]; return a; });
 
   const isAlgorithm = type === 'algorithm';
+  const isQuestion = type === 'exam_question' || type === 'exercise_question';
+  const isMultipleChoice = isQuestion && questionFormat === 'multiple_choice';
+  const formatOptions = type === 'exam_question' ? EXAM_QUESTION_FORMATS : EXERCISE_QUESTION_FORMATS;
+  const availableOptions = sections
+    .map((s) => s.label.match(/^Option ([A-D])$/)?.[1])
+    .filter(Boolean) as ('A' | 'B' | 'C' | 'D')[];
 
   useEffect(() => {
-    if (type === 'algorithm') {
-      setSections([
-        { label: 'Problem', content: '' },
-        { label: 'Algorithm', content: '' },
-        { label: 'Proof', content: '' },
-        { label: 'Runtime', content: '' },
-      ]);
-    } else {
-      setSections([
-        { label: 'Content', content: '' },
-        { label: type === 'proof' ? 'Proof Sketch' : 'Solution', content: '' },
-      ]);
-    }
+    setQuestionFormat('open');
+    setCorrectOption('');
+    setSections(getDefaultSections(type, 'open'));
   }, [type]);
+
+  useEffect(() => {
+    if (isQuestion) {
+      setCorrectOption('');
+      setSections(getDefaultSections(type, questionFormat));
+    }
+  }, [questionFormat]);
+
+  useEffect(() => {
+    if (correctOption && !availableOptions.includes(correctOption)) {
+      setCorrectOption('');
+    }
+  }, [sections]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) { setFormError('Title is required'); return; }
     if (!sections[0]?.content.trim()) { setFormError('Content is required'); return; }
+    if (isMultipleChoice && !correctOption) { setFormError('Please select the correct answer'); return; }
     setFormError('');
     try {
       await createContent.mutateAsync({
@@ -420,6 +480,8 @@ function AddContentModal({
         difficulty: difficulty || undefined,
         tags: tagsInput ? tagsInput.split(',').map((t) => t.trim()).filter(Boolean) : [],
         metadata: {
+          ...(isQuestion ? { question_format: questionFormat } : {}),
+          ...(isMultipleChoice && correctOption ? { correct_option: correctOption } : {}),
           sections: sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: s.content.trim() })),
         },
       });
@@ -453,6 +515,24 @@ function AddContentModal({
             </select>
           </div>
         </div>
+
+        {isQuestion && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Question Format *</label>
+            <div className="flex gap-2 flex-wrap">
+              {formatOptions.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  onClick={() => setQuestionFormat(f.value)}
+                  className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${questionFormat === f.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -511,6 +591,24 @@ function AddContentModal({
             </button>
           </div>
         </div>
+
+        {isMultipleChoice && availableOptions.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer *</label>
+            <div className="flex gap-2">
+              {availableOptions.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setCorrectOption(opt)}
+                  className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${correctOption === opt ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>

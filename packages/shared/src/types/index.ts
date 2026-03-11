@@ -60,11 +60,15 @@ export interface Topic {
 export type ContentType = 'proof' | 'exam_question' | 'exercise_question' | 'algorithm' | 'other';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
+export type QuestionFormat = 'open' | 'multiple_choice' | 'flashcard' | 'other';
+
 export interface AlgorithmMetadata {
   algorithm?: string;
   proof?: string;
   runtime?: string;
   sections?: Array<{ label: string; content: string }>;
+  question_format?: QuestionFormat;
+  correct_option?: 'A' | 'B' | 'C' | 'D';
 }
 
 export interface ContentItem {

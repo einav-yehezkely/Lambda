@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import type { VersionContentItem, Topic } from '@lambda/shared';
+import type { VersionContentItem, Topic, QuestionFormat } from '@lambda/shared';
 import { LatexContent } from './latex-content';
 import { LatexEditor } from '../ui/latex-editor';
 import { Modal } from '../ui/modal';
@@ -37,12 +37,6 @@ const DIFFICULTY_COLOR: Record<string, string> = {
   hard: 'text-red-600',
 };
 
-const INFO_ICON = (
-  <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-  </svg>
-);
-
 const INPUT_CLS = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900';
 
 const HE_RE = /[\u0590-\u05FF]/;
@@ -50,15 +44,67 @@ const hDir = (s?: string | null): 'rtl' | undefined => HE_RE.test(s ?? '') ? 'rt
 
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
 
+const EXAM_QUESTION_FORMATS = [
+  { value: 'open', label: 'Open-ended' },
+  { value: 'multiple_choice', label: 'Multiple Choice' },
+];
+
+const EXERCISE_QUESTION_FORMATS = [
+  { value: 'open', label: 'Open-ended' },
+  { value: 'multiple_choice', label: 'Multiple Choice' },
+  { value: 'flashcard', label: 'Flashcard' },
+  { value: 'other', label: 'Other' },
+];
+
+function getDefaultSections(type: string, format: string): Array<{ label: string; content: string }> {
+  if (type === 'algorithm') {
+    return [
+      { label: 'Problem', content: '' },
+      { label: 'Algorithm', content: '' },
+      { label: 'Proof', content: '' },
+      { label: 'Runtime', content: '' },
+    ];
+  }
+  if (type === 'exam_question' || type === 'exercise_question') {
+    if (format === 'multiple_choice') {
+      return [
+        { label: 'Content', content: '' },
+        { label: 'Option A', content: '' },
+        { label: 'Option B', content: '' },
+        { label: 'Option C', content: '' },
+        { label: 'Option D', content: '' },
+      ];
+    }
+    if (format === 'flashcard') {
+      return [
+        { label: 'Front', content: '' },
+        { label: 'Back', content: '' },
+      ];
+    }
+    return [
+      { label: 'Content', content: '' },
+      { label: 'Solution', content: '' },
+    ];
+  }
+  return [
+    { label: 'Content', content: '' },
+    { label: type === 'proof' ? 'Proof Sketch' : 'Solution', content: '' },
+  ];
+}
+
 function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics: Topic[]; onClose: () => void }) {
   const ci = item.content_item;
   const isAlgorithm = ci.type === 'algorithm';
+  const isQuestion = ci.type === 'exam_question' || ci.type === 'exercise_question';
   const updateContent = useUpdateContent();
 
   const [title, setTitle] = useState(ci.title);
   const [difficulty, setDifficulty] = useState(ci.difficulty ?? '');
   const [tagsInput, setTagsInput] = useState(ci.tags.join(', '));
   const [topicId, setTopicId] = useState(item.topic_id ?? '');
+  const [questionFormat, setQuestionFormat] = useState<QuestionFormat>((ci.metadata?.question_format ?? 'open') as QuestionFormat);
+  const [correctOption, setCorrectOption] = useState<'A' | 'B' | 'C' | 'D' | ''>(ci.metadata?.correct_option ?? '');
+  const isMultipleChoice = isQuestion && questionFormat === 'multiple_choice';
   const [sections, setSections] = useState<Array<{ label: string; content: string }>>(() => {
     const meta = ci.metadata?.sections ?? [];
     if (meta.length > 0) return meta;
@@ -75,6 +121,26 @@ function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics
   });
   const [error, setError] = useState('');
 
+  const formatOptions = ci.type === 'exam_question' ? EXAM_QUESTION_FORMATS : EXERCISE_QUESTION_FORMATS;
+  const availableOptions = sections
+    .map((s) => s.label.match(/^Option ([A-D])$/)?.[1])
+    .filter(Boolean) as ('A' | 'B' | 'C' | 'D')[];
+
+  useEffect(() => {
+    if (correctOption && !availableOptions.includes(correctOption)) {
+      setCorrectOption('');
+    }
+  }, [sections]);
+
+  const handleFormatChange = (fmt: QuestionFormat) => {
+    if (sections.some((s) => s.content.trim())) {
+      if (!window.confirm('Changing format will reset all sections. Continue?')) return;
+    }
+    setQuestionFormat(fmt);
+    setCorrectOption('');
+    setSections(getDefaultSections(ci.type, fmt));
+  };
+
   const addSection = () => setSections((s) => [...s, { label: '', content: '' }]);
   const removeSection = (i: number) => {
     if (!window.confirm('Remove this section?')) return;
@@ -89,6 +155,7 @@ function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics
     e.preventDefault();
     if (!title.trim()) { setError('Title is required'); return; }
     if (!sections[0]?.content.trim()) { setError('Content is required'); return; }
+    if (isMultipleChoice && !correctOption) { setError('Please select the correct answer'); return; }
     setError('');
     try {
       await updateContent.mutateAsync({
@@ -101,6 +168,8 @@ function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics
           tags: tagsInput ? tagsInput.split(',').map((t) => t.trim()).filter(Boolean) : [],
           topic_id: topicId || null,
           metadata: {
+            ...(isQuestion ? { question_format: questionFormat } : {}),
+            ...(isMultipleChoice && correctOption ? { correct_option: correctOption } : {}),
             sections: sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: s.content.trim() })),
           },
         },
@@ -130,6 +199,24 @@ function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics
             <option value="hard">Hard</option>
           </select>
         </div>
+
+        {isQuestion && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Question Format *</label>
+            <div className="flex gap-2 flex-wrap">
+              {formatOptions.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  onClick={() => handleFormatChange(f.value as QuestionFormat)}
+                  className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${questionFormat === f.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {topics.length > 0 && (
           <div>
@@ -173,6 +260,24 @@ function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics
             </button>
           </div>
         </div>
+
+        {isMultipleChoice && availableOptions.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer *</label>
+            <div className="flex gap-2">
+              {availableOptions.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setCorrectOption(opt)}
+                  className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${correctOption === opt ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
@@ -253,24 +358,32 @@ function ViewModal({ item, onClose }: {
         </div>
 
         {/* Section tabs */}
-        {total > 1 && (
-          <div className="flex gap-1 mb-4 border-b border-gray-100 pb-0">
-            {sections.map((s, i) => (
-              <button
-                key={s.label}
-                type="button"
-                onClick={() => setPage(i)}
-                className={`text-xs px-3 py-1.5 rounded-t-md border-b-2 transition-colors ${
-                  i === page
-                    ? 'border-gray-900 text-gray-900 font-medium'
-                    : 'border-transparent text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {total > 1 && (() => {
+          const correctOpt = meta?.correct_option;
+          const isMultiChoice = meta?.question_format === 'multiple_choice';
+          return (
+            <div className="flex gap-1 mb-4 border-b border-gray-100 pb-0">
+              {sections.map((s, i) => {
+                const isCorrectTab = isMultiChoice && correctOpt && s.label === `Option ${correctOpt}`;
+                return (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={() => setPage(i)}
+                    className={`text-xs px-3 py-1.5 rounded-t-md border-b-2 transition-colors flex items-center gap-1 ${
+                      i === page
+                        ? 'border-gray-900 text-gray-900 font-medium'
+                        : 'border-transparent text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    {s.label}
+                    {isCorrectTab && <span className="text-green-500 font-bold">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Section content */}
         {total > 0 && (
