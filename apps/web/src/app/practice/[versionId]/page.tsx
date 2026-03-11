@@ -127,6 +127,7 @@ export default function PracticePage({
 
     try {
       await practiceApi.submitAttempt({
+        version_id: versionId,
         content_item_id: item.content_item_id,
         is_correct: outcome === 'solved',
         status: outcome,

@@ -52,32 +52,19 @@ export class ProgressService {
 
   // Versions the user has made progress on OR enrolled in, with progress summaries
   async getActiveVersions(userId: string): Promise<ActiveVersionProgress[]> {
-    // 1. Get all content items the user has attempted
+    // 1. Get all progress rows for user (version_id is now stored directly)
     const { data: progressRows, error: progressError } = await this.db
       .from('user_progress')
-      .select('content_item_id, status, last_attempt_at')
+      .select('version_id, content_item_id, status, last_attempt_at')
       .eq('user_id', userId);
 
     if (progressError) throw new InternalServerErrorException(progressError.message);
 
-    const contentIds = (progressRows ?? []).map((r) => r.content_item_id);
+    const progressVersionIds = [
+      ...new Set((progressRows ?? []).map((r) => r.version_id).filter(Boolean)),
+    ];
 
-    // 2. Map content items → versions
-    let versionItems: Array<{ version_id: string; content_item_id: string }> = [];
-    let progressVersionIds: string[] = [];
-
-    if (contentIds.length > 0) {
-      const { data: vi, error: viError } = await this.db
-        .from('version_content_items')
-        .select('version_id, content_item_id')
-        .in('content_item_id', contentIds);
-
-      if (viError) throw new InternalServerErrorException(viError.message);
-      versionItems = vi ?? [];
-      progressVersionIds = [...new Set(versionItems.map((r) => r.version_id))];
-    }
-
-    // 3. Get enrolled version IDs
+    // 2. Get enrolled version IDs
     const { data: enrollments, error: enrollError } = await this.db
       .from('user_enrollments')
       .select('version_id, enrolled_at')
@@ -86,11 +73,11 @@ export class ProgressService {
     if (enrollError) throw new InternalServerErrorException(enrollError.message);
     const enrolledVersionIds = (enrollments ?? []).map((e) => e.version_id);
 
-    // 4. Union version IDs from progress + enrollments
+    // 3. Union version IDs from progress + enrollments
     const allVersionIds = [...new Set([...progressVersionIds, ...enrolledVersionIds])];
     if (!allVersionIds.length) return [];
 
-    // 5. Get version details + course template info
+    // 4. Get version details + course template info
     const { data: versions, error: versionsError } = await this.db
       .from('course_versions')
       .select('id, title, template_id, course_templates!template_id(id, title, subject)')
@@ -99,18 +86,25 @@ export class ProgressService {
     if (versionsError) throw new InternalServerErrorException(versionsError.message);
     if (!versions?.length) return [];
 
+    // 5. Get total item counts per version from version_content_items
+    const { data: vci, error: vciError } = await this.db
+      .from('version_content_items')
+      .select('version_id')
+      .in('version_id', allVersionIds);
+
+    if (vciError) throw new InternalServerErrorException(vciError.message);
+
+    const totalByVersion = new Map<string, number>();
+    for (const row of vci ?? []) {
+      totalByVersion.set(row.version_id, (totalByVersion.get(row.version_id) ?? 0) + 1);
+    }
+
     // 6. Compute per-version progress
     const result: ActiveVersionProgress[] = (versions as any[]).map((version) => {
-      const versionContentIds = new Set(
-        versionItems.filter((vi) => vi.version_id === version.id).map((vi) => vi.content_item_id),
-      );
-
-      const total = versionContentIds.size;
-      const userProgressForVersion = (progressRows ?? []).filter((p) =>
-        versionContentIds.has(p.content_item_id),
-      );
-      const solved = userProgressForVersion.filter((p) => p.status === 'solved').length;
-      const lastAttempts = userProgressForVersion
+      const versionProgress = (progressRows ?? []).filter((p) => p.version_id === version.id);
+      const total = totalByVersion.get(version.id) ?? 0;
+      const solved = versionProgress.filter((p) => p.status === 'solved').length;
+      const lastAttempts = versionProgress
         .map((p) => p.last_attempt_at)
         .filter((d): d is string => !!d)
         .sort();
@@ -155,6 +149,7 @@ export class ProgressService {
       .from('user_progress')
       .select('content_item_id, status')
       .eq('user_id', userId)
+      .eq('version_id', versionId)
       .in('content_item_id', allIds);
 
     if (progressError) throw new InternalServerErrorException(progressError.message);

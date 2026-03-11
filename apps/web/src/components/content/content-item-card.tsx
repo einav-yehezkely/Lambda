@@ -163,6 +163,7 @@ function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics
       await updateContent.mutateAsync({
         id: item.content_item_id,
         body: {
+          version_id: item.version_id,
           title: title.trim(),
           content: sections[0]?.content.trim() || title.trim(),
           difficulty: difficulty || null,

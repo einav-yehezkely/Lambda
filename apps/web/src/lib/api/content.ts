@@ -25,6 +25,7 @@ export const contentApi = {
   },
 
   updateItem: (id: string, body: {
+    version_id?: string;
     title?: string;
     content?: string;
     solution?: string | null;

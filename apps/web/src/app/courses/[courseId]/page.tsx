@@ -30,6 +30,7 @@ function VersionRow({
   onEnroll,
   onUnenroll,
   enrolling,
+  parentVersion,
 }: {
   version: CourseVersion;
   courseId: string;
@@ -38,6 +39,7 @@ function VersionRow({
   onEnroll?: () => void;
   onUnenroll?: () => void;
   enrolling?: boolean;
+  parentVersion?: CourseVersion;
 }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl hover:shadow-sm hover:border-gray-300 transition-all">
@@ -56,11 +58,6 @@ function VersionRow({
                 Recommended
               </span>
             )}
-            {version.based_on_version_id && (
-              <span className="text-xs bg-gray-50 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full">
-                Fork
-              </span>
-            )}
             <span className={`text-xs px-2 py-0.5 rounded-full border ${version.visibility === 'public' ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500'}`}>
               {version.visibility === 'public' ? 'Public' : 'Private'}
             </span>
@@ -71,6 +68,18 @@ function VersionRow({
               by{' '}
               <Link href={`/profile/${version.author.username}`} className="hover:text-gray-600 underline underline-offset-2">
                 {version.author.display_name ?? version.author.username}
+              </Link>
+            </p>
+          )}
+
+          {parentVersion && (
+            <p className="text-xs text-gray-400 mt-1">
+              forked from{' '}
+              <Link
+                href={`/courses/${courseId}/versions/${parentVersion.id}`}
+                className="hover:text-gray-600 underline underline-offset-2"
+              >
+                {formatVersionLabel(parentVersion)}
               </Link>
             </p>
           )}
@@ -121,6 +130,17 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
   const enrollCourse = useEnrollCourse();
   const unenrollCourse = useUnenrollCourse();
   const enrolledVersionIds = new Set((activeVersions ?? []).filter((v) => v.enrolled).map((v) => v.version_id));
+  const [enrollingId, setEnrollingId] = useState<string | null>(null);
+
+  const handleEnroll = (versionId: string) => {
+    setEnrollingId(versionId);
+    enrollCourse.mutate(versionId, { onSettled: () => setEnrollingId(null) });
+  };
+
+  const handleUnenroll = (versionId: string) => {
+    setEnrollingId(versionId);
+    unenrollCourse.mutate(versionId, { onSettled: () => setEnrollingId(null) });
+  };
 
   const handleDeleteCourse = async () => {
     if (!window.confirm(`Delete course "${course?.title}"? This will not delete existing versions.`)) return;
@@ -186,6 +206,8 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
 
   if (courseLoading) return <div className="text-sm text-gray-400">Loading...</div>;
   if (!course) return <div className="text-sm text-red-500">Course not found.</div>;
+
+  const versionsById = new Map((versions ?? []).map((v) => [v.id, v]));
 
   return (
     <div>
@@ -273,9 +295,10 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
               courseId={courseId}
               onFork={openFork}
               isEnrolled={enrolledVersionIds.has(v.id)}
-              onEnroll={user ? () => enrollCourse.mutate(v.id) : undefined}
-              onUnenroll={user ? () => unenrollCourse.mutate(v.id) : undefined}
-              enrolling={enrollCourse.isPending || unenrollCourse.isPending}
+              onEnroll={user ? () => handleEnroll(v.id) : undefined}
+              onUnenroll={user ? () => handleUnenroll(v.id) : undefined}
+              enrolling={enrollingId === v.id}
+              parentVersion={v.based_on_version_id ? versionsById.get(v.based_on_version_id) : undefined}
             />
           ))}
         </div>

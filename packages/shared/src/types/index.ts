@@ -102,6 +102,7 @@ export interface UserProgress {
   id: string;
   user_id: string;
   content_item_id: string;
+  version_id: string;
   status: ProgressStatus;
   last_attempt_at: string | null;
 }

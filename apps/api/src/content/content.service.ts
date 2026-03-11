@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -95,38 +96,89 @@ export class ContentService {
     return junction as unknown as VersionContentItem;
   }
 
-  // ─── Update content item (author only) ──────────────────────────────────────
+  // ─── Update content item (copy-on-write for shared items) ──────────────────
 
   async updateItem(id: string, dto: UpdateContentDto, userId: string): Promise<ContentItem> {
     const item = await this.getItem(id);
-    if (item.author_id !== userId) {
-      throw new ForbiddenException('Only the author can edit this content item');
+    const { version_id, topic_id, ...itemData } = dto;
+
+    // Count how many versions reference this content item
+    const { data: usages } = await this.db
+      .from('version_content_items')
+      .select('version_id')
+      .eq('content_item_id', id);
+
+    const isShared = (usages?.length ?? 0) > 1;
+
+    if (!isShared && item.author_id === userId) {
+      // Not shared + user is the author → update in-place
+      const { data, error } = await this.db
+        .from('content_items')
+        .update(itemData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw new InternalServerErrorException(error.message);
+
+      if (topic_id !== undefined && version_id) {
+        await this.db
+          .from('version_content_items')
+          .update({ topic_id })
+          .eq('content_item_id', id)
+          .eq('version_id', version_id);
+      }
+
+      return data as ContentItem;
     }
 
-    const { topic_id, ...itemData } = dto;
+    // Shared or not the original author → copy-on-write
+    if (!version_id) {
+      throw new BadRequestException('version_id is required to edit a shared content item');
+    }
 
-    // Update content_items row
-    const { data, error } = await this.db
+    const { data: version } = await this.db
+      .from('course_versions')
+      .select('author_id')
+      .eq('id', version_id)
+      .single();
+
+    if (!version || version.author_id !== userId) {
+      throw new ForbiddenException('Only the version author can edit shared content items');
+    }
+
+    // Create a copy with edits applied, owned by the editor
+    const { data: newItem, error: copyError } = await this.db
       .from('content_items')
-      .update(itemData)
-      .eq('id', id)
+      .insert({
+        type: item.type,
+        title: itemData.title ?? item.title,
+        content: itemData.content ?? item.content,
+        solution: 'solution' in itemData ? itemData.solution : item.solution,
+        difficulty: 'difficulty' in itemData ? itemData.difficulty : item.difficulty,
+        tags: itemData.tags ?? item.tags,
+        metadata: itemData.metadata ?? item.metadata,
+        is_published: itemData.is_published ?? item.is_published,
+        author_id: userId,
+      })
       .select()
       .single();
 
-    if (error) throw new InternalServerErrorException(error.message);
+    if (copyError) throw new InternalServerErrorException(copyError.message);
 
-    // If topic_id provided, update ALL junction rows for this item
-    // (reassigns topic across all versions that reference it — only makes sense for the caller's version)
-    // Callers should pass version_id explicitly if they want version-scoped reassignment.
-    // For MVP: update junction rows where the user is version author.
-    if (topic_id !== undefined) {
-      await this.db
-        .from('version_content_items')
-        .update({ topic_id })
-        .eq('content_item_id', id);
-    }
+    // Redirect this version's junction row to the new copy
+    const { error: junctionError } = await this.db
+      .from('version_content_items')
+      .update({
+        content_item_id: (newItem as ContentItem).id,
+        ...(topic_id !== undefined ? { topic_id } : {}),
+      })
+      .eq('version_id', version_id)
+      .eq('content_item_id', id);
 
-    return data as ContentItem;
+    if (junctionError) throw new InternalServerErrorException(junctionError.message);
+
+    return newItem as ContentItem;
   }
 
   // ─── Delete content item entirely (author only) ─────────────────────────────

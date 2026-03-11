@@ -5,6 +5,10 @@ import { ProgressStatus } from '@lambda/shared';
 export class SubmitAttemptDto {
   @ApiProperty()
   @IsUUID()
+  version_id!: string;
+
+  @ApiProperty()
+  @IsUUID()
   content_item_id!: string;
 
   @ApiPropertyOptional({ description: 'true = correct, false = incorrect. If omitted, status must be provided.' })

@@ -15,6 +15,7 @@ export const practiceApi = {
   },
 
   submitAttempt: (body: {
+    version_id: string;
     content_item_id: string;
     is_correct?: boolean;
     status?: ProgressStatus;

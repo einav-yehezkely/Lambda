@@ -44,7 +44,7 @@ export class PracticeService {
 
     if (items.length === 0) return [];
 
-    return this.applyMode(items, params.mode, params.userId);
+    return this.applyMode(items, params.mode, params.userId, params.version_id);
   }
 
   // ─── Submit Attempt ─────────────────────────────────────────────────────────
@@ -64,11 +64,12 @@ export class PracticeService {
       .upsert(
         {
           user_id: userId,
+          version_id: dto.version_id,
           content_item_id: dto.content_item_id,
           status,
           last_attempt_at: new Date().toISOString(),
         },
-        { onConflict: 'user_id,content_item_id' },
+        { onConflict: 'user_id,content_item_id,version_id' },
       );
 
     if (progressError) throw new InternalServerErrorException(progressError.message);
@@ -91,6 +92,7 @@ export class PracticeService {
     items: VersionContentItem[],
     mode: PracticeMode,
     userId: string,
+    versionId: string,
   ): Promise<VersionContentItem[]> {
     switch (mode) {
       case 'random':
@@ -102,13 +104,14 @@ export class PracticeService {
         return items;
 
       case 'spaced_repetition':
-        return this.applySpacedRepetition(items, userId);
+        return this.applySpacedRepetition(items, userId, versionId);
     }
   }
 
   private async applySpacedRepetition(
     items: VersionContentItem[],
     userId: string,
+    versionId: string,
   ): Promise<VersionContentItem[]> {
     const ids = items.map((i) => i.content_item_id);
 
@@ -116,6 +119,7 @@ export class PracticeService {
       .from('user_progress')
       .select('content_item_id, status, last_attempt_at')
       .eq('user_id', userId)
+      .eq('version_id', versionId)
       .in('content_item_id', ids);
 
     const progressMap = new Map(

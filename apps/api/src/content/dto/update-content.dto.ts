@@ -3,6 +3,11 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Difficulty } from '@lambda/shared';
 
 export class UpdateContentDto {
+  @ApiPropertyOptional({ description: 'Version context for copy-on-write when editing shared content' })
+  @IsUUID()
+  @IsOptional()
+  version_id?: string;
+
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
