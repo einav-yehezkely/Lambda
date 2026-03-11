@@ -87,30 +87,68 @@ export class UsersService {
     return data ?? [];
   }
 
-  async getLeaderboard(limit = 10): Promise<{ username: string; display_name: string | null; avatar_url: string | null; version_count: number }[]> {
-    const { data, error } = await this.db
-      .from('course_versions')
-      .select('author_id, author:users!course_versions_author_id_fkey(username, display_name, avatar_url)')
-      .eq('visibility', 'public');
-
-    if (error || !data) return [];
+  async getLeaderboard(limit = 10): Promise<{ username: string; display_name: string | null; avatar_url: string | null; contribution_count: number }[]> {
+    const [versionsResult, solutionsResult] = await Promise.all([
+      this.db
+        .from('course_versions')
+        .select('author_id, author:users!course_versions_author_id_fkey(username, display_name, avatar_url)')
+        .eq('visibility', 'public'),
+      this.db
+        .from('solutions')
+        .select('author_id, author:users!solutions_author_id_fkey(username, display_name, avatar_url)'),
+    ]);
 
     const counts = new Map<string, { username: string; display_name: string | null; avatar_url: string | null; count: number }>();
-    for (const row of data as any[]) {
+
+    for (const row of ((versionsResult.data ?? []) as any[])) {
       const author = row.author;
       if (!author?.username) continue;
       const existing = counts.get(author.username);
-      if (existing) {
-        existing.count++;
-      } else {
-        counts.set(author.username, { username: author.username, display_name: author.display_name, avatar_url: author.avatar_url, count: 1 });
-      }
+      if (existing) { existing.count++; }
+      else { counts.set(author.username, { username: author.username, display_name: author.display_name, avatar_url: author.avatar_url, count: 1 }); }
+    }
+
+    for (const row of ((solutionsResult.data ?? []) as any[])) {
+      const author = row.author;
+      if (!author?.username) continue;
+      const existing = counts.get(author.username);
+      if (existing) { existing.count++; }
+      else { counts.set(author.username, { username: author.username, display_name: author.display_name, avatar_url: author.avatar_url, count: 1 }); }
     }
 
     return Array.from(counts.values())
       .sort((a, b) => b.count - a.count)
       .slice(0, limit)
-      .map(({ username, display_name, avatar_url, count }) => ({ username, display_name, avatar_url, version_count: count }));
+      .map(({ username, display_name, avatar_url, count }) => ({ username, display_name, avatar_url, contribution_count: count }));
+  }
+
+  async getUserStats(username: string): Promise<{ version_count: number; solution_count: number }> {
+    const user = await this.findByUsername(username);
+    if (!user) return { version_count: 0, solution_count: 0 };
+
+    const [versionsResult, solutionsResult] = await Promise.all([
+      this.db.from('course_versions').select('id', { count: 'exact', head: true }).eq('author_id', user.id),
+      this.db.from('solutions').select('id', { count: 'exact', head: true }).eq('author_id', user.id),
+    ]);
+
+    return {
+      version_count: versionsResult.count ?? 0,
+      solution_count: solutionsResult.count ?? 0,
+    };
+  }
+
+  async getSolutionsByUsername(username: string) {
+    const user = await this.findByUsername(username);
+    if (!user) return [];
+
+    const { data, error } = await this.db
+      .from('solutions')
+      .select('*, content_item:content_items(id, title, type)')
+      .eq('author_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) return [];
+    return data ?? [];
   }
 
   private async resolveUniqueUsername(base: string): Promise<string> {

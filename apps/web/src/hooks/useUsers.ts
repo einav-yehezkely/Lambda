@@ -24,3 +24,19 @@ export function useUserVersions(username: string) {
     enabled: !!username,
   });
 }
+
+export function useUserStats(username: string) {
+  return useQuery({
+    queryKey: ['user-stats', username],
+    queryFn: () => usersApi.getUserStats(username),
+    enabled: !!username,
+  });
+}
+
+export function useUserSolutions(username: string) {
+  return useQuery({
+    queryKey: ['user-solutions', username],
+    queryFn: () => usersApi.getUserSolutions(username),
+    enabled: !!username,
+  });
+}

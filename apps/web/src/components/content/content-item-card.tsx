@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import type { VersionContentItem, Topic, QuestionFormat } from '@lambda/shared';
 import { LatexContent } from './latex-content';
+import { CommunitySolutions } from './community-solutions';
+import { ReportErrorButton } from './report-error';
 import { LatexEditor } from '../ui/latex-editor';
 import { Modal } from '../ui/modal';
 import { useUpdateContent, useDeleteContent } from '@/hooks/useTopics';
@@ -307,7 +309,11 @@ function ViewModal({ item, onClose }: {
   const { content_item } = item;
   const isAlgorithm = content_item.type === 'algorithm';
   const meta = content_item.metadata;
+  const questionFormat = meta?.question_format;
+  const isMultiChoice = questionFormat === 'multiple_choice';
+  const showCommunitySolutions = questionFormat !== 'multiple_choice' && questionFormat !== 'flashcard';
   const [page, setPage] = useState(0);
+  const [showSolution, setShowSolution] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let el: HTMLElement | null = contentRef.current?.parentElement ?? null;
@@ -357,69 +363,101 @@ function ViewModal({ item, onClose }: {
           )}
         </div>
 
-        {/* Section tabs */}
-        {total > 1 && (() => {
-          const correctOpt = meta?.correct_option;
-          const isMultiChoice = meta?.question_format === 'multiple_choice';
-          return (
-            <div className="flex gap-1 mb-4 border-b border-gray-100 pb-0">
-              {sections.map((s, i) => {
-                const isCorrectTab = isMultiChoice && correctOpt && s.label === `Option ${correctOpt}`;
+        {/* Multiple choice layout */}
+        {isMultiChoice ? (
+          <div>
+            <div className="mb-4">{sections[0]?.content}</div>
+            <div className="space-y-2 mb-4">
+              {(['A', 'B', 'C', 'D'] as const).map((opt) => {
+                const sec = sections.find((s) => s.label === `Option ${opt}`);
+                if (!sec) return null;
+                const isCorrect = showSolution && meta?.correct_option === opt;
                 return (
+                  <div
+                    key={opt}
+                    className={`flex items-start gap-3 p-3 rounded-lg border text-sm transition-colors ${
+                      isCorrect ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                    }`}
+                  >
+                    <span className={`font-semibold shrink-0 ${isCorrect ? 'text-green-600' : 'text-gray-500'}`}>
+                      {opt}.
+                    </span>
+                    <div className={isCorrect ? 'text-green-700' : 'text-gray-600'}>{sec.content}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {!showSolution ? (
+              <button
+                type="button"
+                onClick={() => setShowSolution(true)}
+                className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+              >
+                Show solution
+              </button>
+            ) : (
+              <p className="text-sm font-medium text-green-600">Correct answer: {meta?.correct_option}</p>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Section tabs */}
+            {total > 1 && (
+              <div className="flex gap-1 mb-4 border-b border-gray-100 pb-0">
+                {sections.map((s, i) => (
                   <button
                     key={s.label}
                     type="button"
                     onClick={() => setPage(i)}
-                    className={`text-xs px-3 py-1.5 rounded-t-md border-b-2 transition-colors flex items-center gap-1 ${
+                    className={`text-xs px-3 py-1.5 rounded-t-md border-b-2 transition-colors ${
                       i === page
                         ? 'border-gray-900 text-gray-900 font-medium'
                         : 'border-transparent text-gray-400 hover:text-gray-600'
                     }`}
                   >
                     {s.label}
-                    {isCorrectTab && <span className="text-green-500 font-bold">✓</span>}
                   </button>
-                );
-              })}
-            </div>
-          );
-        })()}
-
-        {/* Section content */}
-        {total > 0 && (
-          <div className="min-h-[120px]">
-            {total === 1 && (
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-2">
-                {current.label}
-              </span>
+                ))}
+              </div>
             )}
-            {current.content}
-          </div>
-        )}
 
-        {/* Pagination nav */}
-        {total > 1 && (
-          <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-3">
-            <button
-              type="button"
-              onClick={() => setPage((p) => p - 1)}
-              disabled={page === 0}
-              className="text-xs px-3 py-1.5 border border-gray-200 rounded-md text-gray-500 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              ← Back
-            </button>
-            <span className="text-xs text-gray-400">
-              {page + 1} / {total}
-            </span>
-            <button
-              type="button"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page === total - 1}
-              className="text-xs px-3 py-1.5 border border-gray-200 rounded-md text-gray-500 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              Next →
-            </button>
-          </div>
+            {/* Section content */}
+            {total > 0 && (
+              <div className="min-h-[120px]">
+                {total === 1 && (
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-2">
+                    {current.label}
+                  </span>
+                )}
+                {current.content}
+              </div>
+            )}
+
+            {/* Pagination nav */}
+            {total > 1 && (
+              <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => p - 1)}
+                  disabled={page === 0}
+                  className="text-xs px-3 py-1.5 border border-gray-200 rounded-md text-gray-500 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  ← Back
+                </button>
+                <span className="text-xs text-gray-400">
+                  {page + 1} / {total}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page === total - 1}
+                  className="text-xs px-3 py-1.5 border border-gray-200 rounded-md text-gray-500 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {content_item.tags.length > 0 && (
@@ -431,6 +469,10 @@ function ViewModal({ item, onClose }: {
             ))}
           </div>
         )}
+
+        {showCommunitySolutions && <CommunitySolutions contentItemId={item.content_item_id} />}
+
+        <ReportErrorButton contentItemId={item.content_item_id} />
 
       </div>
     </Modal>

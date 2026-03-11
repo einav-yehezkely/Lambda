@@ -36,4 +36,16 @@ export class UsersController {
     if (!user) throw new NotFoundException('User not found');
     return this.usersService.getVersionsByUserId(user.id);
   }
+
+  @Get(':username/stats')
+  @ApiOkResponse({ description: 'Get contribution stats for a user' })
+  async getUserStats(@Param('username') username: string) {
+    return this.usersService.getUserStats(username);
+  }
+
+  @Get(':username/solutions')
+  @ApiOkResponse({ description: 'Get all solutions submitted by a user' })
+  async getUserSolutions(@Param('username') username: string) {
+    return this.usersService.getSolutionsByUsername(username);
+  }
 }

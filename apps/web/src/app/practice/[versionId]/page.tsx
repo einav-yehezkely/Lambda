@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { practiceApi } from '@/lib/api/practice';
 import { useAuth } from '@/hooks/useAuth';
 import { LatexContent } from '@/components/content/latex-content';
+import { CommunitySolutions } from '@/components/content/community-solutions';
+import { ReportErrorButton } from '@/components/content/report-error';
 import type { VersionContentItem, PracticeMode, ProgressStatus } from '@lambda/shared';
 
 const MODES: { value: PracticeMode; label: string; description: string }[] = [
@@ -56,6 +58,7 @@ export default function PracticePage({
   const [items, setItems] = useState<VersionContentItem[]>([]);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [results, setResults] = useState<SessionResult[]>([]);
   const [startedAt, setStartedAt] = useState<number>(0);
   const [error, setError] = useState('');
@@ -89,6 +92,7 @@ export default function PracticePage({
       setIndex(0);
       setResults([]);
       setRevealed(false);
+      setSelectedOption(null);
       setStartedAt(Date.now());
       setPhase('active');
     } catch (e) {
@@ -121,6 +125,7 @@ export default function PracticePage({
     } else {
       setIndex((i) => i + 1);
       setRevealed(false);
+      setSelectedOption(null);
       setStartedAt(Date.now());
     }
   };
@@ -274,8 +279,72 @@ export default function PracticePage({
           <LatexContent content={ci.content} />
         </div>
 
-        {/* Solution */}
-        {!revealed ? (
+        {/* Solution / MC options */}
+        {ci.metadata?.question_format === 'multiple_choice' ? (
+          <div>
+            {/* Option buttons — before selection */}
+            {!revealed && (
+              <div className="space-y-2">
+                {(['A', 'B', 'C', 'D'] as const).map((opt) => {
+                  const sec = ci.metadata?.sections?.find((s) => s.label === `Option ${opt}`);
+                  if (!sec) return null;
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => { setSelectedOption(opt); setRevealed(true); }}
+                      className="w-full text-left flex items-start gap-3 p-3 rounded-lg border border-gray-200 text-sm hover:border-gray-400 transition-colors"
+                    >
+                      <span className="font-semibold text-gray-500 shrink-0">{opt}.</span>
+                      <div className="text-gray-700"><LatexContent content={sec.content} /></div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* After selection — highlighted options + outcome buttons */}
+            {revealed && (
+              <div>
+                <div className="space-y-2 mb-5">
+                  {(['A', 'B', 'C', 'D'] as const).map((opt) => {
+                    const sec = ci.metadata?.sections?.find((s) => s.label === `Option ${opt}`);
+                    if (!sec) return null;
+                    const isCorrect = ci.metadata?.correct_option === opt;
+                    const isSelected = selectedOption === opt;
+                    return (
+                      <div
+                        key={opt}
+                        className={`flex items-start gap-3 p-3 rounded-lg border text-sm ${
+                          isCorrect
+                            ? 'border-green-500 bg-green-50'
+                            : isSelected
+                            ? 'border-red-400 bg-red-50'
+                            : 'border-gray-200'
+                        }`}
+                      >
+                        <span className={`font-semibold shrink-0 ${isCorrect ? 'text-green-600' : isSelected ? 'text-red-500' : 'text-gray-500'}`}>
+                          {opt}.
+                        </span>
+                        <div className={isCorrect ? 'text-green-700' : isSelected ? 'text-red-700' : 'text-gray-600'}>
+                          <LatexContent content={sec.content} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <ReportErrorButton contentItemId={ci.id} />
+
+                <button
+                  onClick={() => submitOutcome(selectedOption === ci.metadata?.correct_option ? 'solved' : 'incorrect')}
+                  className="w-full mt-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </div>
+        ) : !revealed ? (
           <button
             onClick={() => setRevealed(true)}
             className="w-full py-2.5 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
@@ -284,14 +353,24 @@ export default function PracticePage({
           </button>
         ) : (
           <div>
-            {ci.solution && (
+            {ci.solution ? (
               <div className="bg-gray-50 rounded-lg p-4 mb-5">
                 <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
                   Solution
                 </div>
                 <div className="text-sm text-gray-700 leading-relaxed"><LatexContent content={ci.solution} /></div>
               </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-4 mb-5 text-sm text-gray-400">
+                No official solution available. Add your own below.
+              </div>
             )}
+
+            {ci.metadata?.question_format !== 'flashcard' && (
+              <CommunitySolutions contentItemId={ci.id} />
+            )}
+
+            <ReportErrorButton contentItemId={ci.id} />
 
             {/* Outcome buttons */}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

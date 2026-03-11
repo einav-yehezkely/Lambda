@@ -148,6 +148,20 @@ export interface CourseVersionWithTemplate extends CourseVersion {
   course_templates: { id: string; title: string; subject: Subject };
 }
 
+// ─── Solutions ────────────────────────────────────────────────────────────────
+
+export interface Solution {
+  id: string;
+  content_item_id: string;
+  author_id: string;
+  author?: { username: string; display_name: string | null; avatar_url: string | null };
+  content: string;
+  vote_count: number;
+  user_vote?: 1 | -1 | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ─── Practice ─────────────────────────────────────────────────────────────────
 
 export type PracticeMode = 'random' | 'topic' | 'exam' | 'spaced_repetition';

@@ -99,4 +99,14 @@ export class ContentController {
   ) {
     return this.contentService.vote(id, dto, user.id);
   }
+
+  @Post(':id/report')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse({ description: 'Report an error in a content item — sends email to the author' })
+  async reportError(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { error_text: string; reporter_username?: string },
+  ) {
+    return this.contentService.reportError(id, body.error_text, body.reporter_username);
+  }
 }

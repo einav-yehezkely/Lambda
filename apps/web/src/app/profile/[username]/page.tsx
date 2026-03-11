@@ -1,9 +1,11 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import Link from 'next/link';
-import { useUserProfile, useUserVersions } from '@/hooks/useUsers';
+import { useUserProfile, useUserVersions, useUserStats, useUserSolutions } from '@/hooks/useUsers';
+import { LatexContent } from '@/components/content/latex-content';
 import type { CourseVersionWithTemplate } from '@lambda/shared';
+import type { UserSolution } from '@/lib/api/users';
 
 const SUBJECT_LABEL: Record<string, string> = {
   cs: 'CS',
@@ -51,6 +53,53 @@ function VersionRow({ version }: { version: CourseVersionWithTemplate }) {
   );
 }
 
+const TYPE_LABEL: Record<string, string> = {
+  proof: 'Proof',
+  exam_question: 'Exam',
+  exercise_question: 'Exercise',
+  algorithm: 'Algorithm',
+  other: 'Other',
+};
+
+const TYPE_COLOR: Record<string, string> = {
+  proof: 'bg-purple-100 text-purple-700',
+  exam_question: 'bg-blue-100 text-blue-700',
+  exercise_question: 'bg-orange-100 text-orange-700',
+  algorithm: 'bg-teal-100 text-teal-700',
+  other: 'bg-gray-100 text-gray-600',
+};
+
+function UserSolutionRow({ solution }: { solution: UserSolution }) {
+  const [expanded, setExpanded] = useState(false);
+  const ci = solution.content_item;
+
+  return (
+    <div className="py-3 border-b border-gray-100 last:border-0">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full text-left"
+      >
+        <div className="flex items-center gap-2 mb-1">
+          {ci && (
+            <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${TYPE_COLOR[ci.type] ?? 'bg-gray-100 text-gray-600'}`}>
+              {TYPE_LABEL[ci.type] ?? ci.type}
+            </span>
+          )}
+          <span className="text-sm font-medium text-gray-900 truncate">
+            {ci ? <LatexContent content={ci.title} /> : 'Unknown question'}
+          </span>
+          <span className="text-gray-300 ml-auto shrink-0">{expanded ? '▲' : '▼'}</span>
+        </div>
+      </button>
+      {expanded && (
+        <div className="mt-2 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 leading-relaxed">
+          <LatexContent content={solution.content} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProfilePage({
   params,
 }: {
@@ -59,6 +108,8 @@ export default function ProfilePage({
   const { username } = use(params);
   const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile(username);
   const { data: versions, isLoading: versionsLoading } = useUserVersions(username);
+  const { data: stats } = useUserStats(username);
+  const { data: solutions, isLoading: solutionsLoading } = useUserSolutions(username);
 
   if (profileLoading) return <div className="text-sm text-gray-400">Loading...</div>;
   if (profileError || !profile) return <div className="text-sm text-red-500">User not found.</div>;
@@ -84,6 +135,16 @@ export default function ProfilePage({
             {profile.display_name ?? profile.username}
           </h1>
           <p className="text-sm text-gray-400">@{profile.username}</p>
+          {stats && (
+            <div className="flex gap-4 mt-2">
+              <span className="text-xs text-gray-500">
+                <span className="font-semibold text-gray-800">{stats.version_count}</span> versions
+              </span>
+              <span className="text-xs text-gray-500">
+                <span className="font-semibold text-gray-800">{stats.solution_count}</span> solutions
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -103,6 +164,27 @@ export default function ProfilePage({
           <div>
             {versions.map((v) => (
               <VersionRow key={v.id} version={v} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Solutions */}
+      <div className="mt-8">
+        <h2 className="text-base font-semibold text-gray-900 mb-4">
+          Solutions {solutions && solutions.length > 0 && `(${solutions.length})`}
+        </h2>
+
+        {solutionsLoading && <div className="text-sm text-gray-400">Loading...</div>}
+
+        {!solutionsLoading && solutions && solutions.length === 0 && (
+          <div className="text-sm text-gray-400">No solutions yet.</div>
+        )}
+
+        {solutions && solutions.length > 0 && (
+          <div>
+            {solutions.map((s) => (
+              <UserSolutionRow key={s.id} solution={s} />
             ))}
           </div>
         )}

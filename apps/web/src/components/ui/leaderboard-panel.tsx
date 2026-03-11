@@ -71,7 +71,7 @@ export function LeaderboardPanel() {
                   >
                     {entry.display_name ?? entry.username}
                   </Link>
-                  <p className="text-[10px] text-slate-400">{entry.version_count} version{entry.version_count !== 1 ? 's' : ''}</p>
+                  <p className="text-[10px] text-slate-400">{entry.contribution_count} contribution{entry.contribution_count !== 1 ? 's' : ''}</p>
                 </div>
               </li>
             ))}

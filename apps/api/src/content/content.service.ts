@@ -4,6 +4,8 @@ import {
   ForbiddenException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
 import { getSupabaseClient } from '../common/supabase.client';
 import { ContentItem, VersionContentItem } from '@lambda/shared';
 import { CreateContentDto } from './dto/create-content.dto';
@@ -12,6 +14,8 @@ import { VoteContentDto } from './dto/vote-content.dto';
 
 @Injectable()
 export class ContentService {
+  constructor(private readonly config: ConfigService) {}
+
   private get db() {
     return getSupabaseClient();
   }
@@ -152,6 +156,58 @@ export class ContentService {
       );
 
     if (error) throw new InternalServerErrorException(error.message);
+  }
+
+  // ─── Report error ────────────────────────────────────────────────────────────
+
+  async reportError(contentItemId: string, errorText: string, reporterUsername?: string): Promise<void> {
+    const { data: item } = await this.db
+      .from('content_items')
+      .select('title, author_id')
+      .eq('id', contentItemId)
+      .single();
+
+    if (!item) throw new NotFoundException('Content item not found');
+
+    // Find a version that contains this item to build a direct link
+    const { data: junction } = await this.db
+      .from('version_content_items')
+      .select('version_id, course_version:course_versions!version_content_items_version_id_fkey(template_id)')
+      .eq('content_item_id', contentItemId)
+      .limit(1)
+      .single();
+
+    const templateId = (junction?.course_version as any)?.template_id;
+    const versionId = junction?.version_id;
+    const itemLink = templateId && versionId
+      ? `https://lambda-site.vercel.app/courses/${templateId}/versions/${versionId}`
+      : null;
+
+    const { data: author } = await this.db
+      .from('users')
+      .select('email, username')
+      .eq('id', item.author_id)
+      .single();
+
+    const smtpUser = this.config.get<string>('SMTP_USER');
+    const pass = this.config.get<string>('SMTP_PASS');
+
+    if (!smtpUser || !pass) throw new InternalServerErrorException('Email service not configured');
+
+    const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: smtpUser, pass } });
+
+    const reporterLine = reporterUsername
+      ? `Reported by: ${reporterUsername} (https://lambda-site.vercel.app/profile/${reporterUsername})`
+      : 'Reported by: Anonymous';
+
+    const linkLine = itemLink ? `\nLink to question: ${itemLink}` : '';
+
+    await transporter.sendMail({
+      from: smtpUser,
+      to: author?.email ?? smtpUser,
+      subject: `Lambda – Mistake Report: "${item.title}"`,
+      text: `${reporterLine}\n\nQuestion: "${item.title}"${linkLine}\n\nMistake description:\n${errorText}`,
+    });
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
