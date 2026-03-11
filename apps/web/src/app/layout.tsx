@@ -4,6 +4,7 @@ import './globals.css';
 import 'katex/dist/katex.min.css';
 import { Providers } from '@/components/providers';
 import { Navbar } from '@/components/ui/navbar';
+import { BackgroundAnimation } from '@/components/ui/background-animation';
 
 const publicSans = Public_Sans({ subsets: ['latin'], variable: '--font-display' });
 
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${publicSans.variable} font-display antialiased bg-[#f8f9fa] text-slate-900`}>
         <Providers>
+          <BackgroundAnimation />
           <Navbar />
           <main className="max-w-7xl mx-auto px-6 py-10">{children}</main>
         </Providers>

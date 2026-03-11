@@ -24,7 +24,8 @@
       "Bash(npm install nodemailer --workspace=@lambda/api)",
       "Bash(npm install @types/nodemailer --workspace=@lambda/api --save-dev)",
       "Bash(grep -n \"progress\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx -i)",
-      "Bash(wc -l /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)"
+      "Bash(wc -l /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
+      "Bash(npm install framer-motion)"
     ],
     "additionalDirectories": [
       "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",

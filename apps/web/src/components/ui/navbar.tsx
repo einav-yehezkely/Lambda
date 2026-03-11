@@ -51,14 +51,6 @@ export function Navbar() {
             <span className="text-xl font-bold tracking-tight text-slate-900">Lambda</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6">
-            <Link
-              href="/courses"
-              className="text-sm font-medium text-slate-600 hover:text-[#1e3a8a] transition-colors"
-            >
-              Courses
-            </Link>
-          </nav>
         </div>
 
         {/* Right side */}
@@ -76,7 +68,7 @@ export function Navbar() {
                 <span className="text-sm font-medium text-slate-600">{displayName}</span>
               )}
               {user.user_metadata?.avatar_url ? (
-                <div className="w-9 h-9 rounded-full border-2 border-[#1e3a8a]/20 overflow-hidden">
+                <div className="w-9 h-9 rounded-full border-2 border-white/20 overflow-hidden">
                   <img
                     src={user.user_metadata.avatar_url}
                     alt="avatar"
