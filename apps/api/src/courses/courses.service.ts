@@ -145,6 +145,14 @@ export class CoursesService {
     if (version.author_id !== userId) {
       throw new ForbiddenException('Only the author can delete this version');
     }
+
+    // Re-parent any forks that point to this version
+    const { error: reparentError } = await this.db
+      .from('course_versions')
+      .update({ based_on_version_id: version.based_on_version_id ?? null })
+      .eq('based_on_version_id', id);
+    if (reparentError) throw new InternalServerErrorException(reparentError.message);
+
     const { error } = await this.db.from('course_versions').delete().eq('id', id);
     if (error) throw new InternalServerErrorException(error.message);
   }
