@@ -653,6 +653,8 @@ export default function VersionPage({
   const [selectedTopic, setSelectedTopic] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
+  const [sortBy, setSortBy] = useState<'default' | 'difficulty' | 'alpha'>('default');
+  const [showSortMenu, setShowSortMenu] = useState(false);
   const [showAddContent, setShowAddContent] = useState(false);
   const [showManageTopics, setShowManageTopics] = useState(false);
   const [showManageTypes, setShowManageTypes] = useState(false);
@@ -683,8 +685,20 @@ export default function VersionPage({
     router.push(`/practice/${versionId}`);
   };
 
+  const DIFFICULTY_ORDER: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
+
   const allTags = Array.from(new Set(items?.flatMap((i) => i.content_item.tags) ?? [])).sort();
-  const visibleItems = selectedTag ? (items ?? []).filter((i) => i.content_item.tags.includes(selectedTag)) : (items ?? []);
+  const filteredItems = selectedTag ? (items ?? []).filter((i) => i.content_item.tags.includes(selectedTag)) : (items ?? []);
+  const visibleItems = [...filteredItems].sort((a, b) => {
+    if (sortBy === 'alpha') return a.content_item.title.localeCompare(b.content_item.title, undefined, { sensitivity: 'base' });
+    if (sortBy === 'difficulty') {
+      const da = DIFFICULTY_ORDER[a.content_item.difficulty ?? ''] ?? 3;
+      const db = DIFFICULTY_ORDER[b.content_item.difficulty ?? ''] ?? 3;
+      return da - db;
+    }
+    // default: by creation time
+    return new Date(a.content_item.created_at).getTime() - new Date(b.content_item.created_at).getTime();
+  });
 
   if (versionLoading) return <div className="text-sm text-gray-400">Loading...</div>;
   if (!version) return <div className="text-sm text-red-500">Version not found.</div>;
@@ -875,7 +889,7 @@ export default function VersionPage({
       {/* Content area */}
       <div>
         {/* Type + tag filters */}
-        <div className="flex flex-wrap gap-2 mb-5">
+        <div className="flex flex-wrap items-center gap-2 mb-5">
           {[{ value: '', label: 'All' }, ...getActiveTypes(version)].map((t) => (
             <button key={t.value} onClick={() => setSelectedType(t.value)} className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
               {t.label}
@@ -895,6 +909,35 @@ export default function VersionPage({
               ))}
             </>
           )}
+          <div className="ml-auto relative">
+            <button
+              onClick={() => setShowSortMenu((v) => !v)}
+              title="Sort"
+              className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 text-xs px-2.5 ${showSortMenu || sortBy !== 'default' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'}`}
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" /><line x1="6" y1="12" x2="18" y2="12" /><line x1="9" y1="18" x2="15" y2="18" />
+              </svg>
+              {sortBy !== 'default' && <span>{sortBy === 'difficulty' ? 'Difficulty' : 'A–Z'}</span>}
+            </button>
+            {showSortMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
+                <div className="absolute right-0 top-full mt-1 z-20 w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-1 text-sm">
+                  {([['default', 'Date added'], ['difficulty', 'Difficulty'], ['alpha', 'A–Z']] as const).map(([val, lbl]) => (
+                    <button
+                      key={val}
+                      onClick={() => { setSortBy(val); setShowSortMenu(false); }}
+                      className={`w-full text-left px-4 py-2 transition-colors flex items-center justify-between ${sortBy === val ? 'text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+                    >
+                      {lbl}
+                      {sortBy === val && <span className="text-gray-400">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {itemsLoading && <div className="text-sm text-gray-400">Loading content...</div>}
