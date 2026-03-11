@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsEnum, IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsObject, IsOptional, IsString, IsUUID, ValidateIf } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Difficulty } from '@lambda/shared';
 
@@ -18,10 +18,11 @@ export class UpdateContentDto {
   @IsOptional()
   solution?: string;
 
-  @ApiPropertyOptional({ enum: ['easy', 'medium', 'hard'] })
+  @ApiPropertyOptional({ enum: ['easy', 'medium', 'hard'], nullable: true })
+  @ValidateIf((o) => o.difficulty !== null)
   @IsEnum(['easy', 'medium', 'hard'])
   @IsOptional()
-  difficulty?: Difficulty;
+  difficulty?: Difficulty | null;
 
   @ApiPropertyOptional({ type: [String] })
   @IsArray()

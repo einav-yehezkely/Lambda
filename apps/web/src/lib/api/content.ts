@@ -28,7 +28,7 @@ export const contentApi = {
     title?: string;
     content?: string;
     solution?: string | null;
-    difficulty?: string;
+    difficulty?: string | null;
     tags?: string[];
     metadata?: AlgorithmMetadata;
     topic_id?: string | null;

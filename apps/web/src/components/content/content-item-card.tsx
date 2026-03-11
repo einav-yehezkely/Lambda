@@ -165,8 +165,7 @@ function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics
         body: {
           title: title.trim(),
           content: sections[0]?.content.trim() || title.trim(),
-          solution: null,
-          difficulty: difficulty || undefined,
+          difficulty: difficulty || null,
           tags: tagsInput ? tagsInput.split(',').map((t) => t.trim()).filter(Boolean) : [],
           topic_id: topicId || null,
           metadata: {
@@ -512,7 +511,7 @@ export function ContentItemCard({
   return (
     <>
       <div
-        className="border border-gray-200 rounded-lg hover:shadow-sm hover:border-gray-300 transition-all flex flex-col overflow-hidden"
+        className="bg-white border border-gray-200 rounded-lg hover:shadow-sm hover:border-gray-300 transition-all flex flex-col overflow-hidden"
       >
         <div className={`h-1 ${TYPE_STRIP[content_item.type] ?? 'bg-gray-300'}`} />
         {/* Clickable area */}

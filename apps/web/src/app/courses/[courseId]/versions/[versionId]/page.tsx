@@ -99,13 +99,13 @@ function ProgressBar({ versionId, userId }: { versionId: string; userId: string 
   if (!progress || progress.total === 0) return null;
   const pct = Math.round((progress.solved / progress.total) * 100);
   return (
-    <div className="mt-3">
-      <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
-        <span>{progress.solved} / {progress.total} solved</span>
-        <span>{pct}%</span>
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs text-gray-500">Course progress</span>
+        <span className="text-sm font-bold text-gray-900">{pct}%</span>
       </div>
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-        <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-full bg-[#1e3a8a] rounded-full transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -657,6 +657,8 @@ export default function VersionPage({
   const [showManageTopics, setShowManageTopics] = useState(false);
   const [showManageTypes, setShowManageTypes] = useState(false);
   const [showEditVersion, setShowEditVersion] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const deleteVersion = useDeleteVersion();
 
   const { data: course } = useCourse(courseId);
@@ -698,161 +700,228 @@ export default function VersionPage({
         <span>{[version.institution, version.year].filter(Boolean).join(' · ') || version.title}</span>
       </div>
 
-      {/* Version header card */}
-      <div className="mb-8 border border-gray-200 rounded-xl p-6 bg-white">
-        {course && <p className="text-sm text-gray-500 mb-1.5">{course.title}</p>}
-        <div className="flex items-start justify-between gap-6">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 mb-3">
-              {[
-                version.institution,
-                version.year,
-                version.semester ? (SEMESTER_LABEL[version.semester] ?? `Semester ${version.semester}`) : null,
-              ].filter(Boolean).join(' · ') || version.title}
-            </h1>
-
-            {/* Meta badges */}
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {version.institution && (
-                <span className="text-xs border border-gray-200 text-gray-600 px-2.5 py-0.5 rounded-full">{version.institution}</span>
-              )}
-              {version.year && (
-                <span className="text-xs border border-gray-200 text-gray-600 px-2.5 py-0.5 rounded-full">{version.year}</span>
-              )}
-              {version.semester && (
-                <span className="text-xs border border-gray-200 text-gray-600 px-2.5 py-0.5 rounded-full">{SEMESTER_LABEL[version.semester] ?? version.semester}</span>
-              )}
-              <span className={`text-xs px-2.5 py-0.5 rounded-full border ${version.visibility === 'public' ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500'}`}>
-                {version.visibility === 'public' ? 'Public' : 'Private'}
-              </span>
+      {/* Header + Tab bar card */}
+      <div className="mb-6 border border-gray-200 rounded-xl bg-white shadow-sm">
+        {/* Header */}
+        <div className="px-6 pt-6 pb-5">
+          <div className="flex items-start gap-5">
+            {/* Course icon */}
+            <div className="shrink-0 w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-500">
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="4 17 10 11 4 5" />
+                <line x1="12" y1="19" x2="20" y2="19" />
+              </svg>
             </div>
 
-            {version.description && (
-              <p className="text-gray-500 text-sm whitespace-pre-wrap mb-3" dir={/[\u0590-\u05FF]/.test(version.description) ? 'rtl' : undefined}>{version.description}</p>
-            )}
-            <VersionAuthor authorId={version.author_id} />
-            {user && <ProgressBar versionId={versionId} userId={user.id} />}
+            {/* Title, meta, stats */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-400 mb-1">
+                {[
+                  version.institution,
+                  version.year,
+                  version.semester ? (SEMESTER_LABEL[version.semester] ?? `Semester ${version.semester}`) : null,
+                ].filter(Boolean).join(' · ')}
+              </p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2.5">
+                {course?.title ?? version.title}
+              </h1>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+                {items && items.length > 0 && (
+                  <span className="text-sm text-gray-500">{items.length} items</span>
+                )}
+                <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${version.visibility === 'public' ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500'}`}>
+                  {version.visibility === 'public' ? 'Public' : 'Private'}
+                </span>
+                {version.is_recommended && (
+                  <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                    Recommended
+                  </span>
+                )}
+              </div>
+              {version.description && (
+                <p className="text-gray-500 text-sm whitespace-pre-wrap mt-2" dir={/[\u0590-\u05FF]/.test(version.description) ? 'rtl' : undefined}>{version.description}</p>
+              )}
+              <div className="mt-2">
+                <VersionAuthor authorId={version.author_id} />
+              </div>
+            </div>
+
+            {/* Progress + CTA */}
+            <div className="shrink-0 flex flex-col gap-3 w-52">
+              {user && <ProgressBar versionId={versionId} userId={user.id} />}
+              <button
+                onClick={handlePractice}
+                disabled={enrollCourse.isPending}
+                className="flex items-center justify-center gap-2 bg-[#1e3a8a] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50 w-full"
+              >
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                {enrollCourse.isPending ? 'Enrolling...' : 'Practice now'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab bar */}
+        <div className="border-t border-gray-100 flex items-center justify-between px-3">
+          {/* Topic tabs */}
+          <div className="flex flex-wrap">
+            <button
+              onClick={() => setSelectedTopic('')}
+              className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 -mb-px transition-colors ${selectedTopic === '' ? 'border-gray-900 text-gray-900 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            >
+              All
+            </button>
+            {topics?.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setSelectedTopic(t.id)}
+                className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 -mb-px transition-colors ${selectedTopic === t.id ? 'border-gray-900 text-gray-900 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                {t.title}
+              </button>
+            ))}
           </div>
 
-          <div className="flex flex-col items-end gap-3 shrink-0">
-            {/* Primary CTA */}
-            <button
-              onClick={handlePractice}
-              disabled={enrollCourse.isPending}
-              className="bg-[#1e3a8a] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50 whitespace-nowrap"
-            >
-              {enrollCourse.isPending ? 'Enrolling...' : 'Practice →'}
-            </button>
-
-            {/* Author actions */}
+          {/* Actions */}
+          <div className="flex items-center gap-1 py-2 shrink-0">
             {isAuthor && (
-              <div className="flex flex-col items-end gap-1.5">
-                <div className="flex items-center gap-1.5">
-                  <button onClick={() => setShowAddContent(true)} className="text-sm border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-colors whitespace-nowrap">
-                    + Add Content
-                  </button>
-                  <button onClick={() => setShowManageTopics(true)} className="text-sm border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-colors">
-                    Topics
-                  </button>
-                  <button onClick={() => setShowManageTypes(true)} className="text-sm border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-colors">
-                    Types
-                  </button>
-                  <button onClick={() => setShowEditVersion(true)} className="text-sm border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-colors">
-                    Edit Version
-                  </button>
-                </div>
+              <>
                 <button
-                  onClick={async () => {
-                    if (!window.confirm('Delete this version? This cannot be undone.')) return;
-                    await deleteVersion.mutateAsync({ id: versionId, templateId: courseId });
-                    router.push(`/courses/${courseId}`);
-                  }}
-                  disabled={deleteVersion.isPending}
-                  className="text-xs text-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
+                  onClick={() => setShowAddContent(true)}
+                  className="text-sm text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap flex items-center gap-1"
                 >
-                  {deleteVersion.isPending ? 'Deleting...' : 'Delete version'}
+                  <span className="text-base leading-none">+</span> Add Content
                 </button>
-              </div>
+                <div className="w-px h-4 bg-gray-200 mx-0.5" />
+              </>
+            )}
+            <button
+              onClick={() => setViewMode('grid')}
+              title="Grid view"
+              className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:bg-gray-100'}`}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              title="List view"
+              className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:bg-gray-100'}`}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+            {isAuthor && (
+              <>
+                <div className="w-px h-4 bg-gray-200 mx-0.5" />
+                <div className="relative">
+                  <button
+                    onClick={() => setShowSettingsMenu((v) => !v)}
+                    title="Settings"
+                    className={`p-1.5 rounded-lg transition-colors ${showSettingsMenu ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:bg-gray-100'}`}
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.92c.04-.34.07-.69.07-1.08s-.03-.73-.07-1.08l2.34-1.84c.2-.16.26-.46.13-.7l-2.22-3.86c-.12-.22-.39-.3-.61-.22l-2.77 1.12c-.57-.44-1.18-.81-1.86-1.09l-.42-2.95A.488.488 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.42 2.95c-.68.28-1.29.65-1.86 1.09L4.46 5.34c-.22-.08-.49 0-.61.22L1.63 9.42c-.13.24-.07.54.13.7l2.34 1.84c-.04.35-.07.7-.07 1.08s.03.73.07 1.08l-2.34 1.84c-.2.16-.26.46-.13.7l2.22 3.86c.12.22.39.3.61.22l2.77-1.12c.57.44 1.18.81 1.86 1.09l.42 2.95c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.42-2.95c.68-.28 1.29-.65 1.86-1.09l2.77 1.12c.22.08.49 0 .61-.22l2.22-3.86c.13-.24.07-.54-.13-.7l-2.34-1.84z" />
+                    </svg>
+                  </button>
+                  {showSettingsMenu && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowSettingsMenu(false)} />
+                      <div className="absolute right-0 top-full mt-1 z-20 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 text-sm">
+                        <button
+                          onClick={() => { setShowEditVersion(true); setShowSettingsMenu(false); }}
+                          className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          Edit version
+                        </button>
+                        <button
+                          onClick={() => { setShowManageTopics(true); setShowSettingsMenu(false); }}
+                          className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          Manage topics
+                        </button>
+                        <button
+                          onClick={() => { setShowManageTypes(true); setShowSettingsMenu(false); }}
+                          className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          Manage content types
+                        </button>
+                        <div className="my-1 border-t border-gray-100" />
+                        <button
+                          onClick={async () => {
+                            setShowSettingsMenu(false);
+                            if (!window.confirm('Delete this version? This cannot be undone.')) return;
+                            await deleteVersion.mutateAsync({ id: versionId, templateId: courseId });
+                            router.push(`/courses/${courseId}`);
+                          }}
+                          disabled={deleteVersion.isPending}
+                          className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                        >
+                          {deleteVersion.isPending ? 'Deleting...' : 'Delete version'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>
       </div>
 
       {/* Content area */}
-      <div className="flex gap-6">
-        {topics && topics.length > 0 && (
-          <aside className="w-52 shrink-0">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Topics</p>
-            <nav className="space-y-0.5">
-              <button
-                onClick={() => setSelectedTopic('')}
-                className={`w-full text-left text-sm px-3 py-2 rounded-lg transition-colors ${selectedTopic === '' ? 'bg-gray-900 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-              >
-                All
-              </button>
-              {topics.map((t) => (
+      <div>
+        {/* Type + tag filters */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          {[{ value: '', label: 'All' }, ...getActiveTypes(version)].map((t) => (
+            <button key={t.value} onClick={() => setSelectedType(t.value)} className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+              {t.label}
+            </button>
+          ))}
+          {allTags.length > 0 && (
+            <>
+              <span className="text-gray-200 self-center">|</span>
+              {allTags.map((tag) => (
                 <button
-                  key={t.id}
-                  onClick={() => setSelectedTopic(t.id)}
-                  className={`w-full text-left text-sm px-3 py-2 rounded-lg transition-colors ${selectedTopic === t.id ? 'bg-gray-900 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                  key={tag}
+                  onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
+                  className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${selectedTag === tag ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'}`}
                 >
-                  {t.title}
+                  {tag}
                 </button>
               ))}
-            </nav>
-          </aside>
-        )}
-
-        <div className="flex-1 min-w-0">
-          {/* Filters */}
-          <div className="flex flex-wrap gap-2 mb-5">
-            {[{ value: '', label: 'All' }, ...getActiveTypes(version)].map((t) => (
-              <button key={t.value} onClick={() => setSelectedType(t.value)} className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
-                {t.label}
-              </button>
-            ))}
-            {allTags.length > 0 && (
-              <>
-                <span className="text-gray-200 self-center">|</span>
-                {allTags.map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
-                    className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${selectedTag === tag ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'}`}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </>
-            )}
-          </div>
-
-          {itemsLoading && <div className="text-sm text-gray-400">Loading content...</div>}
-          {!itemsLoading && visibleItems.length === 0 && (
-            <div className="text-center py-16 text-gray-400">
-              <p className="text-sm">No content items yet.</p>
-              {isAuthor && (
-                <button onClick={() => setShowAddContent(true)} className="mt-2 text-sm text-gray-600 hover:text-gray-900 underline underline-offset-2">
-                  Add the first item
-                </button>
-              )}
-            </div>
-          )}
-          {visibleItems.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {visibleItems.map((item) => (
-                <ContentItemCard
-                  key={item.content_item_id}
-                  item={item}
-                  userId={user?.id}
-                  versionId={versionId}
-                  isVersionAuthor={isAuthor}
-                  topics={topics ?? []}
-                />
-              ))}
-            </div>
+            </>
           )}
         </div>
+
+        {itemsLoading && <div className="text-sm text-gray-400">Loading content...</div>}
+        {!itemsLoading && visibleItems.length === 0 && (
+          <div className="text-center py-16 text-gray-400">
+            <p className="text-sm">No content items yet.</p>
+            {isAuthor && (
+              <button onClick={() => setShowAddContent(true)} className="mt-2 text-sm text-gray-600 hover:text-gray-900 underline underline-offset-2">
+                Add the first item
+              </button>
+            )}
+          </div>
+        )}
+        {visibleItems.length > 0 && (
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' : 'flex flex-col gap-2'}>
+            {visibleItems.map((item) => (
+              <ContentItemCard
+                key={item.content_item_id}
+                item={item}
+                userId={user?.id}
+                versionId={versionId}
+                isVersionAuthor={isAuthor}
+                topics={topics ?? []}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {showManageTopics && <ManageTopicsModal versionId={versionId} topics={topics ?? []} onClose={() => setShowManageTopics(false)} />}
