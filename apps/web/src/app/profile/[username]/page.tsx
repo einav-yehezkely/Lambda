@@ -7,6 +7,20 @@ import { LatexContent } from '@/components/content/latex-content';
 import type { CourseVersionWithTemplate } from '@lambda/shared';
 import type { UserSolution } from '@/lib/api/users';
 
+const SEMESTER_LABEL: Record<string, string> = {
+  A: 'Semester A', B: 'Semester B', Summer: 'Summer',
+  'א': 'Semester A', 'ב': 'Semester B', 'קיץ': 'Summer',
+};
+
+function formatVersionLabel(version: CourseVersionWithTemplate): string {
+  const parts = [
+    version.institution,
+    version.year,
+    version.semester ? (SEMESTER_LABEL[version.semester] ?? `Semester ${version.semester}`) : null,
+  ].filter(Boolean);
+  return parts.join(' · ') || version.title;
+}
+
 const SUBJECT_LABEL: Record<string, string> = {
   cs: 'CS',
   math: 'Math',
@@ -27,7 +41,7 @@ function VersionRow({ version }: { version: CourseVersionWithTemplate }) {
       className="flex items-center justify-between gap-3 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded-md transition-colors"
     >
       <div className="min-w-0">
-        <div className="text-sm font-medium text-gray-900">{version.title}</div>
+        <div className="text-sm font-medium text-gray-900">{formatVersionLabel(version)}</div>
         <div className="text-xs text-gray-400 mt-0.5">
           {template?.title}
           {version.institution && ` · ${version.institution}`}
