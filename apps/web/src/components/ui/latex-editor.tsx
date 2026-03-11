@@ -14,6 +14,15 @@ interface Btn {
 
 const GROUPS: { name: string; buttons: Btn[] }[] = [
   {
+    name: 'Aa',
+    buttons: [
+      { label: 'B', title: 'Bold **...**', insert: '****', wrapWith: ['**', '**'] },
+      { label: 'I', title: 'Italic *...*', insert: '**', wrapWith: ['*', '*'] },
+      { label: 'U', title: 'Underline __...__', insert: '____', wrapWith: ['__', '__'] },
+      { label: 'S', title: 'Strikethrough ~~...~~', insert: '~~~~', wrapWith: ['~~', '~~'] },
+    ],
+  },
+  {
     name: 'Math',
     buttons: [
       { label: '$·$', title: 'Inline math $...$', insert: '$$', wrapWith: ['$', '$'] },
@@ -377,7 +386,13 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
             type="button"
             title={btn.title}
             onMouseDown={(e) => { e.preventDefault(); insertSnippet(btn); }}
-            className="px-1.5 py-0.5 text-sm bg-white border border-gray-200 rounded hover:bg-gray-100 hover:border-gray-300 text-gray-700 min-w-[2rem] text-center font-mono leading-tight"
+            className={`px-1.5 py-0.5 text-sm bg-white border border-gray-200 rounded hover:bg-gray-100 hover:border-gray-300 text-gray-700 min-w-[2rem] text-center leading-tight ${
+              btn.title.startsWith('Bold') ? 'font-bold' :
+              btn.title.startsWith('Italic') ? 'italic font-serif' :
+              btn.title.startsWith('Underline') ? 'underline' :
+              btn.title.startsWith('Strikethrough') ? 'line-through' :
+              'font-mono'
+            }`}
           >
             {btn.label}
           </button>

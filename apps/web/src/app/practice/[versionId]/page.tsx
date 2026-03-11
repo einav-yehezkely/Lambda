@@ -9,11 +9,19 @@ import { CommunitySolutions } from '@/components/content/community-solutions';
 import { ReportErrorButton } from '@/components/content/report-error';
 import type { VersionContentItem, PracticeMode, ProgressStatus } from '@lambda/shared';
 
-const MODES: { value: PracticeMode; label: string; description: string }[] = [
-  { value: 'spaced_repetition', label: 'Spaced Repetition', description: 'Prioritizes items you need to review' },
-  { value: 'random', label: 'Random', description: 'All items in random order' },
-  { value: 'exam', label: 'Exam Mode', description: 'Shuffled, simulates exam conditions' },
-  { value: 'topic', label: 'By Topic', description: 'Go through items in topic order' },
+interface SessionType {
+  id: string;
+  label: string;
+  description: string;
+  mode: PracticeMode;
+  type?: string;
+}
+
+const SESSION_TYPES: SessionType[] = [
+  { id: 'exam_questions',     label: 'Exam Questions',     description: 'Exam-style questions only, in random order', mode: 'exam', type: 'exam_question' },
+  { id: 'exercise_questions', label: 'Practice Questions', description: 'Exercise questions only, in random order', mode: 'random', type: 'exercise_question' },
+  { id: 'mixed',              label: 'Mixed Questions',    description: 'All question types in random order', mode: 'random' },
+  { id: 'review',             label: 'General Review',     description: 'All content — prioritizes items that need review', mode: 'spaced_repetition' },
 ];
 
 const TYPE_LABEL: Record<string, string> = {
@@ -54,10 +62,11 @@ export default function PracticePage({
   const { user, loading: authLoading } = useAuth();
 
   const [phase, setPhase] = useState<Phase>('setup');
-  const [mode, setMode] = useState<PracticeMode>('spaced_repetition');
+  const [sessionType, setSessionType] = useState<SessionType>(SESSION_TYPES[0]);
   const [items, setItems] = useState<VersionContentItem[]>([]);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
+  const [revealedSections, setRevealedSections] = useState<Set<number>>(new Set());
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [results, setResults] = useState<SessionResult[]>([]);
   const [startedAt, setStartedAt] = useState<number>(0);
@@ -82,7 +91,7 @@ export default function PracticePage({
     setPhase('loading');
     setError('');
     try {
-      const data = await practiceApi.getSession({ version_id: versionId, mode });
+      const data = await practiceApi.getSession({ version_id: versionId, mode: sessionType.mode, type: sessionType.type });
       if (data.length === 0) {
         setError('No items found for this version.');
         setPhase('setup');
@@ -125,6 +134,7 @@ export default function PracticePage({
     } else {
       setIndex((i) => i + 1);
       setRevealed(false);
+      setRevealedSections(new Set());
       setSelectedOption(null);
       setStartedAt(Date.now());
     }
@@ -143,18 +153,18 @@ export default function PracticePage({
         </div>
 
         <div className="space-y-2 mb-6">
-          {MODES.map((m) => (
+          {SESSION_TYPES.map((s) => (
             <button
-              key={m.value}
-              onClick={() => setMode(m.value)}
+              key={s.id}
+              onClick={() => setSessionType(s)}
               className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
-                mode === m.value
+                sessionType.id === s.id
                   ? 'border-gray-900 bg-gray-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="font-medium text-sm text-gray-900">{m.label}</div>
-              <div className="text-xs text-gray-500 mt-0.5">{m.description}</div>
+              <div className="font-medium text-sm text-gray-900">{s.label}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{s.description}</div>
             </button>
           ))}
         </div>
@@ -232,6 +242,16 @@ export default function PracticePage({
 
   const current = items[index];
   const ci = current.content_item;
+  const isQuestion = ci.type === 'exam_question' || ci.type === 'exercise_question';
+
+  // For non-question types: sections to reveal (everything after the first/content section)
+  const nonQuestionSections: { label: string; content: string }[] = !isQuestion
+    ? (ci.metadata?.sections?.length ?? 0) > 1
+      ? ci.metadata!.sections!.slice(1)
+      : ci.solution
+        ? [{ label: ci.type === 'proof' ? 'Proof Sketch' : 'Solution', content: ci.solution }]
+        : []
+    : [];
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -344,61 +364,74 @@ export default function PracticePage({
               </div>
             )}
           </div>
-        ) : !revealed ? (
-          <button
-            onClick={() => setRevealed(true)}
-            className="w-full py-2.5 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
-          >
-            Reveal solution
-          </button>
-        ) : (
-          <div>
-            {ci.solution ? (
-              <div className="bg-gray-50 rounded-lg p-4 mb-5">
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                  Solution
+        ) : isQuestion ? (
+          // ── Open question: reveal solution ──
+          !revealed ? (
+            <button
+              onClick={() => setRevealed(true)}
+              className="w-full py-2.5 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+            >
+              Reveal solution
+            </button>
+          ) : (
+            <div>
+              {ci.solution ? (
+                <div className="bg-gray-50 rounded-lg p-4 mb-5">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Solution</div>
+                  <div className="text-sm text-gray-700 leading-relaxed" dir={/[\u0590-\u05FF]/.test(ci.solution ?? '') ? 'rtl' : undefined}><LatexContent content={ci.solution} /></div>
                 </div>
-                <div className="text-sm text-gray-700 leading-relaxed" dir={/[\u0590-\u05FF]/.test(ci.solution ?? '') ? 'rtl' : undefined}><LatexContent content={ci.solution} /></div>
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-4 mb-5 text-sm text-gray-400">
+                  No official solution available. Add your own below.
+                </div>
+              )}
+              {ci.metadata?.question_format !== 'flashcard' && <CommunitySolutions contentItemId={ci.id} />}
+              <ReportErrorButton contentItemId={ci.id} />
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <button onClick={() => submitOutcome('solved')} className="py-2 px-3 rounded-lg text-sm font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors">Correct</button>
+                <button onClick={() => submitOutcome('incorrect')} className="py-2 px-3 rounded-lg text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors">Incorrect</button>
+                <button onClick={() => submitOutcome('needs_review')} className="py-2 px-3 rounded-lg text-sm font-medium bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-colors">Review later</button>
+                <button onClick={() => submitOutcome('skipped')} className="py-2 px-3 rounded-lg text-sm font-medium bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors">Skip</button>
               </div>
-            ) : (
-              <div className="bg-gray-50 rounded-lg p-4 mb-5 text-sm text-gray-400">
-                No official solution available. Add your own below.
-              </div>
-            )}
-
-            {ci.metadata?.question_format !== 'flashcard' && (
-              <CommunitySolutions contentItemId={ci.id} />
-            )}
-
-            <ReportErrorButton contentItemId={ci.id} />
-
-            {/* Outcome buttons */}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <button
-                onClick={() => submitOutcome('solved')}
-                className="py-2 px-3 rounded-lg text-sm font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
-              >
-                Correct
-              </button>
-              <button
-                onClick={() => submitOutcome('incorrect')}
-                className="py-2 px-3 rounded-lg text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-              >
-                Incorrect
-              </button>
-              <button
-                onClick={() => submitOutcome('needs_review')}
-                className="py-2 px-3 rounded-lg text-sm font-medium bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-colors"
-              >
-                Review later
-              </button>
-              <button
-                onClick={() => submitOutcome('skipped')}
-                className="py-2 px-3 rounded-lg text-sm font-medium bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
-              >
-                Skip
-              </button>
             </div>
+          )
+        ) : (
+          // ── Non-question (proof / algorithm / other): reveal sections one by one ──
+          <div>
+            {nonQuestionSections.map((sec, i) => (
+              <div key={i} className="mb-3">
+                <button
+                  onClick={() => {
+                    setRevealedSections((prev) => {
+                      const next = new Set(prev);
+                      next.has(i) ? next.delete(i) : next.add(i);
+                      return next;
+                    });
+                    setRevealed(true);
+                  }}
+                  className="w-full py-2 px-4 mb-1 flex items-center justify-between border border-gray-200 rounded-lg text-sm text-gray-600 hover:border-gray-400 hover:text-gray-800 transition-colors bg-white"
+                >
+                  <span className="font-medium">{sec.label}</span>
+                  <span className="text-gray-400 text-xs">{revealedSections.has(i) ? '▲ Hide' : '▼ Show'}</span>
+                </button>
+                {revealedSections.has(i) && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm text-gray-700 leading-relaxed" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}><LatexContent content={sec.content} /></div>
+                  </div>
+                )}
+              </div>
+            ))}
+            {(revealed || nonQuestionSections.length === 0) && (
+              <>
+                <ReportErrorButton contentItemId={ci.id} />
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 mt-4">
+                  <button onClick={() => submitOutcome('solved')} className="py-2 px-3 rounded-lg text-sm font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors">Knew it</button>
+                  <button onClick={() => submitOutcome('incorrect')} className="py-2 px-3 rounded-lg text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors">Didn&apos;t know</button>
+                  <button onClick={() => submitOutcome('needs_review')} className="py-2 px-3 rounded-lg text-sm font-medium bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-colors">Review later</button>
+                  <button onClick={() => submitOutcome('skipped')} className="py-2 px-3 rounded-lg text-sm font-medium bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors">Skip</button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

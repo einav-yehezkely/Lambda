@@ -307,10 +307,11 @@ function ViewModal({ item, onClose }: {
 }) {
   const { content_item } = item;
   const isAlgorithm = content_item.type === 'algorithm';
+  const isQuestion = content_item.type === 'exam_question' || content_item.type === 'exercise_question';
   const meta = content_item.metadata;
   const questionFormat = meta?.question_format;
   const isMultiChoice = questionFormat === 'multiple_choice';
-  const showCommunitySolutions = questionFormat !== 'multiple_choice' && questionFormat !== 'flashcard';
+  const showCommunitySolutions = isQuestion && questionFormat !== 'multiple_choice' && questionFormat !== 'flashcard';
   const [page, setPage] = useState(0);
   const [showSolution, setShowSolution] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
