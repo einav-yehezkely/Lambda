@@ -88,7 +88,7 @@ export function LatexContent({ content, className }: LatexContentProps) {
   const segments = useMemo(() => parseSegments(content), [content]);
 
   return (
-    <span className={className} dir="auto">
+    <span className={className}>
       {segments.map((seg, i) => {
         if (seg.type === 'text') {
           return <span key={i} className="whitespace-pre-wrap">{renderInline(seg.value)}</span>;

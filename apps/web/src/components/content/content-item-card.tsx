@@ -189,7 +189,7 @@ function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {isAlgorithm ? 'Algorithm Name *' : 'Title *'}
           </label>
-          <input autoFocus type="text" value={title} onChange={(e) => setTitle(e.target.value)} dir="auto" className={INPUT_CLS} />
+          <input autoFocus type="text" value={title} onChange={(e) => setTitle(e.target.value)} dir={hDir(title)} className={INPUT_CLS} />
         </div>
 
         <div>
@@ -247,7 +247,7 @@ function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics
                     value={sec.label}
                     onChange={(e) => updateSection(i, 'label', e.target.value)}
                     placeholder="Section name"
-                    dir="auto"
+                    dir={hDir(sec.label)}
                     className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                   />
                   <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 hover:text-red-500 shrink-0">
@@ -525,7 +525,7 @@ export function ContentItemCard({
             <LatexContent content={content_item.title} />
           </span>
           {topicName && (
-            <span className="text-xs text-gray-400" dir="auto">{topicName}</span>
+            <span className="text-xs text-gray-400" dir={hDir(topicName)}>{topicName}</span>
           )}
           <div className="flex items-end justify-between gap-2 mt-auto">
             <div className="flex items-center gap-1.5">

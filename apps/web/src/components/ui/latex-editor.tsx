@@ -162,6 +162,9 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
   const divRef = useRef<HTMLDivElement>(null);
   const focused = useRef(false);
   const [activeGroup, setActiveGroup] = useState(0);
+  const [dir, setDir] = useState<'ltr' | 'rtl'>(() =>
+    /[\u0590-\u05FF\u0600-\u06FF]/.test(value) ? 'rtl' : 'ltr'
+  );
 
   // Set initial content (and on external changes while not focused)
   useEffect(() => {
@@ -300,7 +303,11 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
   }
 
   function handleInput() {
-    if (divRef.current) onChange(divToValue(divRef.current));
+    if (divRef.current) {
+      const val = divToValue(divRef.current);
+      onChange(val);
+      setDir(/[\u0590-\u05FF\u0600-\u06FF]/.test(val) ? 'rtl' : 'ltr');
+    }
   }
 
   // ── Toolbar insert ──
@@ -387,7 +394,7 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
         onKeyDown={handleKeyDown}
         onInput={handleInput}
         onClick={handleClick}
-        dir="auto"
+        dir={dir}
         data-placeholder={placeholder}
         style={{ minHeight: `${rows * 1.6}rem` }}
         className="px-3 py-2 text-sm focus:outline-none leading-relaxed

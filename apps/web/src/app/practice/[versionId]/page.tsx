@@ -275,7 +275,7 @@ export default function PracticePage({
         )}
 
         {/* Content */}
-        <div className="text-gray-700 mb-6 leading-relaxed">
+        <div className="text-gray-700 mb-6 leading-relaxed" dir={/[\u0590-\u05FF]/.test(ci.content) ? 'rtl' : undefined}>
           <LatexContent content={ci.content} />
         </div>
 
@@ -295,7 +295,7 @@ export default function PracticePage({
                       className="w-full text-left flex items-start gap-3 p-3 rounded-lg border border-gray-200 text-sm hover:border-gray-400 transition-colors"
                     >
                       <span className="font-semibold text-gray-500 shrink-0">{opt}.</span>
-                      <div className="text-gray-700"><LatexContent content={sec.content} /></div>
+                      <div className="text-gray-700" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}><LatexContent content={sec.content} /></div>
                     </button>
                   );
                 })}
@@ -325,7 +325,7 @@ export default function PracticePage({
                         <span className={`font-semibold shrink-0 ${isCorrect ? 'text-green-600' : isSelected ? 'text-red-500' : 'text-gray-500'}`}>
                           {opt}.
                         </span>
-                        <div className={isCorrect ? 'text-green-700' : isSelected ? 'text-red-700' : 'text-gray-600'}>
+                        <div className={isCorrect ? 'text-green-700' : isSelected ? 'text-red-700' : 'text-gray-600'} dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
                           <LatexContent content={sec.content} />
                         </div>
                       </div>
@@ -358,7 +358,7 @@ export default function PracticePage({
                 <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
                   Solution
                 </div>
-                <div className="text-sm text-gray-700 leading-relaxed"><LatexContent content={ci.solution} /></div>
+                <div className="text-sm text-gray-700 leading-relaxed" dir={/[\u0590-\u05FF]/.test(ci.solution ?? '') ? 'rtl' : undefined}><LatexContent content={ci.solution} /></div>
               </div>
             ) : (
               <div className="bg-gray-50 rounded-lg p-4 mb-5 text-sm text-gray-400">
