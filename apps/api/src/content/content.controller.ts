@@ -74,6 +74,18 @@ export class ContentController {
     return this.contentService.updateItem(id, dto, user.id);
   }
 
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse({ description: 'Delete a content item entirely (author only) — cascades to solutions and version associations' })
+  deleteItem(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.contentService.deleteItem(id, user.id);
+  }
+
   @Delete(':id/from/:versionId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

@@ -129,6 +129,18 @@ export class ContentService {
     return data as ContentItem;
   }
 
+  // ─── Delete content item entirely (author only) ─────────────────────────────
+
+  async deleteItem(id: string, userId: string): Promise<void> {
+    const item = await this.getItem(id);
+    if (item.author_id !== userId) {
+      throw new ForbiddenException('Only the author can delete this content item');
+    }
+
+    const { error } = await this.db.from('content_items').delete().eq('id', id);
+    if (error) throw new InternalServerErrorException(error.message);
+  }
+
   // ─── Remove from version (junction only, item preserved) ────────────────────
 
   async removeFromVersion(contentItemId: string, versionId: string, userId: string): Promise<void> {
