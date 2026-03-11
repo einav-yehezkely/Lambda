@@ -2,17 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCourses, useCreateCourse, useActiveVersions } from '@/hooks/useCourses';
+import { useCourses, useCourseSubjects, useCreateCourse, useActiveVersions } from '@/hooks/useCourses';
 import { useAuth } from '@/hooks/useAuth';
 import { CourseCard } from '@/components/course/course-card';
 import { Modal } from '@/components/ui/modal';
 
-const SUBJECTS = [
-  { value: '', label: 'All' },
-  { value: 'cs', label: 'Computer Science' },
-  { value: 'math', label: 'Mathematics' },
-  { value: 'other', label: 'Other' },
-];
+const SUBJECT_LABELS: Record<string, string> = {
+  cs: 'Computer Science',
+  math: 'Mathematics',
+};
+
+function formatSubject(s: string) {
+  return SUBJECT_LABELS[s] ?? (s.charAt(0).toUpperCase() + s.slice(1));
+}
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -33,6 +35,8 @@ export default function CoursesPage() {
     subject: subject || undefined,
     sort: 'recent',
   });
+
+  const { data: uniqueSubjects = [] } = useCourseSubjects();
 
   const createCourse = useCreateCourse();
   const { data: activeVersions } = useActiveVersions(!!user);
@@ -81,18 +85,28 @@ export default function CoursesPage() {
           dir="auto"
           className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
         />
-        <div className="flex gap-2">
-          {SUBJECTS.map((s) => (
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSubject('')}
+            className={`text-sm px-3 py-2 rounded-md border transition-colors ${
+              subject === ''
+                ? 'bg-gray-900 text-white border-gray-900'
+                : 'border-gray-300 text-gray-600 hover:border-gray-500'
+            }`}
+          >
+            All
+          </button>
+          {uniqueSubjects.map((s) => (
             <button
-              key={s.value}
-              onClick={() => setSubject(s.value)}
+              key={s}
+              onClick={() => setSubject(s)}
               className={`text-sm px-3 py-2 rounded-md border transition-colors ${
-                subject === s.value
+                subject === s
                   ? 'bg-gray-900 text-white border-gray-900'
                   : 'border-gray-300 text-gray-600 hover:border-gray-500'
               }`}
             >
-              {s.label}
+              {formatSubject(s)}
             </button>
           ))}
         </div>

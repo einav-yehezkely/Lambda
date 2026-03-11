@@ -2,6 +2,8 @@ import { api } from './client';
 import type { CourseTemplate, CourseVersion } from '@lambda/shared';
 
 export const coursesApi = {
+  subjects: () => api.get<string[]>('/api/courses/subjects'),
+
   list: (params?: { subject?: string; search?: string; sort?: string }) => {
     const query = new URLSearchParams(
       Object.entries(params ?? {}).filter(([, v]) => v) as [string, string][],

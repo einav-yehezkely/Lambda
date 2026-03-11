@@ -7,6 +7,7 @@ export const practiceApi = {
     mode: PracticeMode;
     topic_id?: string;
     type?: string;
+    with_solution?: boolean;
   }) => {
     const query = new URLSearchParams(
       Object.entries(params).filter(([, v]) => v) as [string, string][],

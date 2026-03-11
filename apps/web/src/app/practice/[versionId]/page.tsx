@@ -70,6 +70,7 @@ export default function PracticePage({
 
   const [phase, setPhase] = useState<Phase>('setup');
   const [sessionType, setSessionType] = useState<SessionType>(SESSION_TYPES[0]);
+  const [withSolution, setWithSolution] = useState(false);
   const [items, setItems] = useState<VersionContentItem[]>([]);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -98,7 +99,7 @@ export default function PracticePage({
     setPhase('loading');
     setError('');
     try {
-      const data = await practiceApi.getSession({ version_id: versionId, mode: sessionType.mode, type: sessionType.type });
+      const data = await practiceApi.getSession({ version_id: versionId, mode: sessionType.mode, type: sessionType.type, with_solution: withSolution || undefined });
       if (data.length === 0) {
         setError('No items found for this version.');
         setPhase('setup');
@@ -191,6 +192,16 @@ export default function PracticePage({
             );
           })}
         </div>
+
+        <label className="flex items-center gap-3 mb-6 cursor-pointer select-none">
+          <div
+            onClick={() => setWithSolution((v) => !v)}
+            className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 flex items-center px-0.5 ${withSolution ? 'bg-[#1e3a8a]' : 'bg-slate-200'}`}
+          >
+            <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${withSolution ? 'translate-x-4' : 'translate-x-0'}`} />
+          </div>
+          <span className="text-sm text-slate-700">Only questions with solutions</span>
+        </label>
 
         {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 

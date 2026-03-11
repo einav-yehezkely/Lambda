@@ -3,6 +3,13 @@ import { coursesApi } from '@/lib/api/courses';
 import { progressApi } from '@/lib/api/progress';
 import type { ActiveVersionProgress } from '@lambda/shared';
 
+export function useCourseSubjects() {
+  return useQuery({
+    queryKey: ['course-subjects'],
+    queryFn: () => coursesApi.subjects(),
+  });
+}
+
 export function useCourses(filters?: { subject?: string; search?: string; sort?: string }) {
   return useQuery({
     queryKey: ['courses', filters],
@@ -98,6 +105,7 @@ export function useCreateCourse() {
     mutationFn: coursesApi.createCourse,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['course-subjects'] });
     },
   });
 }
@@ -129,6 +137,7 @@ export function useDeleteCourse() {
     mutationFn: coursesApi.deleteCourse,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['course-subjects'] });
     },
   });
 }

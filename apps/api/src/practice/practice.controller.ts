@@ -34,14 +34,19 @@ export class PracticeController {
   @ApiQuery({ name: 'topic_id', required: false })
   @ApiQuery({ name: 'type', required: false, enum: ['proof', 'exam_question', 'exercise_question'] })
   @ApiQuery({ name: 'mode', required: true, enum: ['random', 'topic', 'exam', 'spaced_repetition'] })
+  @ApiQuery({ name: 'with_solution', required: false, type: Boolean })
   getSession(
     @Query('version_id') version_id: string,
     @Query('mode') mode: PracticeMode,
     @CurrentUser() user: User,
     @Query('topic_id') topic_id?: string,
     @Query('type') type?: string,
+    @Query('with_solution') with_solution?: string,
   ) {
-    return this.practiceService.getSession({ version_id, topic_id, type, mode, userId: user.id });
+    return this.practiceService.getSession({
+      version_id, topic_id, type, mode, userId: user.id,
+      with_solution: with_solution === 'true',
+    });
   }
 
   @Post('attempt')

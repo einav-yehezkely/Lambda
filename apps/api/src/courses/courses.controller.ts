@@ -46,6 +46,12 @@ export class CoursesController {
     return this.coursesService.listCourses({ subject, search, sort });
   }
 
+  @Get('subjects')
+  @ApiOkResponse({ description: 'Get all unique course subjects' })
+  getSubjects() {
+    return this.coursesService.getSubjects();
+  }
+
   @Get(':id')
   @ApiOkResponse({ description: 'Get a course template by ID' })
   getCourse(@Param('id', ParseUUIDPipe) id: string) {

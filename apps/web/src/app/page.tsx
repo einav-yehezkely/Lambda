@@ -3,18 +3,20 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useCourses, useCreateCourse, useActiveVersions } from '@/hooks/useCourses';
+import { useCourses, useCourseSubjects, useCreateCourse, useActiveVersions } from '@/hooks/useCourses';
 import { useAuth } from '@/hooks/useAuth';
 import { CourseCard } from '@/components/course/course-card';
 import { Modal } from '@/components/ui/modal';
 import { LeaderboardPanel } from '@/components/ui/leaderboard-panel';
 
-const SUBJECTS = [
-  { value: '', label: 'All' },
-  { value: 'cs', label: 'Computer Science' },
-  { value: 'math', label: 'Mathematics' },
-  { value: 'other', label: 'Other' },
-];
+const SUBJECT_LABELS: Record<string, string> = {
+  cs: 'Computer Science',
+  math: 'Mathematics',
+};
+
+function formatSubject(s: string) {
+  return SUBJECT_LABELS[s] ?? (s.charAt(0).toUpperCase() + s.slice(1));
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -31,6 +33,7 @@ export default function HomePage() {
   const [formError, setFormError] = useState('');
 
   const { data: activeVersions } = useActiveVersions(!!user);
+  const { data: uniqueSubjects = [] } = useCourseSubjects();
 
   const progressByCourseId = new Map((activeVersions ?? []).map((v) => [v.course_id, v]));
 
@@ -95,17 +98,27 @@ export default function HomePage() {
 
         {/* Subject filter tags */}
         <div className="flex gap-2 mt-4 flex-wrap justify-center">
-          {SUBJECTS.map((s) => (
+          <button
+            onClick={() => setSubject('')}
+            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+              subject === ''
+                ? 'bg-[#1e3a8a]/10 text-[#1e3a8a] border-[#1e3a8a]/20'
+                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+            }`}
+          >
+            All
+          </button>
+          {uniqueSubjects.map((s) => (
             <button
-              key={s.value}
-              onClick={() => setSubject(s.value)}
+              key={s}
+              onClick={() => setSubject(s)}
               className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
-                subject === s.value
+                subject === s
                   ? 'bg-[#1e3a8a]/10 text-[#1e3a8a] border-[#1e3a8a]/20'
                   : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
               }`}
             >
-              {s.label}
+              {formatSubject(s)}
             </button>
           ))}
         </div>
@@ -157,7 +170,7 @@ export default function HomePage() {
       <section className="mb-16">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-xl font-bold text-slate-900">
-            {subject ? SUBJECTS.find(s => s.value === subject)?.label : 'All Courses'}
+            {subject ? formatSubject(subject) : 'All Courses'}
           </h2>
           <a href="/courses" className="text-sm font-semibold text-[#1e3a8a] hover:underline">
             View all

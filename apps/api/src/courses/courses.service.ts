@@ -18,6 +18,15 @@ export class CoursesService {
 
   // ─── Course Templates ───────────────────────────────────────────────────────
 
+  async getSubjects(): Promise<string[]> {
+    const { data, error } = await this.db
+      .from('course_templates')
+      .select('subject');
+    if (error) throw new InternalServerErrorException(error.message);
+    const subjects = [...new Set((data ?? []).map((r: any) => r.subject).filter(Boolean))];
+    return subjects.sort();
+  }
+
   async listCourses(filters: {
     subject?: string;
     search?: string;

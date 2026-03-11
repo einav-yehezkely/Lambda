@@ -21,6 +21,7 @@ export class PracticeService {
     type?: string;
     mode: PracticeMode;
     userId: string;
+    with_solution?: boolean;
   }): Promise<VersionContentItem[]> {
     // Load all items for this version (+ optional topic filter)
     let query = this.db
@@ -40,6 +41,20 @@ export class PracticeService {
     // Filter by content type if requested
     if (params.type) {
       items = items.filter((i) => i.content_item.type === params.type);
+    }
+
+    // Filter to only items with a solution (official or community)
+    if (params.with_solution && items.length > 0) {
+      const contentItemIds = items.map((i) => i.content_item_id);
+      const { data: communityRows } = await this.db
+        .from('solutions')
+        .select('content_item_id')
+        .in('content_item_id', contentItemIds);
+
+      const communitySet = new Set((communityRows ?? []).map((r) => r.content_item_id));
+      items = items.filter(
+        (i) => i.content_item.solution?.trim() || communitySet.has(i.content_item_id),
+      );
     }
 
     if (items.length === 0) return [];
