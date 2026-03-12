@@ -25,7 +25,9 @@
       "Bash(npm install @types/nodemailer --workspace=@lambda/api --save-dev)",
       "Bash(grep -n \"progress\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx -i)",
       "Bash(wc -l /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
-      "Bash(npm install framer-motion)"
+      "Bash(npm install framer-motion)",
+      "Bash(node -e \"require\\(''canvas''\\)\")",
+      "Bash(python -c \"from PIL import Image, ImageDraw, ImageFont; print\\(''Pillow available''\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",

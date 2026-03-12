@@ -9,7 +9,7 @@ import { BackgroundAnimation } from '@/components/ui/background-animation';
 const publicSans = Public_Sans({ subsets: ['latin'], variable: '--font-display' });
 
 export const metadata: Metadata = {
-  title: 'Lambda | Computer Science Practice',
+  title: 'Lambda',
   description: 'Community-driven learning platform for CS & Math students',
 };
 
