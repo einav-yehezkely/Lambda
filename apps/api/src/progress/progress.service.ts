@@ -80,7 +80,7 @@ export class ProgressService {
     // 4. Get version details + course template info
     const { data: versions, error: versionsError } = await this.db
       .from('course_versions')
-      .select('id, title, template_id, course_templates!template_id(id, title, subject)')
+      .select('id, title, institution, year, semester, template_id, course_templates!template_id(id, title, subject)')
       .in('id', allVersionIds);
 
     if (versionsError) throw new InternalServerErrorException(versionsError.message);
@@ -114,7 +114,7 @@ export class ProgressService {
 
       return {
         version_id: version.id,
-        version_title: version.title,
+        version_title: [version.institution, version.year, version.semester ? `Semester ${version.semester}` : null].filter(Boolean).join(' · ') || version.title,
         course_id: tmpl?.id ?? '',
         course_title: tmpl?.title ?? '',
         subject: tmpl?.subject ?? '',

@@ -415,7 +415,7 @@ function AddContentModal({
   onClose: () => void;
 }) {
   const createContent = useCreateContent();
-  const [type, setType] = useState('proof');
+  const [type, setType] = useState(() => activeTypes?.[0]?.value ?? 'proof');
   const [questionFormat, setQuestionFormat] = useState('open');
   const [correctOption, setCorrectOption] = useState<'A' | 'B' | 'C' | 'D' | ''>('');
   const [title, setTitle] = useState('');
@@ -653,6 +653,7 @@ export default function VersionPage({
   const [selectedTopic, setSelectedTopic] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
+  const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'default' | 'difficulty' | 'alpha'>('default');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showAddContent, setShowAddContent] = useState(false);
@@ -668,8 +669,6 @@ export default function VersionPage({
   const { data: topics } = useTopics(versionId);
   const { data: items, isLoading: itemsLoading } = useVersionContent({
     version_id: versionId,
-    topic_id: selectedTopic || undefined,
-    type: selectedType || undefined,
   });
 
   const isAuthor = !!user && !!version && user.id === version.author_id;
@@ -688,7 +687,14 @@ export default function VersionPage({
   const DIFFICULTY_ORDER: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
 
   const allTags = Array.from(new Set(items?.flatMap((i) => i.content_item.tags) ?? [])).sort();
-  const filteredItems = selectedTag ? (items ?? []).filter((i) => i.content_item.tags.includes(selectedTag)) : (items ?? []);
+  const searchLower = search.toLowerCase();
+  const filteredItems = (items ?? []).filter((i) => {
+    if (selectedTopic && i.topic_id !== selectedTopic) return false;
+    if (selectedType && i.content_item.type !== selectedType) return false;
+    if (selectedTag && !i.content_item.tags.includes(selectedTag)) return false;
+    if (searchLower && !i.content_item.title.toLowerCase().includes(searchLower) && !i.content_item.content.toLowerCase().includes(searchLower)) return false;
+    return true;
+  });
   const visibleItems = [...filteredItems].sort((a, b) => {
     if (sortBy === 'alpha') return a.content_item.title.localeCompare(b.content_item.title, undefined, { sensitivity: 'base' });
     if (sortBy === 'difficulty') {
@@ -909,11 +915,24 @@ export default function VersionPage({
               ))}
             </>
           )}
-          <div className="ml-auto relative">
+          <div className="ml-auto flex items-center gap-2">
+            <div className="relative">
+              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search..."
+                className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white w-40"
+              />
+            </div>
+            <div className="relative">
             <button
               onClick={() => setShowSortMenu((v) => !v)}
               title="Sort"
-              className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 text-xs px-2.5 ${showSortMenu || sortBy !== 'default' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'}`}
+              className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 text-xs px-2.5 ${showSortMenu || sortBy !== 'default' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6" /><line x1="6" y1="12" x2="18" y2="12" /><line x1="9" y1="18" x2="15" y2="18" />
@@ -937,6 +956,7 @@ export default function VersionPage({
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
 

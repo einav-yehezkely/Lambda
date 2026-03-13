@@ -25,13 +25,18 @@ const TYPE_COLOR: Record<string, string> = {
   other: 'bg-gray-100 text-gray-600',
 };
 
-const TYPE_STRIP: Record<string, string> = {
-  proof: 'bg-purple-400',
-  exam_question: 'bg-blue-400',
-  exercise_question: 'bg-orange-400',
-  algorithm: 'bg-teal-400',
-  other: 'bg-gray-300',
-};
+const TOPIC_STRIP_COLORS = [
+  '#264653', // Charcoal Blue
+  '#2a9d8f', // Verdigris
+  '#e9c46a', // Tuscan Sun
+  '#f4a261', // Sandy Brown
+  '#e76f51', // Burnt Peach
+  '#457b9d', // Steel Blue
+  '#52796f', // Dark Verdigris
+  '#d4956a', // Muted Peach
+  '#6b705c', // Sage
+  '#a98467', // Warm Taupe
+];
 
 const DIFFICULTY_COLOR: Record<string, string> = {
   easy: 'text-green-600',
@@ -502,7 +507,9 @@ export function ContentItemCard({
 
   const canEdit = !!userId && userId === content_item.author_id;
   const canDelete = !!userId && !!versionId && (userId === content_item.author_id || !!isVersionAuthor);
-  const topicName = item.topic_id ? topics.find((t) => t.id === item.topic_id)?.title : undefined;
+  const topicIndex = item.topic_id ? topics.findIndex((t) => t.id === item.topic_id) : -1;
+  const topicName = topicIndex >= 0 ? topics[topicIndex]?.title : undefined;
+  const stripColor = topicIndex >= 0 ? TOPIC_STRIP_COLORS[topicIndex % TOPIC_STRIP_COLORS.length] : '#e5e7eb';
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -515,7 +522,7 @@ export function ContentItemCard({
       <div
         className="bg-white border border-gray-200 rounded-lg hover:shadow-sm hover:border-gray-300 transition-all flex flex-col overflow-hidden"
       >
-        <div className={`h-1 ${TYPE_STRIP[content_item.type] ?? 'bg-gray-300'}`} />
+        <div className="h-1" style={{ backgroundColor: stripColor }} />
         {/* Clickable area */}
         <button
           type="button"

@@ -38,7 +38,49 @@ export class CoursesService {
       query = query.eq('subject', filters.subject);
     }
     if (filters.search) {
-      query = query.ilike('title', `%${filters.search}%`);
+      const term = `%${filters.search}%`;
+
+      // Find template_ids from versions whose institution matches
+      const { data: matchingVersions } = await this.db
+        .from('course_versions')
+        .select('template_id')
+        .ilike('institution', term);
+
+      // Find template_ids from versions that contain matching content items
+      const { data: matchingItems } = await this.db
+        .from('content_items')
+        .select('id')
+        .or(`title.ilike.${term},content.ilike.${term}`);
+      const itemIds = (matchingItems ?? []).map((i: any) => i.id);
+
+      let contentTemplateIds: string[] = [];
+      if (itemIds.length > 0) {
+        const { data: vci } = await this.db
+          .from('version_content_items')
+          .select('version_id')
+          .in('content_item_id', itemIds);
+        const versionIds = [...new Set((vci ?? []).map((r: any) => r.version_id))];
+        if (versionIds.length > 0) {
+          const { data: versionsFromContent } = await this.db
+            .from('course_versions')
+            .select('template_id')
+            .in('id', versionIds);
+          contentTemplateIds = [...new Set((versionsFromContent ?? []).map((v: any) => v.template_id))];
+        }
+      }
+
+      const extraIds = [...new Set([
+        ...(matchingVersions ?? []).map((v: any) => v.template_id),
+        ...contentTemplateIds,
+      ])];
+
+      if (extraIds.length > 0) {
+        query = query.or(
+          `title.ilike.${term},description.ilike.${term},id.in.(${extraIds.join(',')})`,
+        );
+      } else {
+        query = query.or(`title.ilike.${term},description.ilike.${term}`);
+      }
     }
     if (filters.sort === 'recent') {
       query = query.order('created_at', { ascending: false });

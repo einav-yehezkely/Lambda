@@ -88,7 +88,7 @@ export function LatexContent({ content, className }: LatexContentProps) {
   const segments = useMemo(() => parseSegments(content), [content]);
 
   return (
-    <span className={className}>
+    <span className={`leading-loose ${className ?? ''}`.trim()}>
       {segments.map((seg, i) => {
         if (seg.type === 'text') {
           return <span key={i} className="whitespace-pre-wrap">{renderInline(seg.value)}</span>;
@@ -110,7 +110,7 @@ export function LatexContent({ content, className }: LatexContentProps) {
               key={i}
               dir="ltr"
               dangerouslySetInnerHTML={{ __html: html }}
-              className={seg.type === 'block' ? 'block my-2' : 'inline'}
+              className={seg.type === 'block' ? 'block my-4' : 'inline'}
             />
           );
         } catch {
