@@ -48,8 +48,7 @@ export function Navbar() {
         {/* Logo + Nav */}
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
-            {/* <Image src="/icon_black_noBg.png" alt="Lambda" width={20} height={20} /> */}
-            <span className="text-2xl font-bold text-slate-900">λ</span>
+            <img src="/lambda_icon_black.svg" alt="Lambda" className="h-7 w-auto" />
             <span className="text-xl font-bold tracking-tight text-slate-900">Lambda</span>
           </Link>
 
