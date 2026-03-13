@@ -332,7 +332,7 @@ export default function PracticePage({
         {/* Card header */}
         <div className="px-6 pt-6 pb-5 border-b border-slate-100">
           <div className="flex items-start justify-between gap-3 mb-3">
-            <h2 className="text-base font-semibold text-slate-900 leading-snug flex-1">
+            <h2 className="text-base font-semibold text-slate-900 leading-snug flex-1" dir="auto">
               <LatexContent content={ci.title} />
             </h2>
             <div className="flex items-center gap-2 shrink-0">
