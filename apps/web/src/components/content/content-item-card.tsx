@@ -7,6 +7,7 @@ import { CommunitySolutions } from './community-solutions';
 import { ReportErrorButton } from './report-error';
 import { LatexEditor } from '../ui/latex-editor';
 import { Modal } from '../ui/modal';
+import { FlashCard } from './flash-card';
 import { useUpdateContent, useDeleteContent } from '@/hooks/useTopics';
 
 const TYPE_LABEL: Record<string, string> = {
@@ -333,7 +334,10 @@ function ViewModal({ item, onClose }: {
   const meta = content_item.metadata;
   const questionFormat = meta?.question_format;
   const isMultiChoice = questionFormat === 'multiple_choice';
+  const isFlashcard = questionFormat === 'flashcard';
   const showCommunitySolutions = isQuestion && questionFormat !== 'multiple_choice' && questionFormat !== 'flashcard';
+  const flashcardFront = meta?.sections?.find((s) => s.label === 'Front')?.content ?? content_item.content;
+  const flashcardBack = meta?.sections?.find((s) => s.label === 'Back')?.content ?? content_item.solution ?? '';
   const [page, setPage] = useState(0);
   const [showSolution, setShowSolution] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -385,8 +389,10 @@ function ViewModal({ item, onClose }: {
           )}
         </div>
 
-        {/* Multiple choice layout */}
-        {isMultiChoice ? (
+        {/* Flashcard layout */}
+        {isFlashcard ? (
+          <FlashCard front={flashcardFront} back={flashcardBack} />
+        ) : isMultiChoice ? (
           <div>
             <div className="mb-4">{sections[0]?.content}</div>
             <div className="space-y-2 mb-4">

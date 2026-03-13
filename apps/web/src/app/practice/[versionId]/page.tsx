@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { practiceApi } from '@/lib/api/practice';
 import { useAuth } from '@/hooks/useAuth';
 import { LatexContent } from '@/components/content/latex-content';
+import { FlashCard } from '@/components/content/flash-card';
 import { CommunitySolutions } from '@/components/content/community-solutions';
 import { ReportErrorButton } from '@/components/content/report-error';
 import type { VersionContentItem, PracticeMode, ProgressStatus } from '@lambda/shared';
@@ -299,6 +300,9 @@ export default function PracticePage({
   const current = items[index];
   const ci = current.content_item;
   const isQuestion = ci.type === 'exam_question' || ci.type === 'exercise_question';
+  const isFlashcard = ci.metadata?.question_format === 'flashcard';
+  const flashcardFront = ci.metadata?.sections?.find((s) => s.label === 'Front')?.content ?? ci.content;
+  const flashcardBack = ci.metadata?.sections?.find((s) => s.label === 'Back')?.content ?? ci.solution ?? '';
 
   const nonQuestionSections: { label: string; content: string }[] = !isQuestion
     ? (ci.metadata?.sections?.length ?? 0) > 1
@@ -357,16 +361,28 @@ export default function PracticePage({
 
         {/* Card body */}
         <div className="px-6 py-5">
-          {/* Content */}
-          <div
-            className="text-slate-700 mb-6 leading-relaxed"
-            dir={/[\u0590-\u05FF]/.test(ci.content) ? 'rtl' : undefined}
-          >
-            <LatexContent content={ci.content} />
-          </div>
+          {/* Content (hidden for flashcards — shown inside FlashCard) */}
+          {!isFlashcard && (
+            <div
+              className="text-slate-700 mb-6 leading-relaxed"
+              dir={/[\u0590-\u05FF]/.test(ci.content) ? 'rtl' : undefined}
+            >
+              <LatexContent content={ci.content} />
+            </div>
+          )}
 
           {/* Solution / MC options */}
-          {ci.metadata?.question_format === 'multiple_choice' ? (
+          {isFlashcard ? (
+            <div>
+              <FlashCard key={index} front={flashcardFront} back={flashcardBack} onFirstFlip={() => setRevealed(true)} />
+              {revealed && (
+                <>
+                  <ReportErrorButton contentItemId={ci.id} />
+                  <OutcomeButtons isQuestion onSubmit={submitOutcome} />
+                </>
+              )}
+            </div>
+          ) : ci.metadata?.question_format === 'multiple_choice' ? (
             <div>
               {!revealed ? (
                 <div className="space-y-2">
