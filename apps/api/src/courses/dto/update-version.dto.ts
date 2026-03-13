@@ -43,5 +43,5 @@ export class UpdateVersionDto {
   @ApiPropertyOptional({ description: 'Custom content types for this version' })
   @IsArray()
   @IsOptional()
-  content_types?: { label: string; value: string }[];
+  content_types?: { label: string; value: string; default_sections?: { label: string; content: string }[] }[];
 }

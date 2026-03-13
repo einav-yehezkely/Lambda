@@ -39,7 +39,7 @@ export interface CourseVersion {
   based_on_version_id: string | null;
   visibility: Visibility;
   is_recommended: boolean;
-  content_types: { label: string; value: string }[] | null;
+  content_types: { label: string; value: string; default_sections?: { label: string; content: string }[] }[] | null;
   created_at: string;
   updated_at: string;
 }

@@ -99,7 +99,7 @@ function getDefaultSections(type: string, format: string): Array<{ label: string
   ];
 }
 
-function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics: Topic[]; onClose: () => void }) {
+function EditModal({ item, topics, onSaveDefaultSections, onClose }: { item: VersionContentItem; topics: Topic[]; onSaveDefaultSections?: (type: string, sections: { label: string; content: string }[]) => Promise<void>; onClose: () => void }) {
   const ci = item.content_item;
   const isAlgorithm = ci.type === 'algorithm';
   const isQuestion = ci.type === 'exam_question' || ci.type === 'exercise_question';
@@ -127,6 +127,7 @@ function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics
     ];
   });
   const [error, setError] = useState('');
+  const [savedDefault, setSavedDefault] = useState(false);
 
   const formatOptions = ci.type === 'exam_question' ? EXAM_QUESTION_FORMATS : EXERCISE_QUESTION_FORMATS;
   const availableOptions = sections
@@ -292,13 +293,28 @@ function EditModal({ item, topics, onClose }: { item: VersionContentItem; topics
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
-        <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onClose} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">
-            Cancel
-          </button>
-          <button type="submit" disabled={updateContent.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
-            {updateContent.isPending ? 'Saving...' : 'Save'}
-          </button>
+        <div className="flex items-center justify-between gap-2 pt-1">
+          {onSaveDefaultSections && (
+            <button
+              type="button"
+              onClick={async () => {
+                await onSaveDefaultSections(ci.type, sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: '' })));
+                setSavedDefault(true);
+                setTimeout(() => setSavedDefault(false), 2000);
+              }}
+              className={`text-xs border rounded-md px-3 py-1.5 transition-colors ${savedDefault ? 'border-green-300 text-green-600 bg-green-50' : 'border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-400'}`}
+            >
+              {savedDefault ? '✓ Saved as default' : 'Save sections as default for this type'}
+            </button>
+          )}
+          <div className="flex gap-2 ml-auto">
+            <button type="button" onClick={onClose} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">
+              Cancel
+            </button>
+            <button type="submit" disabled={updateContent.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
+              {updateContent.isPending ? 'Saving...' : 'Save'}
+            </button>
+          </div>
         </div>
       </form>
     </Modal>
@@ -355,7 +371,7 @@ function ViewModal({ item, onClose }: {
   const total = sections.length;
 
   return (
-    <Modal title={content_item.title} onClose={onClose} className="max-w-2xl">
+    <Modal title={<LatexContent content={content_item.title} />} onClose={onClose} className="max-w-2xl">
       <div ref={contentRef} className="text-sm">
         {/* Type + difficulty */}
         <div className="flex items-center gap-2 mb-4">
@@ -493,12 +509,14 @@ export function ContentItemCard({
   versionId,
   isVersionAuthor,
   topics = [],
+  onSaveDefaultSections,
 }: {
   item: VersionContentItem;
   userId?: string;
   versionId?: string;
   isVersionAuthor?: boolean;
   topics?: Topic[];
+  onSaveDefaultSections?: (type: string, sections: { label: string; content: string }[]) => Promise<void>;
 }) {
   const { content_item } = item;
   const [showView, setShowView] = useState(false);
@@ -590,7 +608,7 @@ export function ContentItemCard({
           onClose={() => setShowView(false)}
         />
       )}
-      {showEdit && <EditModal item={item} topics={topics} onClose={() => setShowEdit(false)} />}
+      {showEdit && <EditModal item={item} topics={topics} onSaveDefaultSections={onSaveDefaultSections} onClose={() => setShowEdit(false)} />}
     </>
   );
 }

@@ -407,11 +407,13 @@ function AddContentModal({
   versionId,
   topics,
   activeTypes = BUILT_IN_TYPES,
+  onSaveDefaultSections,
   onClose,
 }: {
   versionId: string;
   topics: Topic[];
-  activeTypes?: { label: string; value: string }[];
+  activeTypes?: { label: string; value: string; default_sections?: { label: string; content: string }[] }[];
+  onSaveDefaultSections?: (type: string, sections: { label: string; content: string }[]) => Promise<void>;
   onClose: () => void;
 }) {
   const createContent = useCreateContent();
@@ -423,10 +425,15 @@ function AddContentModal({
   const [tagsInput, setTagsInput] = useState('');
   const [topicId, setTopicId] = useState('');
   const [formError, setFormError] = useState('');
-  const [sections, setSections] = useState<Array<{ label: string; content: string }>>([
-    { label: 'Content', content: '' },
-    { label: 'Proof Sketch', content: '' },
-  ]);
+
+  const getSections = (t: string, fmt: string) => {
+    const saved = activeTypes?.find((at) => at.value === t)?.default_sections;
+    if (saved && saved.length > 0) return saved.map((s) => ({ ...s, content: '' }));
+    return getDefaultSections(t, fmt);
+  };
+
+  const [sections, setSections] = useState<Array<{ label: string; content: string }>>(() => getSections(activeTypes?.[0]?.value ?? 'proof', 'open'));
+  const [savedDefault, setSavedDefault] = useState(false);
   const addSection = () => setSections((s) => [...s, { label: '', content: '' }]);
   const removeSection = (i: number) => {
     if (!window.confirm('Remove this section?')) return;
@@ -448,13 +455,13 @@ function AddContentModal({
   useEffect(() => {
     setQuestionFormat('open');
     setCorrectOption('');
-    setSections(getDefaultSections(type, 'open'));
+    setSections(getSections(type, 'open'));
   }, [type]);
 
   useEffect(() => {
     if (isQuestion) {
       setCorrectOption('');
-      setSections(getDefaultSections(type, questionFormat));
+      setSections(getSections(type, questionFormat));
     }
   }, [questionFormat]);
 
@@ -616,13 +623,28 @@ function AddContentModal({
         </div>
 
         {formError && <p className="text-sm text-red-500">{formError}</p>}
-        <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onClose} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">
-            Cancel
-          </button>
-          <button type="submit" disabled={createContent.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
-            {createContent.isPending ? 'Adding...' : 'Add'}
-          </button>
+        <div className="flex items-center justify-between gap-2 pt-1">
+          {onSaveDefaultSections && (
+            <button
+              type="button"
+              onClick={async () => {
+                await onSaveDefaultSections(type, sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: '' })));
+                setSavedDefault(true);
+                setTimeout(() => setSavedDefault(false), 2000);
+              }}
+              className={`text-xs border rounded-md px-3 py-1.5 transition-colors ${savedDefault ? 'border-green-300 text-green-600 bg-green-50' : 'border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-400'}`}
+            >
+              {savedDefault ? '✓ Saved as default' : 'Save sections as default for this type'}
+            </button>
+          )}
+          <div className="flex gap-2 ml-auto">
+            <button type="button" onClick={onClose} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">
+              Cancel
+            </button>
+            <button type="submit" disabled={createContent.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
+              {createContent.isPending ? 'Adding...' : 'Add'}
+            </button>
+          </div>
         </div>
       </form>
     </Modal>
@@ -663,6 +685,7 @@ export default function VersionPage({
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const deleteVersion = useDeleteVersion();
+  const updateVersion = useUpdateVersion();
 
   const { data: course } = useCourse(courseId);
   const { data: version, isLoading: versionLoading } = useVersion(versionId);
@@ -981,6 +1004,17 @@ export default function VersionPage({
                 versionId={versionId}
                 isVersionAuthor={isAuthor}
                 topics={topics ?? []}
+                onSaveDefaultSections={isAuthor ? async (type, sections) => {
+                  const current = getActiveTypes(version);
+                  await updateVersion.mutateAsync({
+                    id: versionId,
+                    body: {
+                      content_types: current.map((t) =>
+                        t.value === type ? { ...t, default_sections: sections } : t
+                      ),
+                    },
+                  });
+                } : undefined}
               />
             ))}
           </div>
@@ -989,7 +1023,7 @@ export default function VersionPage({
 
       {showManageTopics && <ManageTopicsModal versionId={versionId} topics={topics ?? []} onClose={() => setShowManageTopics(false)} />}
       {showManageTypes && version && <ManageTypesModal version={version} onClose={() => setShowManageTypes(false)} />}
-      {showAddContent && <AddContentModal versionId={versionId} topics={topics ?? []} activeTypes={getActiveTypes(version)} onClose={() => setShowAddContent(false)} />}
+      {showAddContent && <AddContentModal versionId={versionId} topics={topics ?? []} activeTypes={getActiveTypes(version)} onSaveDefaultSections={async (type, sections) => { const current = getActiveTypes(version); await updateVersion.mutateAsync({ id: versionId, body: { content_types: current.map((t) => t.value === type ? { ...t, default_sections: sections } : t) } }); }} onClose={() => setShowAddContent(false)} />}
       {showEditVersion && version && <EditVersionModal version={version} onClose={() => setShowEditVersion(false)} />}
     </div>
   );
