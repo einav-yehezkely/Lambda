@@ -341,6 +341,26 @@ function ViewModal({ item, onClose }: {
   const [page, setPage] = useState(0);
   const [showSolution, setShowSolution] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const update = () => {
+      setCanScrollLeft(el.scrollLeft > 0);
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    };
+    update();
+    el.addEventListener('scroll', update);
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', update); ro.disconnect(); };
+  }, []);
+
+  const scrollTabs = (dir: -1 | 1) => tabsRef.current?.scrollBy({ left: dir * 120, behavior: 'smooth' });
+
   useEffect(() => {
     let el: HTMLElement | null = contentRef.current?.parentElement ?? null;
     while (el) {
@@ -431,21 +451,45 @@ function ViewModal({ item, onClose }: {
           <>
             {/* Section tabs */}
             {total > 1 && (
-              <div className="flex gap-1 mb-4 border-b border-gray-100 pb-0">
-                {sections.map((s, i) => (
+              <div className="relative flex items-end mb-4 border-b border-gray-100">
+                {canScrollLeft && (
                   <button
-                    key={s.label}
                     type="button"
-                    onClick={() => setPage(i)}
-                    className={`text-xs px-3 py-1.5 rounded-t-md border-b-2 transition-colors ${
-                      i === page
-                        ? 'border-gray-900 text-gray-900 font-medium'
-                        : 'border-transparent text-gray-400 hover:text-gray-600'
-                    }`}
+                    onClick={() => scrollTabs(-1)}
+                    className="absolute left-0 bottom-0 z-10 h-full px-1.5 bg-gradient-to-r from-white from-60% to-transparent text-gray-400 hover:text-gray-700 transition-colors"
                   >
-                    {s.label}
+                    ‹
                   </button>
-                ))}
+                )}
+                <div
+                  ref={tabsRef}
+                  className="flex gap-1 overflow-x-auto"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
+                >
+                  {sections.map((s, i) => (
+                    <button
+                      key={s.label}
+                      type="button"
+                      onClick={() => setPage(i)}
+                      className={`text-xs px-3 py-1.5 rounded-t-md border-b-2 transition-colors whitespace-nowrap shrink-0 ${
+                        i === page
+                          ? 'border-gray-900 text-gray-900 font-medium'
+                          : 'border-transparent text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+                {canScrollRight && (
+                  <button
+                    type="button"
+                    onClick={() => scrollTabs(1)}
+                    className="absolute right-0 bottom-0 z-10 h-full px-1.5 bg-gradient-to-l from-white from-60% to-transparent text-gray-400 hover:text-gray-700 transition-colors"
+                  >
+                    ›
+                  </button>
+                )}
               </div>
             )}
 
