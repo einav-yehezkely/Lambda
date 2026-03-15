@@ -3,7 +3,7 @@
 import { use, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCourse, useCourseVersions, useCreateVersion, useDeleteCourse, useActiveVersions, useEnrollCourse, useUnenrollCourse } from '@/hooks/useCourses';
+import { useCourse, useCourseVersions, useCreateVersion, useDeleteCourse, useActiveVersions, useEnrollCourse, useUnenrollCourse, useRateVersion } from '@/hooks/useCourses';
 import { useAuth } from '@/hooks/useAuth';
 import { Modal } from '@/components/ui/modal';
 import type { CourseVersion } from '@lambda/shared';
@@ -20,6 +20,44 @@ function formatVersionLabel(version: CourseVersion): string {
     version.semester ? (SEMESTER_LABEL[version.semester] ?? `Semester ${version.semester}`) : null,
   ].filter(Boolean);
   return parts.join(' · ') || version.title;
+}
+
+function StarRating({ version, courseId, isLoggedIn }: { version: CourseVersion; courseId: string; isLoggedIn?: boolean }) {
+  const [hover, setHover] = useState(0);
+  const [userRating, setUserRating] = useState(0);
+  const [rated, setRated] = useState(false);
+  const rateVersion = useRateVersion(courseId);
+
+  const filled = hover || userRating || Math.round(version.avg_rating ?? 0);
+
+  const handleRate = (star: number) => {
+    if (!isLoggedIn) return;
+    rateVersion.mutate({ versionId: version.id, rating: star }, {
+      onSuccess: () => { setUserRating(star); setRated(true); setTimeout(() => setRated(false), 2000); },
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-1" onClick={(e) => e.preventDefault()}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => handleRate(star)}
+          onMouseEnter={() => isLoggedIn && setHover(star)}
+          onMouseLeave={() => setHover(0)}
+          className={`text-base leading-none transition-colors ${star <= filled ? 'text-yellow-400' : 'text-gray-200'} ${isLoggedIn ? 'cursor-pointer' : 'cursor-default'}`}
+        >
+          ★
+        </button>
+      ))}
+      {version.avg_rating !== null && (
+        <span className="text-xs text-gray-400 ml-0.5">
+          {rated ? '✓' : `${version.avg_rating.toFixed(1)} (${version.rating_count})`}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function VersionRow({
@@ -64,6 +102,7 @@ function VersionRow({
             <span className={`text-xs px-2 py-0.5 rounded-full border ${version.visibility === 'public' ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500'}`}>
               {version.visibility === 'public' ? 'Public' : 'Private'}
             </span>
+            <StarRating version={version} courseId={courseId} isLoggedIn={isLoggedIn} />
           </div>
 
           {version.author && (

@@ -41,6 +41,8 @@ export interface CourseVersion {
   visibility: Visibility;
   is_recommended: boolean;
   content_types: { label: string; value: string; default_sections?: { label: string; content: string }[] }[] | null;
+  avg_rating: number | null;
+  rating_count: number;
   created_at: string;
   updated_at: string;
 }

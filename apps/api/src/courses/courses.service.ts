@@ -126,7 +126,24 @@ export class CoursesService {
       .order('created_at', { ascending: false });
 
     if (error) throw new InternalServerErrorException(error.message);
-    return data as CourseVersion[];
+    const versions = (data ?? []) as CourseVersion[];
+    if (versions.length === 0) return versions;
+
+    const { data: ratings } = await this.db
+      .from('version_ratings')
+      .select('version_id, rating')
+      .in('version_id', versions.map((v) => v.id));
+
+    const ratingMap = new Map<string, { sum: number; count: number }>();
+    for (const r of (ratings ?? []) as { version_id: string; rating: number }[]) {
+      const agg = ratingMap.get(r.version_id) ?? { sum: 0, count: 0 };
+      ratingMap.set(r.version_id, { sum: agg.sum + r.rating, count: agg.count + 1 });
+    }
+
+    return versions.map((v) => {
+      const agg = ratingMap.get(v.id);
+      return { ...v, avg_rating: agg ? agg.sum / agg.count : null, rating_count: agg?.count ?? 0 };
+    });
   }
 
   async getVersion(id: string): Promise<CourseVersion> {
@@ -137,7 +154,23 @@ export class CoursesService {
       .single();
 
     if (error || !data) throw new NotFoundException('Version not found');
-    return data as CourseVersion;
+
+    const { data: ratings } = await this.db
+      .from('version_ratings')
+      .select('rating')
+      .eq('version_id', id);
+
+    const count = ratings?.length ?? 0;
+    const sum = ((ratings ?? []) as { rating: number }[]).reduce((s, r) => s + r.rating, 0);
+    return { ...(data as CourseVersion), avg_rating: count > 0 ? sum / count : null, rating_count: count };
+  }
+
+  async rateVersion(versionId: string, rating: number, userId: string): Promise<void> {
+    await this.getVersion(versionId); // throws if not found
+    const { error } = await this.db
+      .from('version_ratings')
+      .upsert({ user_id: userId, version_id: versionId, rating }, { onConflict: 'user_id,version_id' });
+    if (error) throw new InternalServerErrorException(error.message);
   }
 
   async createVersion(dto: CreateVersionDto, userId: string): Promise<CourseVersion> {

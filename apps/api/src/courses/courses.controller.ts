@@ -22,6 +22,7 @@ import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { CreateVersionDto } from './dto/create-version.dto';
 import { UpdateVersionDto } from './dto/update-version.dto';
+import { RateVersionDto } from './dto/rate-version.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '@lambda/shared';
@@ -98,6 +99,18 @@ export class CoursesController {
     @CurrentUser() user: User,
   ) {
     return this.coursesService.updateVersion(id, dto, user.id, user.is_admin);
+  }
+
+  @Post('versions/:id/rate')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(204)
+  rateVersion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RateVersionDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.coursesService.rateVersion(id, dto.rating, user.id);
   }
 
   @Delete('versions/:id')

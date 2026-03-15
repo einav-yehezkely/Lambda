@@ -142,6 +142,17 @@ export function useDeleteCourse() {
   });
 }
 
+export function useRateVersion(courseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ versionId, rating }: { versionId: string; rating: number }) =>
+      coursesApi.rateVersion(versionId, rating),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['course-versions', courseId] });
+    },
+  });
+}
+
 export function useCreateVersion() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -35,6 +35,9 @@ export const coursesApi = {
 
   deleteCourse: (id: string) => api.delete<void>(`/api/courses/${id}`),
 
+  rateVersion: (id: string, rating: number) =>
+    api.post<void>(`/api/courses/versions/${id}/rate`, { rating }),
+
   createVersion: (body: {
     template_id: string;
     title: string;
