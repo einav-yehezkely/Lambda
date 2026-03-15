@@ -166,6 +166,17 @@ export interface Solution {
   updated_at: string;
 }
 
+// ─── Version Files (Drive) ────────────────────────────────────────────────
+
+export interface VersionFile {
+  id: string;
+  version_id: string;
+  original_filename: string;
+  display_name: string;
+  size_bytes: number;
+  created_at: string;
+}
+
 // ─── Announcements ────────────────────────────────────────────────────────────
 
 export interface Announcement {

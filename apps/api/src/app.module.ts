@@ -10,6 +10,7 @@ import { ProgressModule } from './progress/progress.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { SolutionsModule } from './solutions/solutions.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
+import { VersionFilesModule } from './version-files/version-files.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AnnouncementsModule } from './announcements/announcements.module';
     FeedbackModule,
     SolutionsModule,
     AnnouncementsModule,
+    VersionFilesModule,
   ],
 })
 export class AppModule {}

@@ -228,6 +228,17 @@ export class CoursesService {
       .eq('based_on_version_id', id);
     if (reparentError) throw new InternalServerErrorException(reparentError.message);
 
+    // Purge storage files before DB delete (cascade only cleans DB rows, not storage)
+    const { data: versionFiles } = await this.db
+      .from('version_files')
+      .select('storage_path')
+      .eq('version_id', id);
+    if (versionFiles && versionFiles.length > 0) {
+      await this.db.storage
+        .from('version-files')
+        .remove(versionFiles.map((f: any) => f.storage_path));
+    }
+
     const { error } = await this.db.from('course_versions').delete().eq('id', id);
     if (error) throw new InternalServerErrorException(error.message);
   }

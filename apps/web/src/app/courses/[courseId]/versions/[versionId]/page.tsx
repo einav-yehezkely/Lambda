@@ -8,6 +8,7 @@ import { useTopics, useVersionContent, useCreateContent, useCreateTopic, useDele
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfileById, useCurrentUser } from '@/hooks/useUsers';
 import { ContentItemCard } from '@/components/content/content-item-card';
+import { VersionDrive } from '@/components/version-drive';
 import { Modal } from '@/components/ui/modal';
 import { LatexEditor } from '@/components/ui/latex-editor';
 import type { Topic, CourseVersion } from '@lambda/shared';
@@ -687,6 +688,7 @@ export default function VersionPage({
   const [showEditVersion, setShowEditVersion] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showDrive, setShowDrive] = useState(false);
   const deleteVersion = useDeleteVersion();
   const updateVersion = useUpdateVersion();
 
@@ -924,7 +926,7 @@ export default function VersionPage({
         {/* Type + tag filters */}
         <div className="flex flex-wrap items-center gap-2 mb-5">
           {[{ value: '', label: 'All' }, ...getActiveTypes(version)].map((t) => (
-            <button key={t.value} onClick={() => setSelectedType(t.value)} className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+            <button key={t.value} onClick={() => { setSelectedType(t.value); setShowDrive(false); }} className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${!showDrive && selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}>
               {t.label}
             </button>
           ))}
@@ -943,6 +945,15 @@ export default function VersionPage({
             </>
           )}
           <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setShowDrive(true)}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${showDrive ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+              Study Materials
+            </button>
             <div className="relative">
               <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -987,43 +998,49 @@ export default function VersionPage({
           </div>
         </div>
 
-        {itemsLoading && <div className="text-sm text-gray-400">Loading content...</div>}
-        {!itemsLoading && visibleItems.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
-            <p className="text-sm">No content items yet.</p>
-            {isAuthor && (
-              <button onClick={() => setShowAddContent(true)} className="mt-2 text-sm text-gray-600 hover:text-gray-900 underline underline-offset-2">
-                Add the first item
-              </button>
+        {showDrive ? (
+          <VersionDrive versionId={versionId} isAuthor={isAuthor} />
+        ) : (
+          <>
+            {itemsLoading && <div className="text-sm text-gray-400">Loading content...</div>}
+            {!itemsLoading && visibleItems.length === 0 && (
+              <div className="text-center py-16 text-gray-400">
+                <p className="text-sm">No content items yet.</p>
+                {isAuthor && (
+                  <button onClick={() => setShowAddContent(true)} className="mt-2 text-sm text-gray-600 hover:text-gray-900 underline underline-offset-2">
+                    Add the first item
+                  </button>
+                )}
+              </div>
             )}
-          </div>
-        )}
-        {visibleItems.length > 0 && (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' : 'flex flex-col gap-2'}>
-            {visibleItems.map((item) => (
-              <ContentItemCard
-                key={item.content_item_id}
-                item={item}
-                userId={user?.id}
-                versionId={versionId}
-                isVersionAuthor={isAuthor}
-                isAdmin={isAdmin}
-                topics={topics ?? []}
-                initialOpen={openItemId === item.content_item_id}
-                onSaveDefaultSections={isAuthor ? async (type, sections) => {
-                  const current = getActiveTypes(version);
-                  await updateVersion.mutateAsync({
-                    id: versionId,
-                    body: {
-                      content_types: current.map((t) =>
-                        t.value === type ? { ...t, default_sections: sections } : t
-                      ),
-                    },
-                  });
-                } : undefined}
-              />
-            ))}
-          </div>
+            {visibleItems.length > 0 && (
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' : 'flex flex-col gap-2'}>
+                {visibleItems.map((item) => (
+                  <ContentItemCard
+                    key={item.content_item_id}
+                    item={item}
+                    userId={user?.id}
+                    versionId={versionId}
+                    isVersionAuthor={isAuthor}
+                    isAdmin={isAdmin}
+                    topics={topics ?? []}
+                    initialOpen={openItemId === item.content_item_id}
+                    onSaveDefaultSections={isAuthor ? async (type, sections) => {
+                      const current = getActiveTypes(version);
+                      await updateVersion.mutateAsync({
+                        id: versionId,
+                        body: {
+                          content_types: current.map((t) =>
+                            t.value === type ? { ...t, default_sections: sections } : t
+                          ),
+                        },
+                      });
+                    } : undefined}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
