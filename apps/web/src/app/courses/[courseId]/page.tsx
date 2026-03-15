@@ -127,7 +127,7 @@ function VersionRow({
           )}
 
           {version.description && (
-            <p className="text-sm text-gray-500 mt-1.5 line-clamp-2" dir={/[\u0590-\u05FF]/.test(version.description) ? 'rtl' : undefined}>
+            <p className="text-sm text-gray-500 mt-1.5 whitespace-pre-line" dir={/[\u0590-\u05FF]/.test(version.description) ? 'rtl' : undefined}>
               {version.description}
             </p>
           )}
