@@ -71,7 +71,7 @@ export class ContentController {
     @Body() dto: UpdateContentDto,
     @CurrentUser() user: User,
   ) {
-    return this.contentService.updateItem(id, dto, user.id);
+    return this.contentService.updateItem(id, dto, user.id, user.is_admin);
   }
 
   @Delete(':id')
@@ -83,7 +83,7 @@ export class ContentController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: User,
   ) {
-    return this.contentService.deleteItem(id, user.id);
+    return this.contentService.deleteItem(id, user.id, user.is_admin);
   }
 
   @Delete(':id/from/:versionId')
@@ -96,7 +96,7 @@ export class ContentController {
     @Param('versionId', ParseUUIDPipe) versionId: string,
     @CurrentUser() user: User,
   ) {
-    return this.contentService.removeFromVersion(id, versionId, user.id);
+    return this.contentService.removeFromVersion(id, versionId, user.id, user.is_admin);
   }
 
   @Post(':id/vote')

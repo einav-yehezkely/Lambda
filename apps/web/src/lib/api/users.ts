@@ -21,6 +21,9 @@ export interface UserSolution {
 }
 
 export const usersApi = {
+  getMe: () =>
+    api.get<User>('/api/auth/me'),
+
   getProfile: (username: string) =>
     api.get<User>(`/api/users/${username}`),
 

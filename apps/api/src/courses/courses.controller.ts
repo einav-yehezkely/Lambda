@@ -97,7 +97,7 @@ export class CoursesController {
     @Body() dto: UpdateVersionDto,
     @CurrentUser() user: User,
   ) {
-    return this.coursesService.updateVersion(id, dto, user.id);
+    return this.coursesService.updateVersion(id, dto, user.id, user.is_admin);
   }
 
   @Delete('versions/:id')
@@ -105,7 +105,7 @@ export class CoursesController {
   @ApiBearerAuth()
   @HttpCode(204)
   deleteVersion(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
-    return this.coursesService.deleteVersion(id, user.id);
+    return this.coursesService.deleteVersion(id, user.id, user.is_admin);
   }
 
   @Delete(':id')
@@ -113,6 +113,6 @@ export class CoursesController {
   @ApiBearerAuth()
   @HttpCode(204)
   deleteCourse(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
-    return this.coursesService.deleteCourse(id, user.id);
+    return this.coursesService.deleteCourse(id, user.id, user.is_admin);
   }
 }

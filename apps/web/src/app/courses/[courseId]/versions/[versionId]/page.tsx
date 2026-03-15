@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCourse, useVersion, useVersionProgress, useDeleteVersion, useUpdateVersion, useEnrollCourse, useActiveVersions } from '@/hooks/useCourses';
 import { useTopics, useVersionContent, useCreateContent, useCreateTopic, useDeleteTopic } from '@/hooks/useTopics';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserProfileById } from '@/hooks/useUsers';
+import { useUserProfileById, useCurrentUser } from '@/hooks/useUsers';
 import { ContentItemCard } from '@/components/content/content-item-card';
 import { Modal } from '@/components/ui/modal';
 import { LatexEditor } from '@/components/ui/latex-editor';
@@ -672,6 +672,7 @@ export default function VersionPage({
   const { courseId, versionId } = use(params);
   const router = useRouter();
   const { user } = useAuth();
+  const { data: currentUser } = useCurrentUser();
   const [selectedTopic, setSelectedTopic] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
@@ -694,7 +695,8 @@ export default function VersionPage({
     version_id: versionId,
   });
 
-  const isAuthor = !!user && !!version && user.id === version.author_id;
+  const isAdmin = !!currentUser?.is_admin;
+  const isAuthor = !!user && !!version && (user.id === version.author_id || isAdmin);
 
   const { data: activeVersions } = useActiveVersions(!!user);
   const enrollCourse = useEnrollCourse();
@@ -1003,6 +1005,7 @@ export default function VersionPage({
                 userId={user?.id}
                 versionId={versionId}
                 isVersionAuthor={isAuthor}
+                isAdmin={isAdmin}
                 topics={topics ?? []}
                 onSaveDefaultSections={isAuthor ? async (type, sections) => {
                   const current = getActiveTypes(version);

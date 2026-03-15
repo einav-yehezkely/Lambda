@@ -43,7 +43,7 @@ export class TopicsController {
   @ApiBearerAuth()
   @ApiCreatedResponse({ description: 'Create a topic in a version (author only)' })
   createTopic(@Body() dto: CreateTopicDto, @CurrentUser() user: User) {
-    return this.topicsService.createTopic(dto, user.id);
+    return this.topicsService.createTopic(dto, user.id, user.is_admin);
   }
 
   @Put(':id')
@@ -55,7 +55,7 @@ export class TopicsController {
     @Body() dto: UpdateTopicDto,
     @CurrentUser() user: User,
   ) {
-    return this.topicsService.updateTopic(id, dto, user.id);
+    return this.topicsService.updateTopic(id, dto, user.id, user.is_admin);
   }
 
   @Delete(':id')
@@ -64,6 +64,6 @@ export class TopicsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse({ description: 'Delete a topic (version author only)' })
   deleteTopic(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
-    return this.topicsService.deleteTopic(id, user.id);
+    return this.topicsService.deleteTopic(id, user.id, user.is_admin);
   }
 }

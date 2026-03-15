@@ -1,5 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { usersApi } from '@/lib/api/users';
+import { useAuth } from './useAuth';
+
+export function useCurrentUser() {
+  const { user: authUser } = useAuth();
+  return useQuery({
+    queryKey: ['current-user'],
+    queryFn: () => usersApi.getMe(),
+    enabled: !!authUser,
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 export function useUserProfile(username: string) {
   return useQuery({

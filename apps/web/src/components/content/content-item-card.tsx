@@ -558,6 +558,7 @@ export function ContentItemCard({
   userId,
   versionId,
   isVersionAuthor,
+  isAdmin,
   topics = [],
   onSaveDefaultSections,
 }: {
@@ -565,6 +566,7 @@ export function ContentItemCard({
   userId?: string;
   versionId?: string;
   isVersionAuthor?: boolean;
+  isAdmin?: boolean;
   topics?: Topic[];
   onSaveDefaultSections?: (type: string, sections: { label: string; content: string }[]) => Promise<void>;
 }) {
@@ -573,8 +575,8 @@ export function ContentItemCard({
   const [showEdit, setShowEdit] = useState(false);
   const deleteContent = useDeleteContent();
 
-  const canEdit = !!userId && userId === content_item.author_id;
-  const canDelete = !!userId && !!versionId && (userId === content_item.author_id || !!isVersionAuthor);
+  const canEdit = !!userId && (userId === content_item.author_id || !!isAdmin);
+  const canDelete = !!userId && !!versionId && (userId === content_item.author_id || !!isVersionAuthor || !!isAdmin);
   const topicIndex = item.topic_id ? topics.findIndex((t) => t.id === item.topic_id) : -1;
   const topicName = topicIndex >= 0 ? topics[topicIndex]?.title : undefined;
   const stripColor = topicIndex >= 0 ? TOPIC_STRIP_COLORS[topicIndex % TOPIC_STRIP_COLORS.length] : '#e5e7eb';

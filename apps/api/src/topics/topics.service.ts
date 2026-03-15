@@ -37,8 +37,8 @@ export class TopicsService {
     return data as Topic;
   }
 
-  async createTopic(dto: CreateTopicDto, userId: string): Promise<Topic> {
-    await this.assertVersionAuthor(dto.version_id, userId);
+  async createTopic(dto: CreateTopicDto, userId: string, isAdmin = false): Promise<Topic> {
+    if (!isAdmin) await this.assertVersionAuthor(dto.version_id, userId);
 
     const { data, error } = await this.db
       .from('topics')
@@ -50,9 +50,9 @@ export class TopicsService {
     return data as Topic;
   }
 
-  async updateTopic(id: string, dto: UpdateTopicDto, userId: string): Promise<Topic> {
+  async updateTopic(id: string, dto: UpdateTopicDto, userId: string, isAdmin = false): Promise<Topic> {
     const topic = await this.getTopic(id);
-    await this.assertVersionAuthor(topic.version_id, userId);
+    if (!isAdmin) await this.assertVersionAuthor(topic.version_id, userId);
 
     const { data, error } = await this.db
       .from('topics')
@@ -65,9 +65,9 @@ export class TopicsService {
     return data as Topic;
   }
 
-  async deleteTopic(id: string, userId: string): Promise<void> {
+  async deleteTopic(id: string, userId: string, isAdmin = false): Promise<void> {
     const topic = await this.getTopic(id);
-    await this.assertVersionAuthor(topic.version_id, userId);
+    if (!isAdmin) await this.assertVersionAuthor(topic.version_id, userId);
 
     const { error } = await this.db.from('topics').delete().eq('id', id);
     if (error) throw new InternalServerErrorException(error.message);

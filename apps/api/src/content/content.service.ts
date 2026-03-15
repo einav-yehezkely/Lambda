@@ -98,7 +98,7 @@ export class ContentService {
 
   // ─── Update content item (copy-on-write for shared items) ──────────────────
 
-  async updateItem(id: string, dto: UpdateContentDto, userId: string): Promise<ContentItem> {
+  async updateItem(id: string, dto: UpdateContentDto, userId: string, isAdmin = false): Promise<ContentItem> {
     const item = await this.getItem(id);
     const { version_id, topic_id, ...itemData } = dto;
 
@@ -110,8 +110,8 @@ export class ContentService {
 
     const isShared = (usages?.length ?? 0) > 1;
 
-    if (!isShared && item.author_id === userId) {
-      // Not shared + user is the author → update in-place
+    if (!isShared && (item.author_id === userId || isAdmin)) {
+      // Not shared + user is the author (or admin) → update in-place
       const { data, error } = await this.db
         .from('content_items')
         .update(itemData)
@@ -143,7 +143,7 @@ export class ContentService {
       .eq('id', version_id)
       .single();
 
-    if (!version || version.author_id !== userId) {
+    if (!isAdmin && (!version || version.author_id !== userId)) {
       throw new ForbiddenException('Only the version author can edit shared content items');
     }
 
@@ -183,9 +183,9 @@ export class ContentService {
 
   // ─── Delete content item entirely (author only) ─────────────────────────────
 
-  async deleteItem(id: string, userId: string): Promise<void> {
+  async deleteItem(id: string, userId: string, isAdmin = false): Promise<void> {
     const item = await this.getItem(id);
-    if (item.author_id !== userId) {
+    if (!isAdmin && item.author_id !== userId) {
       throw new ForbiddenException('Only the author can delete this content item');
     }
 
@@ -195,8 +195,8 @@ export class ContentService {
 
   // ─── Remove from version (junction only, item preserved) ────────────────────
 
-  async removeFromVersion(contentItemId: string, versionId: string, userId: string): Promise<void> {
-    await this.assertVersionAuthorOrItemAuthor(contentItemId, versionId, userId);
+  async removeFromVersion(contentItemId: string, versionId: string, userId: string, isAdmin = false): Promise<void> {
+    if (!isAdmin) await this.assertVersionAuthorOrItemAuthor(contentItemId, versionId, userId);
 
     const { error } = await this.db
       .from('version_content_items')

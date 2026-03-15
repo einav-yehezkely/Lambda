@@ -165,9 +165,9 @@ export class CoursesService {
     return newVersion;
   }
 
-  async updateVersion(id: string, dto: UpdateVersionDto, userId: string): Promise<CourseVersion> {
+  async updateVersion(id: string, dto: UpdateVersionDto, userId: string, isAdmin = false): Promise<CourseVersion> {
     const version = await this.getVersion(id);
-    if (version.author_id !== userId) {
+    if (!isAdmin && version.author_id !== userId) {
       throw new ForbiddenException('Only the author can edit this version');
     }
 
@@ -182,9 +182,9 @@ export class CoursesService {
     return data as CourseVersion;
   }
 
-  async deleteVersion(id: string, userId: string): Promise<void> {
+  async deleteVersion(id: string, userId: string, isAdmin = false): Promise<void> {
     const version = await this.getVersion(id);
-    if (version.author_id !== userId) {
+    if (!isAdmin && version.author_id !== userId) {
       throw new ForbiddenException('Only the author can delete this version');
     }
 
@@ -199,9 +199,9 @@ export class CoursesService {
     if (error) throw new InternalServerErrorException(error.message);
   }
 
-  async deleteCourse(id: string, userId: string): Promise<void> {
+  async deleteCourse(id: string, userId: string, isAdmin = false): Promise<void> {
     const course = await this.getCourse(id);
-    if (course.created_by !== userId) {
+    if (!isAdmin && course.created_by !== userId) {
       throw new ForbiddenException('Only the creator can delete this course');
     }
     const { error } = await this.db.from('course_templates').delete().eq('id', id);
