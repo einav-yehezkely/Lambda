@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import type { User as LambdaUser } from '@lambda/shared';
+import { NotificationBell } from './notification-bell';
 
 export function Navbar() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -58,6 +59,25 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           {loading ? null : user ? (
             <>
+              {user.user_metadata?.avatar_url && profileUsername ? (
+                <Link href={`/profile/${profileUsername}`} className="w-9 h-9 rounded-full border-2 border-white/20 overflow-hidden hover:opacity-80 transition-opacity">
+                  <img
+                    src={user.user_metadata.avatar_url}
+                    alt="avatar"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
+                </Link>
+              ) : user.user_metadata?.avatar_url ? (
+                <div className="w-9 h-9 rounded-full border-2 border-white/20 overflow-hidden">
+                  <img
+                    src={user.user_metadata.avatar_url}
+                    alt="avatar"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : null}
               {profileUsername ? (
                 <Link
                   href={`/profile/${profileUsername}`}
@@ -68,16 +88,7 @@ export function Navbar() {
               ) : (
                 <span className="text-sm font-medium text-slate-600">{displayName}</span>
               )}
-              {user.user_metadata?.avatar_url ? (
-                <div className="w-9 h-9 rounded-full border-2 border-white/20 overflow-hidden">
-                  <img
-                    src={user.user_metadata.avatar_url}
-                    alt="avatar"
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : null}
+              <NotificationBell isAdmin={!!profile?.is_admin} />
               <button
                 onClick={signOut}
                 className="text-sm text-slate-400 hover:text-slate-700 transition-colors"

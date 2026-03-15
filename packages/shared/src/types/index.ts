@@ -164,6 +164,17 @@ export interface Solution {
   updated_at: string;
 }
 
+// ─── Announcements ────────────────────────────────────────────────────────────
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string | null;
+  created_by: string;
+  created_at: string;
+  is_read: boolean;
+}
+
 // ─── Practice ─────────────────────────────────────────────────────────────────
 
 export type PracticeMode = 'random' | 'topic' | 'exam' | 'spaced_repetition';
