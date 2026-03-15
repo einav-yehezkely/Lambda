@@ -31,6 +31,7 @@ function VersionRow({
   onUnenroll,
   enrolling,
   parentVersion,
+  isLoggedIn,
 }: {
   version: CourseVersion;
   courseId: string;
@@ -40,7 +41,9 @@ function VersionRow({
   onUnenroll?: () => void;
   enrolling?: boolean;
   parentVersion?: CourseVersion;
+  isLoggedIn?: boolean;
 }) {
+  const [showLoginMsg, setShowLoginMsg] = useState(false);
   return (
     <div className="bg-white border border-gray-200 rounded-xl hover:shadow-sm hover:border-gray-300 transition-all">
       <div className="px-5 py-4 flex items-start gap-4">
@@ -106,12 +109,20 @@ function VersionRow({
               {enrolling ? '...' : isEnrolled ? 'Enrolled ✓' : 'Enroll'}
             </button>
           )}
-          <button
-            onClick={() => onFork(version)}
-            className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
-          >
-            Fork →
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              onClick={() => {
+                if (!isLoggedIn) { setShowLoginMsg(true); setTimeout(() => setShowLoginMsg(false), 3000); return; }
+                onFork(version);
+              }}
+              className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+            >
+              Fork →
+            </button>
+            {showLoginMsg && (
+              <p className="text-xs text-red-500 whitespace-nowrap">Sign in to fork</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -294,6 +305,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
               version={v}
               courseId={courseId}
               onFork={openFork}
+              isLoggedIn={!!user}
               isEnrolled={enrolledVersionIds.has(v.id)}
               onEnroll={user ? () => handleEnroll(v.id) : undefined}
               onUnenroll={user ? () => handleUnenroll(v.id) : undefined}

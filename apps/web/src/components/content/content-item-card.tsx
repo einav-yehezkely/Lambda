@@ -369,6 +369,9 @@ function ViewModal({ item, onClose }: {
     }
   }, [page]);
 
+  const isSolutionTab = (label?: string) =>
+    !!label && (label.toLowerCase().includes('solution') || label === 'Proof Sketch');
+
   const sections: { label: string; content: React.ReactNode }[] =
     (content_item.metadata?.sections?.length ?? 0) > 0
       ? content_item.metadata!.sections!.map((s) => ({
@@ -542,7 +545,7 @@ function ViewModal({ item, onClose }: {
           </div>
         )}
 
-        {showCommunitySolutions && <CommunitySolutions contentItemId={item.content_item_id} />}
+        {showCommunitySolutions && isSolutionTab(current?.label) && <CommunitySolutions contentItemId={item.content_item_id} />}
 
         <ReportErrorButton contentItemId={item.content_item_id} />
 
@@ -561,6 +564,7 @@ export function ContentItemCard({
   isAdmin,
   topics = [],
   onSaveDefaultSections,
+  initialOpen,
 }: {
   item: VersionContentItem;
   userId?: string;
@@ -569,9 +573,10 @@ export function ContentItemCard({
   isAdmin?: boolean;
   topics?: Topic[];
   onSaveDefaultSections?: (type: string, sections: { label: string; content: string }[]) => Promise<void>;
+  initialOpen?: boolean;
 }) {
   const { content_item } = item;
-  const [showView, setShowView] = useState(false);
+  const [showView, setShowView] = useState(initialOpen ?? false);
   const [showEdit, setShowEdit] = useState(false);
   const deleteContent = useDeleteContent();
 

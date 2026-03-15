@@ -269,6 +269,7 @@ export class ContentService {
     await transporter.sendMail({
       from: smtpUser,
       to: author?.email ?? smtpUser,
+      cc: 'simplifye.solutions@gmail.com',
       subject: `Lambda – Mistake Report: "${item.title}"`,
       text: `${reporterLine}\n\nQuestion: "${item.title}"${linkLine}\n\nMistake description:\n${errorText}`,
     });

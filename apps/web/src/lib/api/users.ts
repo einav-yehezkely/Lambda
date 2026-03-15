@@ -17,7 +17,15 @@ export interface UserSolution {
   id: string;
   content: string;
   created_at: string;
-  content_item: { id: string; title: string; type: string } | null;
+  content_item: {
+    id: string;
+    title: string;
+    type: string;
+    version_content_items: Array<{
+      version_id: string;
+      course_version: { template_id: string } | null;
+    }>;
+  } | null;
 }
 
 export const usersApi = {

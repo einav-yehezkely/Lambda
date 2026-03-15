@@ -87,24 +87,41 @@ function UserSolutionRow({ solution }: { solution: UserSolution }) {
   const [expanded, setExpanded] = useState(false);
   const ci = solution.content_item;
 
+  const firstVersion = ci?.version_content_items?.[0];
+  const versionLink =
+    firstVersion?.course_version && ci
+      ? `/courses/${firstVersion.course_version.template_id}/versions/${firstVersion.version_id}?item=${ci.id}`
+      : null;
+
   return (
     <div className="py-3 border-b border-gray-100 last:border-0">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full text-left"
-      >
-        <div className="flex items-center gap-2 mb-1">
-          {ci && (
-            <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${TYPE_COLOR[ci.type] ?? 'bg-gray-100 text-gray-600'}`}>
-              {TYPE_LABEL[ci.type] ?? ci.type}
-            </span>
-          )}
-          <span className="text-sm font-medium text-gray-900 truncate">
-            {ci ? <LatexContent content={ci.title} /> : 'Unknown question'}
+      <div className="flex items-center gap-2 mb-1">
+        {ci && (
+          <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${TYPE_COLOR[ci.type] ?? 'bg-gray-100 text-gray-600'}`}>
+            {TYPE_LABEL[ci.type] ?? ci.type}
           </span>
-          <span className="text-gray-300 ml-auto shrink-0">{expanded ? '▲' : '▼'}</span>
-        </div>
-      </button>
+        )}
+        <span
+          className="text-sm font-medium text-gray-900 truncate flex-1 cursor-pointer"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {ci ? <LatexContent content={ci.title} /> : 'Unknown question'}
+        </span>
+        {versionLink && (
+          <Link
+            href={versionLink}
+            className="text-xs text-blue-600 hover:text-blue-800 shrink-0 px-2 py-0.5 rounded border border-blue-200 hover:border-blue-400 transition-colors"
+          >
+            View
+          </Link>
+        )}
+        <span
+          className="text-gray-300 shrink-0 cursor-pointer"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? '▲' : '▼'}
+        </span>
+      </div>
       {expanded && (
         <div className="mt-2 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 leading-relaxed">
           <LatexContent content={solution.content} />

@@ -143,7 +143,7 @@ export class UsersService {
 
     const { data, error } = await this.db
       .from('solutions')
-      .select('*, content_item:content_items(id, title, type)')
+      .select('*, content_item:content_items(id, title, type, version_content_items(version_id, course_version:course_versions(template_id)))')
       .eq('author_id', user.id)
       .order('created_at', { ascending: false });
 

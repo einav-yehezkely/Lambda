@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCourse, useVersion, useVersionProgress, useDeleteVersion, useUpdateVersion, useEnrollCourse, useActiveVersions } from '@/hooks/useCourses';
 import { useTopics, useVersionContent, useCreateContent, useCreateTopic, useDeleteTopic } from '@/hooks/useTopics';
 import { useAuth } from '@/hooks/useAuth';
@@ -671,6 +671,8 @@ export default function VersionPage({
 }) {
   const { courseId, versionId } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const openItemId = searchParams.get('item');
   const { user } = useAuth();
   const { data: currentUser } = useCurrentUser();
   const [selectedTopic, setSelectedTopic] = useState('');
@@ -1007,6 +1009,7 @@ export default function VersionPage({
                 isVersionAuthor={isAuthor}
                 isAdmin={isAdmin}
                 topics={topics ?? []}
+                initialOpen={openItemId === item.content_item_id}
                 onSaveDefaultSections={isAuthor ? async (type, sections) => {
                   const current = getActiveTypes(version);
                   await updateVersion.mutateAsync({
