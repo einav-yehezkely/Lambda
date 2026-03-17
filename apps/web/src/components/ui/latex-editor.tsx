@@ -235,6 +235,37 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
       return;
     }
 
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const div = divRef.current;
+      if (!div) return;
+      const sel = window.getSelection();
+      if (!sel?.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      if (!range.collapsed) range.deleteContents();
+      const spaces = '\u00a0\u00a0';
+      let newRange: Range;
+      if (range.startContainer.nodeType === Node.TEXT_NODE) {
+        const textNode = range.startContainer as Text;
+        const offset = range.startOffset;
+        textNode.nodeValue = (textNode.nodeValue ?? '').slice(0, offset) + spaces + (textNode.nodeValue ?? '').slice(offset);
+        newRange = document.createRange();
+        newRange.setStart(textNode, offset + spaces.length);
+        newRange.collapse(true);
+      } else {
+        const textNode = document.createTextNode(spaces);
+        const ref = range.startContainer.childNodes[range.startOffset] ?? null;
+        range.startContainer.insertBefore(textNode, ref);
+        newRange = document.createRange();
+        newRange.setStart(textNode, spaces.length);
+        newRange.collapse(true);
+      }
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+      onChange(divToValue(div));
+      return;
+    }
+
     if (e.key !== ' ') return;
 
     // Merge adjacent text nodes so $...$ is detectable even after toolbar inserts
@@ -411,7 +442,7 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
         onClick={handleClick}
         dir={dir}
         data-placeholder={placeholder}
-        style={{ minHeight: `${rows * 1.6}rem` }}
+        style={{ minHeight: `${rows * 1.6}rem`, whiteSpace: 'pre-wrap' }}
         className="px-3 py-2 text-sm focus:outline-none leading-relaxed
           before:content-[attr(data-placeholder)] before:text-gray-400 before:pointer-events-none
           [&:not(:empty)]:before:hidden

@@ -172,14 +172,14 @@ function EditModal({ item, topics, onSaveDefaultSections, onClose }: { item: Ver
         body: {
           version_id: item.version_id,
           title: title.trim(),
-          content: sections[0]?.content.trim() || title.trim(),
+          content: sections[0]?.content || title.trim(),
           difficulty: difficulty || null,
           tags: tagsInput ? tagsInput.split(',').map((t) => t.trim()).filter(Boolean) : [],
           topic_id: topicId || null,
           metadata: {
             ...(isQuestion ? { question_format: questionFormat } : {}),
             ...(isMultipleChoice && correctOption ? { correct_option: correctOption } : {}),
-            sections: sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: s.content.trim() })),
+            sections: sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: s.content })),
           },
         },
       });

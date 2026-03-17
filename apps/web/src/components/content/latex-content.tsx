@@ -26,7 +26,7 @@ function parseSegments(text: string): Segment[] {
       // List environment — render as HTML list
       if (m.index > last) segments.push({ type: 'text', value: text.slice(last, m.index) });
       const inner = m[0].slice(`\\begin{${envName}}`.length, -`\\end{${envName}}`.length);
-      const items = inner.split('\\item').slice(1).map(s => s.trim());
+      const items = inner.split('\\item').slice(1).map(s => s.replace(/^[ \n\r]+/, '').replace(/[ \n\r]+$/, ''));
       segments.push({ type: 'list', listType: LIST_ENVS[envName], items });
       last = m.index + m[0].length;
     } else if (envName && !MATH_ENV_RE.test(envName)) {
@@ -88,10 +88,10 @@ export function LatexContent({ content, className }: LatexContentProps) {
   const segments = useMemo(() => parseSegments(content), [content]);
 
   return (
-    <span className={`leading-loose ${className ?? ''}`.trim()}>
+    <span style={{ whiteSpace: 'pre-wrap' }} className={`leading-loose ${className ?? ''}`.trim()}>
       {segments.map((seg, i) => {
         if (seg.type === 'text') {
-          return <span key={i} className="whitespace-pre-wrap">{renderInline(seg.value)}</span>;
+          return <span key={i}>{renderInline(seg.value)}</span>;
         }
         if (seg.type === 'list') {
           const Tag = seg.listType === 'ol' ? 'ol' : 'ul';

@@ -484,13 +484,13 @@ function AddContentModal({
         topic_id: topicId || undefined,
         type,
         title: title.trim(),
-        content: sections[0]?.content.trim() || title.trim(),
+        content: sections[0]?.content || title.trim(),
         difficulty: difficulty || undefined,
         tags: tagsInput ? tagsInput.split(',').map((t) => t.trim()).filter(Boolean) : [],
         metadata: {
           ...(isQuestion ? { question_format: questionFormat } : {}),
           ...(isMultipleChoice && correctOption ? { correct_option: correctOption } : {}),
-          sections: sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: s.content.trim() })),
+          sections: sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: s.content })),
         },
       });
       onClose();
