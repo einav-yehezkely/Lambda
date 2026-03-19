@@ -364,6 +364,7 @@ function ViewModal({ item, onClose }: {
   useEffect(() => {
     let el: HTMLElement | null = contentRef.current?.parentElement ?? null;
     while (el) {
+      if (window.getComputedStyle(el).position === 'fixed') break;
       if (el.scrollHeight > el.clientHeight) { el.scrollTo(0, 0); break; }
       el = el.parentElement;
     }

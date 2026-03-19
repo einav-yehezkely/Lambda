@@ -10,11 +10,16 @@ interface ModalProps {
 }
 
 export function Modal({ title, onClose, children, className }: ModalProps) {
-  // Close on Escape
+  // Close on Escape + lock body scroll
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handler);
+      document.body.style.overflow = prev;
+    };
   }, [onClose]);
 
   return (
@@ -24,6 +29,7 @@ export function Modal({ title, onClose, children, className }: ModalProps) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-[#1A365D]" dir="auto">{title}</h2>
           <button
+            type="button"
             onClick={onClose}
             className="text-[#1A365D]/30 hover:text-[#1A365D]/70 text-xl leading-none transition-colors"
           >

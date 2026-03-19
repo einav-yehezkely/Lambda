@@ -46,6 +46,7 @@ export function ReportErrorButton({ contentItemId }: { contentItemId: string }) 
     <div className="mt-4">
       {!open ? (
         <button
+          type="button"
           onClick={() => setOpen(true)}
           className="text-xs text-gray-400 hover:text-red-500 transition-colors"
         >
