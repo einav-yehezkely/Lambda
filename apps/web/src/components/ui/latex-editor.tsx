@@ -2,6 +2,293 @@
 
 import { useEffect, useRef, useState } from 'react';
 import katex from 'katex';
+import { MathMLToLaTeX } from 'mathml-to-latex';
+
+// ─── Word math conversion ─────────────────────────────────────────────────────
+
+const UNICODE_TO_LATEX: [string, string][] = [
+  ['⟹', '\\Longrightarrow'], ['⟺', '\\Longleftrightarrow'],
+  ['→', '\\rightarrow'], ['←', '\\leftarrow'], ['↔', '\\leftrightarrow'],
+  ['↦', '\\mapsto'],
+  ['⇒', '\\Rightarrow'], ['⇐', '\\Leftarrow'], ['⇔', '\\Leftrightarrow'],
+  ['≤', '\\leq'], ['≥', '\\geq'], ['≠', '\\neq'], ['≈', '\\approx'],
+  ['∈', '\\in'], ['∉', '\\notin'], ['⊆', '\\subseteq'], ['⊂', '\\subset'],
+  ['∪', '\\cup'], ['∩', '\\cap'], ['∅', '\\emptyset'],
+  ['∀', '\\forall'], ['∃', '\\exists'], ['¬', '\\neg'],
+  ['∧', '\\land'], ['∨', '\\lor'],
+  ['∞', '\\infty'], ['∂', '\\partial'],
+  ['∑', '\\sum'], ['∏', '\\prod'], ['∫', '\\int'],
+  ['±', '\\pm'], ['×', '\\times'], ['÷', '\\div'], ['·', '\\cdot'],
+  ['√', '\\sqrt'],
+  ['Γ', '\\Gamma'], ['Δ', '\\Delta'], ['Θ', '\\Theta'], ['Λ', '\\Lambda'],
+  ['Ξ', '\\Xi'], ['Π', '\\Pi'], ['Σ', '\\Sigma'], ['Υ', '\\Upsilon'],
+  ['Φ', '\\Phi'], ['Ψ', '\\Psi'], ['Ω', '\\Omega'],
+  ['α', '\\alpha'], ['β', '\\beta'], ['γ', '\\gamma'], ['δ', '\\delta'],
+  ['ε', '\\epsilon'], ['ζ', '\\zeta'], ['η', '\\eta'], ['θ', '\\theta'],
+  ['ι', '\\iota'], ['κ', '\\kappa'], ['λ', '\\lambda'], ['μ', '\\mu'],
+  ['ν', '\\nu'], ['ξ', '\\xi'], ['π', '\\pi'], ['ρ', '\\rho'],
+  ['σ', '\\sigma'], ['τ', '\\tau'], ['υ', '\\upsilon'], ['φ', '\\phi'],
+  ['χ', '\\chi'], ['ψ', '\\psi'], ['ω', '\\omega'],
+];
+
+/** Convert Word's _(expr) / ^(expr) notation to LaTeX _{expr} / ^{expr}. */
+function convertSubSupParens(text: string): string {
+  let result = '';
+  let i = 0;
+  while (i < text.length) {
+    if ((text[i] === '_' || text[i] === '^') && text[i + 1] === '(') {
+      result += text[i] + '{';
+      i += 2;
+      let depth = 1;
+      while (i < text.length) {
+        if (text[i] === '(') { depth++; result += text[i++]; }
+        else if (text[i] === ')') {
+          depth--;
+          if (depth === 0) { result += '}'; i++; break; }
+          result += text[i++];
+        } else {
+          result += text[i++];
+        }
+      }
+    } else {
+      result += text[i++];
+    }
+  }
+  return result;
+}
+
+/** Returns true if the text contains Word linear math patterns. */
+function hasMathContent(text: string): boolean {
+  if (/[_^]\(/.test(text)) return true;
+  if (/[⟹⟺→↦⇒⇐⇔≤≥≠≈∈∉⊆⊂∪∩∅∀∃∞∂±×÷∑∏∫√]/.test(text)) return true;
+  if (/[αβγδεζηθικλμνξπρστυφχψωΓΔΘΛΞΠΣΥΦΨΩ]/.test(text)) return true;
+  // Inline equation: variable=expression, e.g. f=..., N=(V,E,c,s,t)
+  if (/[a-zA-Z]\s*=\s*[a-zA-Z0-9(\\]/.test(text)) return true;
+  // Fraction: x/y, (expr)/y, x/(expr), |x|/y
+  if (/[a-zA-Z0-9)|]\s*\/\s*[a-zA-Z0-9(|]/.test(text)) return true;
+  return false;
+}
+
+const HEBREW_RE = /[\u0590-\u05FF\u05BE\u05C0\u05C3\u05C6\uFB1D-\uFB4E]/;
+const MATH_SIGNAL_RE = /[_^{}\\=|<>']/;
+
+/**
+ * Walk through converted text and wrap "math islands" in $...$.
+ * Math islands are non-Hebrew sequences that contain at least one math signal.
+ * Spaces inside {} and spaces followed by '(' (function application) are
+ * kept inside the island.
+ */
+function wrapMathIslands(text: string): string {
+  let result = '';
+  let i = 0;
+
+  while (i < text.length) {
+    // Hebrew run — copy as-is
+    if (HEBREW_RE.test(text[i])) {
+      while (i < text.length && HEBREW_RE.test(text[i])) result += text[i++];
+      continue;
+    }
+    // Newline — copy as-is
+    if (text[i] === '\n' || text[i] === '\r') { result += text[i++]; continue; }
+    // Space — copy as-is (spaces *outside* math are separators)
+    if (/[ \t]/.test(text[i])) { result += text[i++]; continue; }
+
+    // Potential math / plain token — collect greedily
+    let seg = '';
+    let braceDepth = 0;
+    let hasMathSignal = false;
+
+    while (i < text.length) {
+      const ch = text[i];
+      if (HEBREW_RE.test(ch) || ch === '\n' || ch === '\r') break;
+
+      if (ch === '{') braceDepth++;
+      else if (ch === '}') braceDepth--;
+      if (MATH_SIGNAL_RE.test(ch)) hasMathSignal = true;
+
+      if (/[ \t]/.test(ch)) {
+        if (braceDepth > 0) { seg += text[i++]; continue; } // inside {}, always continue
+
+        // Lookahead past spaces
+        let j = i;
+        while (j < text.length && /[ \t]/.test(text[j])) j++;
+        if (j >= text.length || HEBREW_RE.test(text[j]) || /[\n\r]/.test(text[j])) break;
+
+        // Continue if: we already have a math signal AND the next token looks like math
+        if (hasMathSignal && /[|(+\-=<>a-zA-Z0-9\\{]/.test(text[j])) {
+          seg += ch; i++; continue;
+        }
+        break;
+      }
+
+      seg += text[i++];
+    }
+
+    if (!seg) continue;
+
+    if (hasMathSignal) {
+      const trimmed = seg.trimStart().trimEnd();
+      // Strip trailing sentence punctuation (but not math punctuation like })
+      const stripped = trimmed.replace(/[.,:;!?]+$/, '');
+      const punct = trimmed.slice(stripped.length);
+      result += `$${stripped}$${punct}`;
+    } else {
+      result += seg;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Scan backwards from the end of `text` to extract one math token.
+ * Returns [startIndex, content]. Outer parens are stripped (they were grouping for the fraction).
+ */
+function scanTokenBack(text: string): [number, string] {
+  const origLen = text.length;
+  if (origLen === 0) return [0, ''];
+  let pos = origLen;
+
+  while (pos > 0) {
+    const ch = text[pos - 1];
+
+    if (ch === ')') {
+      let depth = 1; let j = pos - 2;
+      while (j >= 0 && depth > 0) {
+        if (text[j] === ')') depth++;
+        else if (text[j] === '(') depth--;
+        j--;
+      }
+      if (depth !== 0) break;
+      const pStart = j + 1;
+      if (pos === origLen) return [pStart, text.slice(pStart + 1, pos - 1)]; // strip outer parens
+      pos = pStart; continue;
+    }
+
+    if (ch === '}') {
+      let depth = 1; let j = pos - 2;
+      while (j >= 0 && depth > 0) {
+        if (text[j] === '}') depth++;
+        else if (text[j] === '{') depth--;
+        j--;
+      }
+      if (depth !== 0) break;
+      pos = j + 1;
+      if (pos > 0 && (text[pos - 1] === '_' || text[pos - 1] === '^')) pos--;
+      continue;
+    }
+
+    if (ch === '|' && pos === origLen) {
+      let j = pos - 2;
+      while (j >= 0 && text[j] !== '|') j--;
+      if (j >= 0) return [j, text.slice(j, pos)];
+      break;
+    }
+
+    if (/[a-zA-Z0-9\\']/.test(ch)) { pos--; continue; }
+    break;
+  }
+
+  if (pos === origLen) return [origLen, ''];
+  return [pos, text.slice(pos, origLen)];
+}
+
+/**
+ * Scan forwards from `start` to extract one math token.
+ * Returns [endIndex, content]. Outer parens are stripped.
+ */
+function scanTokenFwd(text: string, start: number): [number, string] {
+  if (start >= text.length) return [start, ''];
+  const ch = text[start];
+
+  if (ch === '(') {
+    let depth = 1; let j = start + 1;
+    while (j < text.length && depth > 0) {
+      if (text[j] === '(') depth++;
+      else if (text[j] === ')') depth--;
+      j++;
+    }
+    return [j, text.slice(start + 1, j - 1)]; // strip outer parens
+  }
+
+  if (ch === '{') {
+    let depth = 1; let j = start + 1;
+    while (j < text.length && depth > 0) {
+      if (text[j] === '{') depth++;
+      else if (text[j] === '}') depth--;
+      j++;
+    }
+    return [j, text.slice(start, j)];
+  }
+
+  if (ch === '|') {
+    let j = start + 1;
+    while (j < text.length && text[j] !== '|') j++;
+    if (j < text.length) return [j + 1, text.slice(start, j + 1)];
+    return [start + 1, ch];
+  }
+
+  // Atom: letters, digits, LaTeX commands, trailing sub/superscripts
+  let end = start;
+  while (end < text.length) {
+    const c = text[end];
+    if (/[a-zA-Z0-9\\']/.test(c)) { end++; continue; }
+    if ((c === '_' || c === '^') && text[end + 1] === '{') {
+      let depth = 1; let j = end + 2;
+      while (j < text.length && depth > 0) {
+        if (text[j] === '{') depth++;
+        else if (text[j] === '}') depth--;
+        j++;
+      }
+      end = j; continue;
+    }
+    if ((c === '_' || c === '^') && end + 1 < text.length && /[a-zA-Z0-9]/.test(text[end + 1])) {
+      end += 2; continue;
+    }
+    break;
+  }
+  if (end === start) return [start, ''];
+  return [end, text.slice(start, end)];
+}
+
+/**
+ * Convert slash-fractions to \frac{}{} using a balanced-paren parser.
+ * Handles nested parens, |...|, and chained sub/superscripts.
+ */
+function convertFractions(text: string): string {
+  let result = '';
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] !== '/' || text[i + 1] === '/') { result += text[i++]; continue; }
+
+    const [numStart, num] = scanTokenBack(result);
+    const [denomEnd, denom] = scanTokenFwd(text, i + 1);
+
+    if (num && denom) {
+      result = result.slice(0, numStart) + `\\frac{${num}}{${denom}}`;
+      i = denomEnd;
+    } else {
+      result += text[i++];
+    }
+  }
+  return result;
+}
+
+/** Full pipeline: Word linear text → LaTeX with $...$ wrapping. */
+function wordMathToLatex(text: string): string {
+  // 1. _(parens) → _{curly}, ^(parens) → ^{curly}
+  text = convertSubSupParens(text);
+  // 2. Word prime notation: ^' → '
+  text = text.replace(/\^'/g, "'");
+  // 3. Unicode math symbols → LaTeX macros
+  for (const [from, to] of UNICODE_TO_LATEX) text = text.split(from).join(to);
+  // 4. Trim spaces inside {} (Word sometimes adds spacing there)
+  text = text.replace(/\{([^{}]*)\}/g, (_, inner) => `{${inner.trim()}}`);
+  // 5. Convert fractions: a/b → \frac{a}{b}
+  text = convertFractions(text);
+  // 6. Wrap math islands in $...$
+  return wrapMathIslands(text);
+}
 
 // ─── Toolbar ─────────────────────────────────────────────────────────────────
 
@@ -342,6 +629,48 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
     onChange(divToValue(divRef.current!));
   }
 
+  // ── Paste: convert Word math (MathML or linear notation) to $latex$ ──
+  function pasteText(text: string) {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    const node = document.createTextNode(text);
+    range.insertNode(node);
+    const newRange = document.createRange();
+    newRange.setStartAfter(node);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+    onChange(divToValue(divRef.current!));
+  }
+
+  function handlePaste(e: React.ClipboardEvent<HTMLDivElement>) {
+    const html = e.clipboardData.getData('text/html');
+    const plain = e.clipboardData.getData('text/plain');
+
+    // Case 1: Word equation objects → MathML in HTML
+    if (html?.includes('<math')) {
+      e.preventDefault();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      doc.querySelectorAll('math').forEach((math) => {
+        try { math.replaceWith(`$${MathMLToLaTeX.convert(math.outerHTML)}$`); }
+        catch { math.replaceWith(math.textContent ?? ''); }
+      });
+      pasteText(doc.body.innerText ?? doc.body.textContent ?? '');
+      return;
+    }
+
+    // Case 2: Word linear/UnicodeMath notation (x_(y), Δ, ⟹, etc.)
+    if (plain && hasMathContent(plain)) {
+      e.preventDefault();
+      pasteText(wordMathToLatex(plain));
+      return;
+    }
+
+    // Case 3: plain text / non-math — let browser handle
+  }
+
   function handleInput() {
     if (divRef.current) {
       const val = divToValue(divRef.current);
@@ -439,6 +768,7 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
         onBlur={() => { focused.current = false; }}
         onKeyDown={handleKeyDown}
         onInput={handleInput}
+        onPaste={handlePaste}
         onClick={handleClick}
         dir={dir}
         data-placeholder={placeholder}

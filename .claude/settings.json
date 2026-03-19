@@ -28,7 +28,9 @@
       "Bash(npm install framer-motion)",
       "Bash(node -e \"require\\(''canvas''\\)\")",
       "Bash(python -c \"from PIL import Image, ImageDraw, ImageFont; print\\(''Pillow available''\\)\")",
-      "Bash(xargs grep -l \"useUser\\\\|useAuth\\\\|AuthProvider\\\\|currentUser\")"
+      "Bash(xargs grep -l \"useUser\\\\|useAuth\\\\|AuthProvider\\\\|currentUser\")",
+      "Bash(npm install mathml-to-latex)",
+      "Bash(xargs cat)"
     ],
     "additionalDirectories": [
       "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",
