@@ -7,7 +7,9 @@ type Segment =
   | { type: 'text'; value: string }
   | { type: 'inline'; value: string }
   | { type: 'block'; value: string }
-  | { type: 'list'; listType: 'ol' | 'ul'; items: string[] };
+  | { type: 'list'; listType: 'ol' | 'ul'; items: string[] }
+  | { type: 'code-block'; value: string }
+  | { type: 'code-inline'; value: string };
 
 // KaTeX-supported math environments only
 const MATH_ENV_RE = /^(array|[pPbBvV]?matrix|align\*?|alignat\*?|alignedat|equation\*?|gather\*?|gathered|cases|[dr]?cases|split|CD|multline\*?|flalign\*?)$/;
@@ -15,12 +17,30 @@ const LIST_ENVS: Record<string, 'ol' | 'ul'> = { enumerate: 'ol', itemize: 'ul' 
 
 function parseSegments(text: string): Segment[] {
   const segments: Segment[] = [];
-  const re = /(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\\begin\{([^}]+)\}[\s\S]*?\\end\{\2\})/g;
+  // Code blocks and inline code are matched first (higher priority than math)
+  const re = /```([\s\S]*?)```|`([^`\n]+?)`|(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\\begin\{([^}]+)\}[\s\S]*?\\end\{\4\})/g;
   let last = 0;
   let m: RegExpExecArray | null;
 
   while ((m = re.exec(text)) !== null) {
-    const envName = m[2]; // set only for \begin{...} matches
+    if (m[1] !== undefined) {
+      // Code block ```...```
+      if (m.index > last) segments.push({ type: 'text', value: text.slice(last, m.index) });
+      segments.push({ type: 'code-block', value: m[1].replace(/^\n/, '').replace(/\n$/, '') });
+      last = m.index + m[0].length;
+      continue;
+    }
+
+    if (m[2] !== undefined) {
+      // Inline code `...`
+      if (m.index > last) segments.push({ type: 'text', value: text.slice(last, m.index) });
+      segments.push({ type: 'code-inline', value: m[2] });
+      last = m.index + m[0].length;
+      continue;
+    }
+
+    // Math / environment (m[3] is the full match, m[4] is env name if \begin{...})
+    const envName = m[4];
 
     if (envName && LIST_ENVS[envName]) {
       // List environment — render as HTML list
@@ -51,7 +71,7 @@ function parseSegments(text: string): Segment[] {
 
 // ── Inline formatting (Markdown-style) ───────────────────────────────────────
 // Order matters: longer tokens first to avoid partial matches.
-const INLINE_RE = /(\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*|_(.+?)_)/gs;
+const INLINE_RE = /(\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*|_(.+?)_)/g;
 
 function renderInline(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
@@ -90,6 +110,24 @@ export function LatexContent({ content, className }: LatexContentProps) {
   return (
     <span style={{ whiteSpace: 'pre-wrap' }} className={`leading-loose ${className ?? ''}`.trim()}>
       {segments.map((seg, i) => {
+        if (seg.type === 'code-block') {
+          const lines = seg.value ? seg.value.split('\n') : [''];
+          return (
+            <div key={i} dir="ltr" className="font-mono text-sm bg-gray-900 rounded my-1.5 border border-gray-700 flex overflow-x-auto">
+              <div className="text-gray-500 p-3 pr-4 border-r border-gray-700 select-none text-right whitespace-pre leading-relaxed">
+                {lines.map((_, j) => j + 1).join('\n')}
+              </div>
+              <pre className="text-green-400 p-3 flex-1 whitespace-pre m-0 leading-relaxed">{seg.value}</pre>
+            </div>
+          );
+        }
+        if (seg.type === 'code-inline') {
+          return (
+            <code key={i} dir="ltr" className="font-mono text-xs bg-gray-900 text-green-400 px-1.5 py-0.5 rounded border border-gray-700">
+              {seg.value}
+            </code>
+          );
+        }
         if (seg.type === 'text') {
           return <span key={i}>{renderInline(seg.value)}</span>;
         }

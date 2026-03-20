@@ -362,6 +362,7 @@ interface Btn {
   title: string;
   insert: string;
   wrapWith?: [string, string];
+  action?: string;
 }
 
 const GROUPS: { name: string; buttons: Btn[] }[] = [
@@ -451,6 +452,13 @@ const GROUPS: { name: string; buttons: Btn[] }[] = [
     ],
   },
   {
+    name: 'Code',
+    buttons: [
+      { label: '`·`', title: 'Inline code `...`', insert: '``', wrapWith: ['`', '`'] },
+      { label: '</>', title: 'Code block', insert: '', action: 'code-block' },
+    ],
+  },
+  {
     name: 'O(n)',
     buttons: [
       { label: 'O()', title: 'Big-O', insert: 'O()' },
@@ -471,6 +479,21 @@ function escHtml(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** Extract plain text from an element, converting <br> to \n. */
+function elementToText(el: HTMLElement): string {
+  let text = '';
+  function walk(node: Node) {
+    if (node.nodeType === Node.TEXT_NODE) { text += node.textContent ?? ''; }
+    else if (node instanceof HTMLElement) {
+      if (node.tagName === 'BR') { text += '\n'; return; }
+      if (['DIV', 'P'].includes(node.tagName) && text && !text.endsWith('\n')) text += '\n';
+      node.childNodes.forEach(walk);
+    }
+  }
+  el.childNodes.forEach(walk);
+  return text;
+}
+
 /** Walk the contenteditable div and produce the raw source string. */
 function divToValue(div: HTMLElement): string {
   let out = '';
@@ -480,6 +503,17 @@ function divToValue(div: HTMLElement): string {
     } else if (node instanceof HTMLElement) {
       const latex = node.getAttribute('data-latex');
       if (latex !== null) { out += `$${latex}$`; return; }
+      if (node.hasAttribute('data-code-wrapper')) {
+        const pre = node.querySelector('[data-code-block]') as HTMLElement | null;
+        if (pre) out += '```\n' + elementToText(pre) + '\n```';
+        return;
+      }
+      if (node.hasAttribute('data-code-block')) {
+        out += '```\n' + elementToText(node) + '\n```';
+        return;
+      }
+      const code = node.getAttribute('data-code');
+      if (code !== null) { out += '`' + code + '`'; return; }
       if (node.tagName === 'BR') { out += '\n'; return; }
       if (['DIV', 'P'].includes(node.tagName) && out && !out.endsWith('\n')) out += '\n';
       node.childNodes.forEach(walk);
@@ -489,20 +523,33 @@ function divToValue(div: HTMLElement): string {
   return out;
 }
 
-/** Convert a raw value string to HTML for initial render (renders existing $...$). */
+/** Convert a raw value string to HTML for initial render (renders $...$, `...`, ```...```). */
 function valueToHtml(value: string): string {
-  const re = /\$([^$\n]+?)\$/g;
+  const re = /```([\s\S]*?)```|`([^`\n]+?)`|\$([^$\n]+?)\$/g;
   let html = '';
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(value)) !== null) {
     if (m.index > last) html += escHtml(value.slice(last, m.index)).replace(/\n/g, '<br>');
-    const latex = m[1];
-    try {
-      const rendered = katex.renderToString(latex, { throwOnError: false });
-      html += `<span data-latex="${latex.replace(/"/g, '&quot;')}" contenteditable="false" dir="ltr" class="math-span">${rendered}</span>`;
-    } catch {
-      html += escHtml(m[0]);
+    if (m[1] !== undefined) {
+      // Code block
+      const code = m[1].replace(/^\n/, '').replace(/\n$/, '');
+      const lineCount = code ? (code.match(/\n/g) ?? []).length + 1 : 1;
+      const lineNums = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
+      html += `<span data-code-wrapper contenteditable="false" class="code-block-wrapper"><span class="code-line-nums" contenteditable="false" aria-hidden="true">${lineNums}</span><pre data-code-block contenteditable="true" dir="ltr" spellcheck="false" class="code-block">${escHtml(code)}</pre></span>`;
+    } else if (m[2] !== undefined) {
+      // Inline code
+      const code = m[2];
+      html += `<code data-code="${code.replace(/"/g, '&quot;')}" contenteditable="false" dir="ltr" class="code-inline">${escHtml(code)}</code>`;
+    } else if (m[3] !== undefined) {
+      // Math
+      const latex = m[3];
+      try {
+        const rendered = katex.renderToString(latex, { throwOnError: false });
+        html += `<span data-latex="${latex.replace(/"/g, '&quot;')}" contenteditable="false" dir="ltr" class="math-span">${rendered}</span>`;
+      } catch {
+        html += escHtml(m[0]);
+      }
     }
     last = m.index + m[0].length;
   }
@@ -544,7 +591,24 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
       if (!sel?.rangeCount || !sel.getRangeAt(0).collapsed) return;
       const range = sel.getRangeAt(0);
 
+      // If inside a code block: empty → remove block; non-empty → let browser handle
+      const containerEl = range.startContainer.nodeType === Node.ELEMENT_NODE
+        ? range.startContainer as HTMLElement
+        : (range.startContainer as Text).parentElement;
+      const insideCodeBlock = containerEl?.closest('[data-code-block]') as HTMLElement | null;
+      if (insideCodeBlock) {
+        if ((insideCodeBlock.textContent ?? '').trim() === '') {
+          e.preventDefault();
+          const wrapperEl = insideCodeBlock.closest('[data-code-wrapper]') as HTMLElement | null;
+          (wrapperEl ?? insideCodeBlock).parentNode?.removeChild(wrapperEl ?? insideCodeBlock);
+          onChange(divToValue(divRef.current!));
+        }
+        return;
+      }
+
       let mathSpan: HTMLElement | null = null;
+      let codeSpan: HTMLElement | null = null;
+      let codeWrapper: HTMLElement | null = null;
       let removeNbsp = false;
 
       if (range.startContainer.nodeType === Node.TEXT_NODE) {
@@ -553,17 +617,20 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
         const charBefore = offset > 0 ? (textNode.nodeValue ?? '')[offset - 1] : null;
         if (offset === 0 || charBefore === '\u00a0') {
           const prev = textNode.previousSibling;
-          if (prev instanceof HTMLElement && prev.hasAttribute('data-latex')) {
-            mathSpan = prev;
-            removeNbsp = charBefore === '\u00a0';
+          if (prev instanceof HTMLElement) {
+            if (prev.hasAttribute('data-latex')) { mathSpan = prev; removeNbsp = charBefore === '\u00a0'; }
+            else if (prev.hasAttribute('data-code')) { codeSpan = prev; removeNbsp = charBefore === '\u00a0'; }
+            else if (prev.hasAttribute('data-code-wrapper')) { codeWrapper = prev; removeNbsp = charBefore === '\u00a0'; }
           }
         }
       } else if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
         const offset = range.startOffset;
         if (offset > 0) {
           const prev = range.startContainer.childNodes[offset - 1];
-          if (prev instanceof HTMLElement && prev.hasAttribute('data-latex')) {
-            mathSpan = prev as HTMLElement;
+          if (prev instanceof HTMLElement) {
+            if (prev.hasAttribute('data-latex')) mathSpan = prev as HTMLElement;
+            else if (prev.hasAttribute('data-code')) codeSpan = prev as HTMLElement;
+            else if (prev.hasAttribute('data-code-wrapper')) codeWrapper = prev as HTMLElement;
           }
         }
       }
@@ -583,6 +650,30 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
         newRange.collapse(true);
         sel.removeAllRanges();
         sel.addRange(newRange);
+        onChange(divToValue(divRef.current!));
+      } else if (codeSpan) {
+        e.preventDefault();
+        const code = codeSpan.getAttribute('data-code')!;
+        const raw = '`' + code + '`';
+        const rawNode = document.createTextNode(raw);
+        if (removeNbsp) {
+          const textNode = range.startContainer as Text;
+          textNode.nodeValue = (textNode.nodeValue ?? '').slice(1);
+        }
+        codeSpan.parentNode!.replaceChild(rawNode, codeSpan);
+        const newRange = document.createRange();
+        newRange.setStart(rawNode, raw.length);
+        newRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+        onChange(divToValue(divRef.current!));
+      } else if (codeWrapper) {
+        e.preventDefault();
+        if (removeNbsp) {
+          const textNode = range.startContainer as Text;
+          textNode.nodeValue = (textNode.nodeValue ?? '').slice(1);
+        }
+        codeWrapper.parentNode!.removeChild(codeWrapper);
         onChange(divToValue(divRef.current!));
       }
       return;
@@ -619,7 +710,7 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
       return;
     }
 
-    if (e.key !== ' ') return;
+    if (e.key !== ' ' && e.key !== '`') return;
 
     // Merge adjacent text nodes so $...$ is detectable even after toolbar inserts
     divRef.current?.normalize();
@@ -633,9 +724,80 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
     const offset = range.startOffset;
     const textBefore = (textNode.nodeValue ?? '').slice(0, offset);
 
+    // Don't render patterns inside code blocks
+    let ancestor: Node | null = textNode.parentNode;
+    while (ancestor && ancestor !== divRef.current) {
+      if (ancestor instanceof HTMLElement && ancestor.hasAttribute('data-code-block')) return;
+      ancestor = ancestor.parentNode;
+    }
+
+    // Closing backtick typed → render inline code immediately (no space needed)
+    if (e.key === '`') {
+      const inlineMatch = textBefore.match(/`([^`\n]+)$/);
+      if (!inlineMatch) return;
+      e.preventDefault();
+      const code = inlineMatch[1];
+      const matchStart = offset - inlineMatch[0].length;
+      const fullText = textNode.nodeValue ?? '';
+      const after = fullText.slice(offset);
+      const span = document.createElement('code');
+      span.setAttribute('data-code', code);
+      span.setAttribute('contenteditable', 'false');
+      span.setAttribute('dir', 'ltr');
+      span.className = 'code-inline';
+      span.textContent = code;
+      const parent = textNode.parentNode!;
+      const beforeNode = document.createTextNode(fullText.slice(0, matchStart));
+      const afterNode = document.createTextNode(after);
+      parent.insertBefore(beforeNode, textNode);
+      parent.insertBefore(span, textNode);
+      parent.insertBefore(afterNode, textNode);
+      parent.removeChild(textNode);
+      const newRange = document.createRange();
+      newRange.setStart(afterNode, 0);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+      onChange(divToValue(divRef.current!));
+      return;
+    }
+
     // Match complete $...$ right before cursor
     const match = textBefore.match(/\$([^$\n]+)\$$/);
-    if (!match) return;
+    if (!match) {
+      // Match complete `...` right before cursor (fallback: space after backtick)
+      const codeMatch = textBefore.match(/`([^`\n]+)`$/);
+      if (!codeMatch) return;
+
+      e.preventDefault();
+      const code = codeMatch[1];
+      const matchStart = offset - codeMatch[0].length;
+      const fullText = textNode.nodeValue ?? '';
+      const after = fullText.slice(offset);
+
+      const span = document.createElement('code');
+      span.setAttribute('data-code', code);
+      span.setAttribute('contenteditable', 'false');
+      span.setAttribute('dir', 'ltr');
+      span.className = 'code-inline';
+      span.textContent = code;
+
+      const parent = textNode.parentNode!;
+      const beforeNode = document.createTextNode(fullText.slice(0, matchStart));
+      const afterNode = document.createTextNode('\u00a0' + after);
+      parent.insertBefore(beforeNode, textNode);
+      parent.insertBefore(span, textNode);
+      parent.insertBefore(afterNode, textNode);
+      parent.removeChild(textNode);
+
+      const newRange = document.createRange();
+      newRange.setStart(afterNode, 1);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+      onChange(divToValue(divRef.current!));
+      return;
+    }
 
     e.preventDefault();
 
@@ -675,24 +837,38 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
     onChange(divToValue(divRef.current!));
   }
 
-  // ── Click on rendered math → expand back to raw LaTeX ──
+  // ── Click on rendered math/inline-code → expand back to raw ──
   function handleClick(e: React.MouseEvent<HTMLDivElement>) {
-    const span = (e.target as HTMLElement).closest('[data-latex]') as HTMLElement | null;
-    if (!span) return;
+    const mathSpan = (e.target as HTMLElement).closest('[data-latex]') as HTMLElement | null;
+    if (mathSpan) {
+      const latex = mathSpan.getAttribute('data-latex')!;
+      const raw = `$${latex}$`;
+      const textNode = document.createTextNode(raw);
+      mathSpan.parentNode!.replaceChild(textNode, mathSpan);
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(textNode, raw.length - 1);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      onChange(divToValue(divRef.current!));
+      return;
+    }
 
-    const latex = span.getAttribute('data-latex')!;
-    const raw = `$${latex}$`;
-    const textNode = document.createTextNode(raw);
-    span.parentNode!.replaceChild(textNode, span);
-
-    const sel = window.getSelection()!;
-    const range = document.createRange();
-    range.setStart(textNode, raw.length - 1); // cursor before closing $
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
-
-    onChange(divToValue(divRef.current!));
+    const codeSpan = (e.target as HTMLElement).closest('[data-code]') as HTMLElement | null;
+    if (codeSpan) {
+      const code = codeSpan.getAttribute('data-code')!;
+      const raw = '`' + code + '`';
+      const textNode = document.createTextNode(raw);
+      codeSpan.parentNode!.replaceChild(textNode, codeSpan);
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(textNode, raw.length);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      onChange(divToValue(divRef.current!));
+    }
   }
 
   // ── Paste: convert Word math (MathML or linear notation) to $latex$ ──
@@ -739,6 +915,16 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
 
   function handleInput() {
     if (divRef.current) {
+      // Sync line numbers for all code blocks
+      divRef.current.querySelectorAll('[data-code-block]').forEach(pre => {
+        const wrapper = pre.parentElement;
+        if (!wrapper?.hasAttribute('data-code-wrapper')) return;
+        const lineNumsEl = wrapper.querySelector('.code-line-nums');
+        if (!lineNumsEl) return;
+        const text = elementToText(pre as HTMLElement);
+        const lineCount = (text.match(/\n/g) ?? []).length + 1;
+        lineNumsEl.textContent = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
+      });
       const val = divToValue(divRef.current);
       onChange(val);
       setDir(/[\u0590-\u05FF\u0600-\u06FF]/.test(val) ? 'rtl' : 'ltr');
@@ -779,6 +965,50 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
     sel.removeAllRanges();
     sel.addRange(newRange);
 
+    onChange(divToValue(div));
+  }
+
+  // ── Insert a code block <pre> element ──
+  function insertCodeBlock() {
+    const div = divRef.current;
+    if (!div) return;
+    div.focus();
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+
+    const wrapper = document.createElement('span');
+    wrapper.setAttribute('data-code-wrapper', '');
+    wrapper.setAttribute('contenteditable', 'false');
+    wrapper.className = 'code-block-wrapper';
+
+    const lineNumsEl = document.createElement('span');
+    lineNumsEl.className = 'code-line-nums';
+    lineNumsEl.setAttribute('contenteditable', 'false');
+    lineNumsEl.setAttribute('aria-hidden', 'true');
+    lineNumsEl.textContent = '1';
+
+    const pre = document.createElement('pre');
+    pre.setAttribute('data-code-block', '');
+    pre.setAttribute('contenteditable', 'true');
+    pre.setAttribute('dir', 'ltr');
+    pre.setAttribute('spellcheck', 'false');
+    pre.className = 'code-block';
+    pre.appendChild(document.createTextNode(''));
+
+    wrapper.appendChild(lineNumsEl);
+    wrapper.appendChild(pre);
+
+    const frag = document.createDocumentFragment();
+    frag.appendChild(wrapper);
+    range.insertNode(frag);
+
+    const newRange = document.createRange();
+    newRange.setStart(pre, 0);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
     onChange(divToValue(div));
   }
 
@@ -823,7 +1053,7 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
             key={btn.title}
             type="button"
             title={btn.title}
-            onMouseDown={(e) => { e.preventDefault(); insertSnippet(btn); }}
+            onMouseDown={(e) => { e.preventDefault(); btn.action === 'code-block' ? insertCodeBlock() : insertSnippet(btn); }}
             className={`px-1.5 py-0.5 text-sm bg-white border border-gray-200 rounded hover:bg-gray-100 hover:border-gray-300 text-gray-700 min-w-[2rem] text-center leading-tight ${
               btn.title.startsWith('Bold') ? 'font-bold' :
               btn.title.startsWith('Italic') ? 'italic font-serif' :
@@ -855,7 +1085,11 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
           before:content-[attr(data-placeholder)] before:text-gray-400 before:pointer-events-none
           [&:not(:empty)]:before:hidden
           [&_.math-span]:cursor-pointer [&_.math-span]:inline-block [&_.math-span]:align-middle
-          [&_.math-span:hover]:outline [&_.math-span:hover]:outline-1 [&_.math-span:hover]:outline-blue-300 [&_.math-span:hover]:rounded"
+          [&_.math-span:hover]:outline [&_.math-span:hover]:outline-1 [&_.math-span:hover]:outline-blue-300 [&_.math-span:hover]:rounded
+          [&_.code-inline]:font-mono [&_.code-inline]:text-xs [&_.code-inline]:bg-gray-900 [&_.code-inline]:text-green-400 [&_.code-inline]:px-1.5 [&_.code-inline]:py-0.5 [&_.code-inline]:rounded [&_.code-inline]:border [&_.code-inline]:border-gray-700 [&_.code-inline]:cursor-pointer [&_.code-inline:hover]:bg-gray-800
+          [&_.code-block-wrapper]:flex [&_.code-block-wrapper]:overflow-x-auto [&_.code-block-wrapper]:rounded [&_.code-block-wrapper]:my-1.5 [&_.code-block-wrapper]:border [&_.code-block-wrapper]:border-gray-700 [&_.code-block-wrapper]:bg-gray-900
+          [&_.code-line-nums]:font-mono [&_.code-line-nums]:text-sm [&_.code-line-nums]:text-gray-500 [&_.code-line-nums]:p-3 [&_.code-line-nums]:pr-4 [&_.code-line-nums]:border-r [&_.code-line-nums]:border-gray-700 [&_.code-line-nums]:select-none [&_.code-line-nums]:text-right [&_.code-line-nums]:whitespace-pre [&_.code-line-nums]:leading-relaxed
+          [&_.code-block]:font-mono [&_.code-block]:text-sm [&_.code-block]:text-green-400 [&_.code-block]:p-3 [&_.code-block]:flex-1 [&_.code-block]:whitespace-pre [&_.code-block]:leading-relaxed [&_.code-block]:focus:outline-none"
       />
     </div>
   );
