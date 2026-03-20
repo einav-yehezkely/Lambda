@@ -249,10 +249,17 @@ export default function PracticePage({
 
   useEffect(() => {
     if (!user) return;
-    setOptionsLoading(true);
+    const cacheKey = `practice_options_${versionId}_${user.id}_${withSolution}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try { setVersionOptions(JSON.parse(cached)); setOptionsLoading(false); } catch {}
+    }
     practiceApi
       .getOptions(versionId, withSolution || undefined)
-      .then(setVersionOptions)
+      .then((data) => {
+        setVersionOptions(data);
+        sessionStorage.setItem(cacheKey, JSON.stringify(data));
+      })
       .catch(() => {})
       .finally(() => setOptionsLoading(false));
   }, [versionId, user, withSolution]);

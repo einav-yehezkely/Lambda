@@ -45,9 +45,11 @@ export class PracticeService {
         .in('content_item_id', contentItemIds);
       const communitySet = new Set((communityRows ?? []).map((r) => r.content_item_id));
       items = items.filter((i) => {
-        const fmt = (i.content_item as any).metadata?.question_format;
+        const ci = i.content_item as any;
+        if (ci.type !== 'exam_question' && ci.type !== 'exercise_question') return true;
+        const fmt = ci.metadata?.question_format;
         if (fmt === 'flashcard' || fmt === 'multiple_choice') return true;
-        return (i.content_item as any).solution?.trim() || communitySet.has(i.content_item_id);
+        return ci.solution?.trim() || communitySet.has(i.content_item_id);
       });
     }
 
@@ -223,6 +225,7 @@ export class PracticeService {
 
       const communitySet = new Set((communityRows ?? []).map((r) => r.content_item_id));
       items = items.filter((i) => {
+        if (i.content_item.type !== 'exam_question' && i.content_item.type !== 'exercise_question') return true;
         const fmt = i.content_item.metadata?.question_format;
         if (fmt === 'flashcard' || fmt === 'multiple_choice') return true;
         return i.content_item.solution?.trim() || communitySet.has(i.content_item_id);
