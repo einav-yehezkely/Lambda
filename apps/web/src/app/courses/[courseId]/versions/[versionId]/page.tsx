@@ -490,7 +490,7 @@ function AddContentModal({
   const updateContent = useUpdateContent();
   const [type, setType] = useState(() => activeTypes?.[0]?.value ?? 'proof');
   const [questionFormat, setQuestionFormat] = useState('open');
-  const [correctOption, setCorrectOption] = useState<'A' | 'B' | 'C' | 'D' | ''>('');
+  const [correctOptions, setCorrectOptions] = useState<string[]>([]);
   const [title, setTitle] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [topicId, setTopicId] = useState('');
@@ -508,6 +508,11 @@ function AddContentModal({
   const [sections, setSections] = useState<Array<{ label: string; content: string; imageFiles: File[] }>>(() => getSections(activeTypes?.[0]?.value ?? 'proof', 'open'));
   const [savedDefault, setSavedDefault] = useState(false);
   const addSection = () => setSections((s) => [...s, { label: '', content: '', imageFiles: [] }]);
+  const addMCQOption = () => {
+    const used = new Set(sections.map((s) => s.label.match(/^Option ([A-Z])$/)?.[1]).filter(Boolean));
+    const next = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find((l) => !used.has(l)) ?? 'A';
+    setSections((s) => [...s, { label: `Option ${next}`, content: '', imageFiles: [] }]);
+  };
   const removeSection = (i: number) => {
     if (!window.confirm('Remove this section?')) return;
     setSections((s) => s.filter((_, idx) => idx !== i));
@@ -551,33 +556,31 @@ function AddContentModal({
   const isMultipleChoice = isQuestion && questionFormat === 'multiple_choice';
   const formatOptions = type === 'exam_question' ? EXAM_QUESTION_FORMATS : EXERCISE_QUESTION_FORMATS;
   const availableOptions = sections
-    .map((s) => s.label.match(/^Option ([A-D])$/)?.[1])
-    .filter(Boolean) as ('A' | 'B' | 'C' | 'D')[];
+    .map((s) => s.label.match(/^Option ([A-Z])$/)?.[1])
+    .filter(Boolean) as string[];
 
   useEffect(() => {
     setQuestionFormat('open');
-    setCorrectOption('');
+    setCorrectOptions([]);
     setSections(getSections(type, 'open').map((s) => ({ ...s, imageFiles: [] })));
   }, [type]);
 
   useEffect(() => {
     if (isQuestion) {
-      setCorrectOption('');
+      setCorrectOptions([]);
       setSections(getSections(type, questionFormat).map((s) => ({ ...s, imageFiles: [] })));
     }
   }, [questionFormat]);
 
   useEffect(() => {
-    if (correctOption && !availableOptions.includes(correctOption)) {
-      setCorrectOption('');
-    }
+    setCorrectOptions((prev) => prev.filter((o) => availableOptions.includes(o)));
   }, [sections]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) { setFormError('Title is required'); return; }
     if (!sections[0]?.content.trim() && !sections[0]?.imageFiles?.length) { setFormError('Content is required'); return; }
-    if (isMultipleChoice && !correctOption) { setFormError('Please select the correct answer'); return; }
+    if (isMultipleChoice && correctOptions.length === 0) { setFormError('Please select the correct answer'); return; }
     setFormError('');
     try {
       const junction = await createContent.mutateAsync({
@@ -589,7 +592,7 @@ function AddContentModal({
         tags: tagsInput ? tagsInput.split(',').map((t) => t.trim()).filter(Boolean) : [],
         metadata: {
           ...(isQuestion ? { question_format: questionFormat } : {}),
-          ...(isMultipleChoice && correctOption ? { correct_option: correctOption } : {}),
+          ...(isMultipleChoice && correctOptions.length > 0 ? { correct_option: correctOptions } : {}),
           sections: sections.filter((s) => s.label.trim() || s.content.trim() || s.imageFiles?.length).map((s) => ({ label: s.label.trim() || 'Section', content: s.content })),
         },
       });
@@ -612,7 +615,7 @@ function AddContentModal({
             version_id: versionId,
             metadata: {
               ...(isQuestion ? { question_format: questionFormat } : {}),
-              ...(isMultipleChoice && correctOption ? { correct_option: correctOption } : {}),
+              ...(isMultipleChoice && correctOptions.length > 0 ? { correct_option: correctOptions } : {}),
               sections: sectionsWithUrls.filter((s) => s.label || s.content || (s as any).images?.length),
             },
           },
@@ -690,21 +693,26 @@ function AddContentModal({
             {sections.map((sec, i) => (
               <div key={i} className="border border-gray-200 rounded-md p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex flex-col gap-0.5 shrink-0">
-                    <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▲</button>
-                    <button type="button" onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▼</button>
-                  </div>
+                  {!isMultipleChoice && (
+                    <div className="flex flex-col gap-0.5 shrink-0">
+                      <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▲</button>
+                      <button type="button" onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▼</button>
+                    </div>
+                  )}
                   <input
                     type="text"
                     value={sec.label}
                     onChange={(e) => updateSection(i, 'label', e.target.value)}
                     placeholder="Section name"
                     dir="auto"
-                    className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    readOnly={isMultipleChoice}
+                    className={`flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 ${isMultipleChoice ? 'bg-gray-50 text-gray-500 cursor-default' : ''}`}
                   />
-                  <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 hover:text-red-500 shrink-0">
-                    Remove
-                  </button>
+                  {(!isMultipleChoice || i > 0) && (
+                    <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 hover:text-red-500 shrink-0">
+                      Remove
+                    </button>
+                  )}
                 </div>
                 <LatexEditor value={sec.content} onChange={(v) => updateSection(i, 'content', v)} rows={3} placeholder="Use $...$ for inline LaTeX." />
                 <div className="flex flex-wrap gap-2 pt-1">
@@ -732,22 +740,29 @@ function AddContentModal({
               </div>
             ))}
             <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-            <button type="button" onClick={addSection} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
-              + Add Section
-            </button>
+            {isMultipleChoice && (
+              <button type="button" onClick={addMCQOption} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
+                + Add Option
+              </button>
+            )}
+            {!isMultipleChoice && (
+              <button type="button" onClick={addSection} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
+                + Add Section
+              </button>
+            )}
           </div>
         </div>
 
         {isMultipleChoice && availableOptions.length > 0 && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer *</label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {availableOptions.map((opt) => (
                 <button
                   key={opt}
                   type="button"
-                  onClick={() => setCorrectOption(opt)}
-                  className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${correctOption === opt ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
+                  onClick={() => setCorrectOptions((prev) => prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt])}
+                  className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${correctOptions.includes(opt) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
                 >
                   {opt}
                 </button>

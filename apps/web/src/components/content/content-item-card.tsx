@@ -112,7 +112,10 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
   const [tagsInput, setTagsInput] = useState(ci.tags.join(', '));
   const [topicId, setTopicId] = useState(item.topic_id ?? '');
   const [questionFormat, setQuestionFormat] = useState<QuestionFormat>((ci.metadata?.question_format ?? 'open') as QuestionFormat);
-  const [correctOption, setCorrectOption] = useState<'A' | 'B' | 'C' | 'D' | ''>(ci.metadata?.correct_option ?? '');
+  const [correctOptions, setCorrectOptions] = useState<string[]>(() => {
+    const v = ci.metadata?.correct_option;
+    return Array.isArray(v) ? v : v ? [v] : [];
+  });
   const isCurrentQuestion = contentType === 'exam_question' || contentType === 'exercise_question';
   const isCurrentAlgorithm = contentType === 'algorithm';
   const isMultipleChoice = isCurrentQuestion && questionFormat === 'multiple_choice';
@@ -141,7 +144,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
     setContentType(newType as typeof contentType);
     if (!stayingQuestion) {
       setQuestionFormat('open');
-      setCorrectOption('');
+      setCorrectOptions([]);
       setSections(getDefaultSections(newType, 'open'));
     }
   };
@@ -185,13 +188,11 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
 
   const formatOptions = contentType === 'exam_question' ? EXAM_QUESTION_FORMATS : EXERCISE_QUESTION_FORMATS;
   const availableOptions = sections
-    .map((s) => s.label.match(/^Option ([A-D])$/)?.[1])
-    .filter(Boolean) as ('A' | 'B' | 'C' | 'D')[];
+    .map((s) => s.label.match(/^Option ([A-Z])$/)?.[1])
+    .filter(Boolean) as string[];
 
   useEffect(() => {
-    if (correctOption && !availableOptions.includes(correctOption)) {
-      setCorrectOption('');
-    }
+    setCorrectOptions((prev) => prev.filter((o) => availableOptions.includes(o)));
   }, [sections]);
 
   const handleFormatChange = (fmt: QuestionFormat) => {
@@ -199,11 +200,16 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
       if (!window.confirm('Changing format will reset all sections. Continue?')) return;
     }
     setQuestionFormat(fmt);
-    setCorrectOption('');
+    setCorrectOptions([]);
     setSections(getDefaultSections(contentType, fmt));
   };
 
   const addSection = () => setSections((s) => [...s, { label: '', content: '' }]);
+  const addMCQOption = () => {
+    const used = new Set(sections.map((s) => s.label.match(/^Option ([A-Z])$/)?.[1]).filter(Boolean));
+    const next = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find((l) => !used.has(l)) ?? 'A';
+    setSections((s) => [...s, { label: `Option ${next}`, content: '' }]);
+  };
   const removeSection = (i: number) => {
     if (!window.confirm('Remove this section?')) return;
     setSections((s) => s.filter((_, idx) => idx !== i));
@@ -217,7 +223,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
     e.preventDefault();
     if (!title.trim()) { setError('Title is required'); return; }
     if (!sections[0]?.content.trim() && !sections[0]?.images?.length) { setError('Content is required'); return; }
-    if (isMultipleChoice && !correctOption) { setError('Please select the correct answer'); return; }
+    if (isMultipleChoice && correctOptions.length === 0) { setError('Please select the correct answer'); return; }
     setError('');
     try {
       await updateContent.mutateAsync({
@@ -231,7 +237,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
           topic_id: topicId || null,
           metadata: {
             ...(isCurrentQuestion ? { question_format: questionFormat } : {}),
-            ...(isMultipleChoice && correctOption ? { correct_option: correctOption } : {}),
+            ...(isMultipleChoice && correctOptions.length > 0 ? { correct_option: correctOptions } : {}),
             sections: sections.filter((s) => s.label.trim() || s.content.trim() || s.images?.length).map((s) => ({ label: s.label.trim() || 'Section', content: s.content, ...(s.images?.length ? { images: s.images } : {}) })),
           },
         },
@@ -312,7 +318,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
                     readOnly={isCurrentQuestion}
                     className={`flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 ${isCurrentQuestion ? 'bg-gray-50 text-gray-500 cursor-default' : ''}`}
                   />
-                  {!isCurrentQuestion && (
+                  {(!isCurrentQuestion || (isMultipleChoice && i > 0)) && (
                     <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 hover:text-red-500 shrink-0">
                       Remove
                     </button>
@@ -346,6 +352,11 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
                 </div>
               </div>
             ))}
+            {isMultipleChoice && (
+              <button type="button" onClick={addMCQOption} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
+                + Add Option
+              </button>
+            )}
             {!isCurrentQuestion && (
               <button type="button" onClick={addSection} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
                 + Add Section
@@ -357,13 +368,13 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
         {isMultipleChoice && availableOptions.length > 0 && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer *</label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {availableOptions.map((opt) => (
                 <button
                   key={opt}
                   type="button"
-                  onClick={() => setCorrectOption(opt)}
-                  className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${correctOption === opt ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
+                  onClick={() => setCorrectOptions((prev) => prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt])}
+                  className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${correctOptions.includes(opt) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
                 >
                   {opt}
                 </button>
@@ -529,38 +540,48 @@ function ViewModal({ item, onClose }: {
           <FlashCard front={flashcardFront} back={flashcardBack} />
         ) : isMultiChoice ? (
           <div>
-            <div className="mb-4">{sections[0]?.content}</div>
-            <div className="space-y-2 mb-4">
-              {(['A', 'B', 'C', 'D'] as const).map((opt) => {
-                const sec = sections.find((s) => s.label === `Option ${opt}`);
-                if (!sec) return null;
-                const isCorrect = showSolution && meta?.correct_option === opt;
-                return (
-                  <div
-                    key={opt}
-                    className={`flex items-start gap-3 p-3 rounded-lg border text-sm transition-colors ${
-                      isCorrect ? 'border-green-500 bg-green-50' : 'border-gray-200'
-                    }`}
-                  >
-                    <span className={`font-semibold shrink-0 ${isCorrect ? 'text-green-600' : 'text-gray-500'}`}>
-                      {opt}.
-                    </span>
-                    <div className={isCorrect ? 'text-green-700' : 'text-gray-600'}>{sec.content}</div>
+            {(() => {
+              const raw = meta?.correct_option;
+              const correctOpts = Array.isArray(raw) ? raw : raw ? [raw] : [];
+              const optionSections = sections.filter((s) => /^Option [A-Z]$/.test(s.label));
+              return (
+                <>
+                  <div className="mb-4">{sections[0]?.content}</div>
+                  <div className="space-y-2 mb-4">
+                    {optionSections.map((sec) => {
+                      const letter = sec.label.replace('Option ', '');
+                      const isCorrect = showSolution && correctOpts.includes(letter);
+                      return (
+                        <div
+                          key={sec.label}
+                          className={`flex items-start gap-3 p-3 rounded-lg border text-sm transition-colors ${
+                            isCorrect ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                          }`}
+                        >
+                          <span className={`font-semibold shrink-0 ${isCorrect ? 'text-green-600' : 'text-gray-500'}`}>
+                            {letter}.
+                          </span>
+                          <div className={isCorrect ? 'text-green-700' : 'text-gray-600'}>{sec.content}</div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-            {!showSolution ? (
-              <button
-                type="button"
-                onClick={() => setShowSolution(true)}
-                className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
-              >
-                Show solution
-              </button>
-            ) : (
-              <p className="text-sm font-medium text-green-600">Correct answer: {meta?.correct_option}</p>
-            )}
+                  {!showSolution ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowSolution(true)}
+                      className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                    >
+                      Show solution
+                    </button>
+                  ) : (
+                    <p className="text-sm font-medium text-green-600">
+                      Correct answer{correctOpts.length > 1 ? 's' : ''}: {correctOpts.join(', ')}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
           </div>
         ) : (
           <>

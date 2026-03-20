@@ -257,7 +257,7 @@ export default function PracticePage({
   const [revealed, setRevealed] = useState(false);
   const [revealedSections, setRevealedSections] = useState<Set<number>>(new Set());
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [results, setResults] = useState<SessionResult[]>([]);
   const [startedAt, setStartedAt] = useState<number>(0);
   const [error, setError] = useState('');
@@ -331,7 +331,7 @@ export default function PracticePage({
       setIndex(0);
       setResults([]);
       setRevealed(false);
-      setSelectedOption(null);
+      setSelectedOptions([]);
       setReappearedIds(new Set());
       setOriginalItemCount(data.length);
       setStartedAt(Date.now());
@@ -370,7 +370,7 @@ export default function PracticePage({
       setIndex((i) => i + 1);
       setRevealed(false);
       setRevealedSections(new Set());
-      setSelectedOption(null);
+      setSelectedOptions([]);
       setStartedAt(Date.now());
     } else if (index + 1 >= items.length) {
       setPhase('done');
@@ -378,7 +378,7 @@ export default function PracticePage({
       setIndex((i) => i + 1);
       setRevealed(false);
       setRevealedSections(new Set());
-      setSelectedOption(null);
+      setSelectedOptions([]);
       setStartedAt(Date.now());
     }
   };
@@ -948,76 +948,103 @@ export default function PracticePage({
             </div>
           ) : ci.metadata?.question_format === 'multiple_choice' ? (
             <div>
-              {!revealed ? (
-                <div>
-                  <div className="space-y-2">
-                    {(['A', 'B', 'C', 'D'] as const).map((opt) => {
-                      const sec = ci.metadata?.sections?.find((s) => s.label === `Option ${opt}`);
-                      if (!sec) return null;
-                      return (
-                        <button
-                          key={opt}
-                          onClick={() => { setSelectedOption(opt); setRevealed(true); }}
-                          className="w-full text-left flex items-start gap-3 px-4 py-3 rounded-xl border border-slate-200 text-sm hover:border-[#1e3a8a]/40 hover:bg-[#1e3a8a]/5 transition-all group"
-                        >
-                          <span className="font-bold text-slate-400 group-hover:text-[#1e3a8a] shrink-0 transition-colors">{opt}</span>
-                          <div className="text-slate-700" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
-                            <LatexContent content={sec.content} />
-                          </div>
-                        </button>
-                      );
-                    })}
+              {(() => {
+                const raw = ci.metadata?.correct_option;
+                const correctOpts = Array.isArray(raw) ? raw : raw ? [raw] : [];
+                const optionSecs = ci.metadata?.sections?.filter((s) => /^Option [A-Z]$/.test(s.label)) ?? [];
+                return !revealed ? (
+                  <div>
+                    <div className="space-y-2">
+                      {optionSecs.map((sec) => {
+                        const letter = sec.label.replace('Option ', '');
+                        const isSelected = selectedOptions.includes(letter);
+                        return (
+                          <button
+                            key={letter}
+                            onClick={() => setSelectedOptions((prev) => prev.includes(letter) ? prev.filter((o) => o !== letter) : [...prev, letter])}
+                            className={`w-full text-left flex items-start gap-3 px-4 py-3 rounded-xl border text-sm transition-all group ${isSelected ? 'border-[#1e3a8a]/40 bg-[#1e3a8a]/5' : 'border-slate-200 hover:border-[#1e3a8a]/40 hover:bg-[#1e3a8a]/5'}`}
+                          >
+                            <span className={`font-bold shrink-0 transition-colors ${isSelected ? 'text-[#1e3a8a]' : 'text-slate-400 group-hover:text-[#1e3a8a]'}`}>{letter}</span>
+                            <div className="text-slate-700" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
+                              <LatexContent content={sec.content} />
+                            </div>
+                            {isSelected && <span className="ml-auto shrink-0 font-bold text-[#1e3a8a]">✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {selectedOptions.length > 0 && (
+                      <button
+                        onClick={() => setRevealed(true)}
+                        className="w-full mt-3 py-2.5 rounded-xl text-sm font-semibold bg-[#1e3a8a] text-white hover:bg-[#1e3a8a]/90 transition-colors"
+                      >
+                        Check
+                      </button>
+                    )}
+                    <SkipButton onSubmit={submitOutcome} />
                   </div>
-                  <SkipButton onSubmit={submitOutcome} />
-                </div>
-              ) : (
-                <div>
-                  <div className="space-y-2 mb-5">
-                    {(['A', 'B', 'C', 'D'] as const).map((opt) => {
-                      const sec = ci.metadata?.sections?.find((s) => s.label === `Option ${opt}`);
-                      if (!sec) return null;
-                      const isCorrect = ci.metadata?.correct_option === opt;
-                      const isSelected = selectedOption === opt;
+                ) : (
+                  <div>
+                    {(() => {
+                      const isAnswerCorrect =
+                        correctOpts.length > 0 &&
+                        correctOpts.every((o) => selectedOptions.includes(o)) &&
+                        selectedOptions.every((o) => correctOpts.includes(o));
                       return (
-                        <div
-                          key={opt}
-                          className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm ${
-                            isCorrect
-                              ? 'border-emerald-400 bg-emerald-50'
-                              : isSelected
-                              ? 'border-red-300 bg-red-50'
-                              : 'border-slate-200 bg-white'
-                          }`}
-                        >
-                          <span className={`font-bold shrink-0 ${isCorrect ? 'text-emerald-600' : isSelected ? 'text-red-500' : 'text-slate-400'}`}>
-                            {opt}
-                          </span>
-                          <div className={isCorrect ? 'text-emerald-700' : isSelected ? 'text-red-700' : 'text-slate-600'} dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
-                            <LatexContent content={sec.content} />
+                        <>
+                          <div className="space-y-2 mb-5">
+                            {optionSecs.map((sec) => {
+                              const letter = sec.label.replace('Option ', '');
+                              const isCorrect = correctOpts.includes(letter);
+                              const isSelected = selectedOptions.includes(letter);
+                              return (
+                                <div
+                                  key={letter}
+                                  className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm ${
+                                    isCorrect ? 'border-emerald-400 bg-emerald-50' : isSelected ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'
+                                  }`}
+                                >
+                                  <span className={`font-bold shrink-0 ${isCorrect ? 'text-emerald-600' : isSelected ? 'text-red-500' : 'text-slate-400'}`}>
+                                    {letter}
+                                  </span>
+                                  <div className={isCorrect ? 'text-emerald-700' : isSelected ? 'text-red-700' : 'text-slate-600'} dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
+                                    <LatexContent content={sec.content} />
+                                  </div>
+                                  {isCorrect && (
+                                    <span className="ml-auto shrink-0 text-emerald-600">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    </span>
+                                  )}
+                                  {isSelected && !isCorrect && (
+                                    <span className="ml-auto shrink-0 text-red-400">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
-                          {isCorrect && (
-                            <span className="ml-auto shrink-0 text-emerald-600">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </span>
-                          )}
-                          {isSelected && !isCorrect && (
-                            <span className="ml-auto shrink-0 text-red-400">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </span>
-                          )}
-                        </div>
+                          <ReportErrorButton contentItemId={ci.id} />
+                          <button
+                            onClick={() => submitOutcome(isAnswerCorrect ? 'solved' : 'incorrect', false)}
+                            className={`w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                              isAnswerCorrect
+                                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                : 'bg-red-500 text-white hover:bg-red-600'
+                            }`}
+                          >
+                            Continue
+                          </button>
+                        </>
                       );
-                    })}
+                    })()}
                   </div>
-
-                  <ReportErrorButton contentItemId={ci.id} />
-                  {ci.type === 'exam_question' ? <ExamOutcomeButtons onSubmit={submitOutcome} /> : <OutcomeButtons onSubmit={submitOutcome} />}
-                </div>
-              )}
+                );
+              })()}
             </div>
           ) : isQuestion ? (
             !revealed ? (

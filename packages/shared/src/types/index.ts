@@ -71,7 +71,7 @@ export interface AlgorithmMetadata {
   runtime?: string;
   sections?: Array<{ label: string; content: string; images?: string[] }>;
   question_format?: QuestionFormat;
-  correct_option?: 'A' | 'B' | 'C' | 'D';
+  correct_option?: string | string[];
 }
 
 export interface ContentItem {
