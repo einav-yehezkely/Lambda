@@ -49,7 +49,8 @@ export class PracticeService {
         if (ci.type !== 'exam_question' && ci.type !== 'exercise_question') return true;
         const fmt = ci.metadata?.question_format;
         if (fmt === 'flashcard' || fmt === 'multiple_choice') return true;
-        return ci.solution?.trim() || communitySet.has(i.content_item_id);
+        const hasImageSolution = (ci.metadata?.sections?.slice(1) ?? []).some((s: any) => s.images?.length);
+        return ci.solution?.trim() || hasImageSolution || communitySet.has(i.content_item_id);
       });
     }
 
@@ -233,7 +234,8 @@ export class PracticeService {
         if (i.content_item.type !== 'exam_question' && i.content_item.type !== 'exercise_question') return true;
         const fmt = i.content_item.metadata?.question_format;
         if (fmt === 'flashcard' || fmt === 'multiple_choice') return true;
-        return i.content_item.solution?.trim() || communitySet.has(i.content_item_id);
+        const hasImageSolution = (i.content_item.metadata?.sections?.slice(1) ?? []).some((s: any) => s.images?.length);
+        return i.content_item.solution?.trim() || hasImageSolution || communitySet.has(i.content_item_id);
       });
     }
 

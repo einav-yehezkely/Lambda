@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCourse, useVersion, useVersionProgress, useDeleteVersion, useUpdateVersion, useEnrollCourse, useActiveVersions } from '@/hooks/useCourses';
 import { useQueryClient } from '@tanstack/react-query';
-import { useTopics, useVersionContent, useCreateContent, useCreateTopic, useDeleteTopic } from '@/hooks/useTopics';
-import { topicsApi } from '@/lib/api/content';
+import { useTopics, useVersionContent, useCreateContent, useUpdateContent, useCreateTopic, useDeleteTopic } from '@/hooks/useTopics';
+import { topicsApi, contentApi } from '@/lib/api/content';
+import { compressImage } from '@/lib/compress-image';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfileById, useCurrentUser } from '@/hooks/useUsers';
 import { ContentItemCard } from '@/components/content/content-item-card';
@@ -486,6 +487,7 @@ function AddContentModal({
   onClose: () => void;
 }) {
   const createContent = useCreateContent();
+  const updateContent = useUpdateContent();
   const [type, setType] = useState(() => activeTypes?.[0]?.value ?? 'proof');
   const [questionFormat, setQuestionFormat] = useState('open');
   const [correctOption, setCorrectOption] = useState<'A' | 'B' | 'C' | 'D' | ''>('');
@@ -493,16 +495,19 @@ function AddContentModal({
   const [tagsInput, setTagsInput] = useState('');
   const [topicId, setTopicId] = useState('');
   const [formError, setFormError] = useState('');
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const uploadingIdxRef = useRef<number>(-1);
 
   const getSections = (t: string, fmt: string) => {
     const saved = activeTypes?.find((at) => at.value === t)?.default_sections;
-    if (saved && saved.length > 0) return saved.map((s) => ({ ...s, content: '' }));
-    return getDefaultSections(t, fmt);
+    if (saved && saved.length > 0) return saved.map((s) => ({ ...s, content: '', imageFiles: [] as File[] }));
+    return getDefaultSections(t, fmt).map((s) => ({ ...s, imageFiles: [] as File[] }));
   };
 
-  const [sections, setSections] = useState<Array<{ label: string; content: string }>>(() => getSections(activeTypes?.[0]?.value ?? 'proof', 'open'));
+  const [sections, setSections] = useState<Array<{ label: string; content: string; imageFiles: File[] }>>(() => getSections(activeTypes?.[0]?.value ?? 'proof', 'open'));
   const [savedDefault, setSavedDefault] = useState(false);
-  const addSection = () => setSections((s) => [...s, { label: '', content: '' }]);
+  const addSection = () => setSections((s) => [...s, { label: '', content: '', imageFiles: [] }]);
   const removeSection = (i: number) => {
     if (!window.confirm('Remove this section?')) return;
     setSections((s) => s.filter((_, idx) => idx !== i));
@@ -511,6 +516,35 @@ function AddContentModal({
     setSections((s) => s.map((sec, idx) => idx === i ? { ...sec, [field]: value } : sec));
   const moveSection = (i: number, dir: -1 | 1) =>
     setSections((s) => { const a = [...s]; [a[i], a[i + dir]] = [a[i + dir], a[i]]; return a; });
+
+  const triggerImageUpload = (sectionIdx: number) => {
+    uploadingIdxRef.current = sectionIdx;
+    imageInputRef.current?.click();
+  };
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    imageInputRef.current!.value = '';
+    const idx = uploadingIdxRef.current;
+    uploadingIdxRef.current = -1;
+    if (!file || idx < 0) return;
+    if (!file.type.startsWith('image/')) { setFormError('Only image files are allowed'); return; }
+    if (file.size > 5 * 1024 * 1024) { setFormError('Image must be under 5 MB'); return; }
+    if ((sections[idx]?.imageFiles?.length ?? 0) >= 3) { setFormError('Maximum 3 images per section'); return; }
+    setUploadingIdx(idx);
+    setFormError('');
+    try {
+      const compressed = await compressImage(file);
+      setSections((s) => s.map((sec, i) => i === idx ? { ...sec, imageFiles: [...sec.imageFiles, compressed] } : sec));
+    } catch {
+      setFormError('Image compression failed');
+    } finally {
+      setUploadingIdx(null);
+    }
+  };
+
+  const removeImageFile = (sectionIdx: number, fileIdx: number) =>
+    setSections((s) => s.map((sec, i) => i === sectionIdx ? { ...sec, imageFiles: sec.imageFiles.filter((_, fi) => fi !== fileIdx) } : sec));
 
   const isAlgorithm = type === 'algorithm';
   const isQuestion = type === 'exam_question' || type === 'exercise_question';
@@ -523,13 +557,13 @@ function AddContentModal({
   useEffect(() => {
     setQuestionFormat('open');
     setCorrectOption('');
-    setSections(getSections(type, 'open'));
+    setSections(getSections(type, 'open').map((s) => ({ ...s, imageFiles: [] })));
   }, [type]);
 
   useEffect(() => {
     if (isQuestion) {
       setCorrectOption('');
-      setSections(getSections(type, questionFormat));
+      setSections(getSections(type, questionFormat).map((s) => ({ ...s, imageFiles: [] })));
     }
   }, [questionFormat]);
 
@@ -542,11 +576,11 @@ function AddContentModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) { setFormError('Title is required'); return; }
-    if (!sections[0]?.content.trim()) { setFormError('Content is required'); return; }
+    if (!sections[0]?.content.trim() && !sections[0]?.imageFiles?.length) { setFormError('Content is required'); return; }
     if (isMultipleChoice && !correctOption) { setFormError('Please select the correct answer'); return; }
     setFormError('');
     try {
-      await createContent.mutateAsync({
+      const junction = await createContent.mutateAsync({
         version_id: versionId,
         topic_id: topicId || undefined,
         type,
@@ -556,9 +590,35 @@ function AddContentModal({
         metadata: {
           ...(isQuestion ? { question_format: questionFormat } : {}),
           ...(isMultipleChoice && correctOption ? { correct_option: correctOption } : {}),
-          sections: sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: s.content })),
+          sections: sections.filter((s) => s.label.trim() || s.content.trim() || s.imageFiles?.length).map((s) => ({ label: s.label.trim() || 'Section', content: s.content })),
         },
       });
+
+      // Upload images if any
+      const hasImages = sections.some((s) => s.imageFiles?.length);
+      if (hasImages) {
+        const itemId = junction.content_item_id;
+        const sectionsWithUrls = await Promise.all(sections.map(async (sec) => {
+          if (!sec.imageFiles?.length) return { label: sec.label.trim() || 'Section', content: sec.content };
+          const urls = await Promise.all(sec.imageFiles.map(async (f) => {
+            const { url } = await contentApi.uploadImage(itemId, f);
+            return url;
+          }));
+          return { label: sec.label.trim() || 'Section', content: sec.content, images: urls };
+        }));
+        await updateContent.mutateAsync({
+          id: itemId,
+          body: {
+            version_id: versionId,
+            metadata: {
+              ...(isQuestion ? { question_format: questionFormat } : {}),
+              ...(isMultipleChoice && correctOption ? { correct_option: correctOption } : {}),
+              sections: sectionsWithUrls.filter((s) => s.label || s.content || (s as any).images?.length),
+            },
+          },
+        });
+      }
+
       onClose();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Failed to create item');
@@ -647,8 +707,31 @@ function AddContentModal({
                   </button>
                 </div>
                 <LatexEditor value={sec.content} onChange={(v) => updateSection(i, 'content', v)} rows={3} placeholder="Use $...$ for inline LaTeX." />
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {sec.imageFiles.map((f, fi) => (
+                    <div key={fi} className="relative group w-16 h-16 shrink-0">
+                      <img src={URL.createObjectURL(f)} alt="" className="w-16 h-16 object-cover rounded border border-gray-200" />
+                      <button
+                        type="button"
+                        onClick={() => removeImageFile(i, fi)}
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >×</button>
+                    </div>
+                  ))}
+                  {sec.imageFiles.length < 3 && (
+                    <button
+                      type="button"
+                      onClick={() => triggerImageUpload(i)}
+                      disabled={uploadingIdx === i}
+                      className="w-16 h-16 border-2 border-dashed border-gray-300 rounded text-gray-400 hover:border-gray-400 hover:text-gray-600 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors disabled:opacity-50"
+                    >
+                      {uploadingIdx === i ? '...' : <><span className="text-lg leading-none">+</span><span>Image</span></>}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
+            <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
             <button type="button" onClick={addSection} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
               + Add Section
             </button>

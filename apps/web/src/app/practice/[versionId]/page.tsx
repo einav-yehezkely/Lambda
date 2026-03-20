@@ -256,6 +256,7 @@ export default function PracticePage({
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [revealedSections, setRevealedSections] = useState<Set<number>>(new Set());
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [results, setResults] = useState<SessionResult[]>([]);
   const [startedAt, setStartedAt] = useState<number>(0);
@@ -693,7 +694,7 @@ export default function PracticePage({
         <div className="mb-7">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Session length</p>
           <div className="flex flex-wrap gap-2">
-            {([10, 20, 50, null] as (number | null)[]).map((n) => {
+            {([5, 10, 20, 50, null] as (number | null)[]).map((n) => {
               const disabled = n !== null && effectiveCount !== null && effectiveCount < n;
               const active   = !disabled && activeSessionLength === n;
               const label    = n === null
@@ -835,7 +836,7 @@ export default function PracticePage({
   const flashcardFront = ci.metadata?.sections?.find((s) => s.label === 'Front')?.content ?? ci.content;
   const flashcardBack = ci.metadata?.sections?.find((s) => s.label === 'Back')?.content ?? ci.solution ?? '';
 
-  const nonQuestionSections: { label: string; content: string }[] = !isQuestion
+  const nonQuestionSections: { label: string; content: string; images?: string[] }[] = !isQuestion
     ? (ci.metadata?.sections?.length ?? 0) > 1
       ? ci.metadata!.sections!.slice(1)
       : ci.solution
@@ -847,6 +848,7 @@ export default function PracticePage({
   const progressPct = originalItemCount > 0 ? (doneCount / originalItemCount) * 100 : 0;
 
   return (
+    <>
     <div className="max-w-2xl mx-auto">
       {/* Progress bar + counter */}
       <div className="flex items-center gap-3 mb-6">
@@ -910,6 +912,16 @@ export default function PracticePage({
             </div>
           )}
         </div>
+
+        {/* Section 0 images — full-width above card body */}
+        {!isFlashcard && (ci.metadata?.sections?.[0]?.images?.length ?? 0) > 0 && (
+          <div className="border-b border-slate-200">
+            {ci.metadata!.sections![0].images!.map((url) => (
+              <img key={url} src={url} alt="" onClick={() => setLightboxUrl(url)}
+                className="w-full block cursor-pointer hover:opacity-90 transition-opacity" />
+            ))}
+          </div>
+        )}
 
         {/* Card body */}
         <div className="px-6 py-5">
@@ -1020,18 +1032,27 @@ export default function PracticePage({
               </div>
             ) : (
               <div>
-                {ci.solution ? (
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5">
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Solution</div>
-                    <div className="text-sm text-slate-700 leading-relaxed" dir={/[\u0590-\u05FF]/.test(ci.solution ?? '') ? 'rtl' : undefined}>
-                      <LatexContent content={ci.solution} />
+                {(() => {
+                  const solutionImages = (ci.metadata?.sections?.slice(1) ?? []).flatMap((s) => s.images ?? []);
+                  return ci.solution || solutionImages.length > 0 ? (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden mb-5">
+                      <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest px-4 pt-4 mb-2">Solution</div>
+                      {solutionImages.map((url) => (
+                        <img key={url} src={url} alt="" onClick={() => setLightboxUrl(url)}
+                          className="w-full block cursor-pointer hover:opacity-90 transition-opacity" />
+                      ))}
+                      {ci.solution && (
+                        <div className="px-4 pb-4 text-sm text-slate-700 leading-relaxed" dir={/[\u0590-\u05FF]/.test(ci.solution) ? 'rtl' : undefined}>
+                          <LatexContent content={ci.solution} />
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ) : (
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5 text-sm text-slate-400">
-                    No official solution available. Add your own below.
-                  </div>
-                )}
+                  ) : (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5 text-sm text-slate-400">
+                      No official solution available. Add your own below.
+                    </div>
+                  );
+                })()}
                 {ci.metadata?.question_format !== 'flashcard' && <CommunitySolutions contentItemId={ci.id} />}
                 <ReportErrorButton contentItemId={ci.id} />
                 {ci.type === 'exam_question' ? <ExamOutcomeButtons onSubmit={submitOutcome} /> : <OutcomeButtons onSubmit={submitOutcome} />}
@@ -1061,8 +1082,16 @@ export default function PracticePage({
                     </svg>
                   </button>
                   {revealedSections.has(i) && (
-                    <div className="bg-slate-50 border border-slate-200 border-t-0 rounded-b-xl px-4 py-4">
-                      <div className="text-sm text-slate-700 leading-relaxed" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
+                    <div className="bg-slate-50 border border-slate-200 border-t-0 rounded-b-xl overflow-hidden">
+                      {(sec.images?.length ?? 0) > 0 && (
+                        <div className="border-b border-slate-200">
+                          {sec.images!.map((url) => (
+                            <img key={url} src={url} alt="" onClick={() => setLightboxUrl(url)}
+                              className="w-full block cursor-pointer hover:opacity-90 transition-opacity" />
+                          ))}
+                        </div>
+                      )}
+                      <div className="px-4 py-4 text-sm text-slate-700 leading-relaxed" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
                         <LatexContent content={sec.content} />
                       </div>
                     </div>
@@ -1082,6 +1111,16 @@ export default function PracticePage({
         </div>
       </div>
     </div>
+
+    {lightboxUrl && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+        onClick={() => setLightboxUrl(null)}
+      >
+        <img src={lightboxUrl} alt="" className="max-w-[90vw] max-h-[90vh] rounded shadow-2xl" />
+      </div>
+    )}
+    </>
   );
 }
 

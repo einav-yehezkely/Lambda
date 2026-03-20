@@ -9,6 +9,8 @@ import { LatexEditor } from '../ui/latex-editor';
 import { Modal } from '../ui/modal';
 import { FlashCard } from './flash-card';
 import { useUpdateContent, useDeleteContent } from '@/hooks/useTopics';
+import { contentApi } from '@/lib/api/content';
+import { compressImage } from '@/lib/compress-image';
 
 const TYPE_LABEL: Record<string, string> = {
   proof: 'Proof',
@@ -114,7 +116,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
   const isCurrentQuestion = contentType === 'exam_question' || contentType === 'exercise_question';
   const isCurrentAlgorithm = contentType === 'algorithm';
   const isMultipleChoice = isCurrentQuestion && questionFormat === 'multiple_choice';
-  const [sections, setSections] = useState<Array<{ label: string; content: string }>>(() => {
+  const [sections, setSections] = useState<Array<{ label: string; content: string; images?: string[] }>>(() => {
     const meta = ci.metadata?.sections ?? [];
     if (meta.length > 0) return meta;
     if (isAlgorithm) return [
@@ -145,6 +147,41 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
   };
   const [error, setError] = useState('');
   const [savedDefault, setSavedDefault] = useState(false);
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const uploadingIdxRef = useRef<number>(-1);
+
+  const triggerImageUpload = (sectionIdx: number) => {
+    uploadingIdxRef.current = sectionIdx;
+    imageInputRef.current?.click();
+  };
+
+  const handleImageAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    imageInputRef.current!.value = '';
+    const idx = uploadingIdxRef.current;
+    uploadingIdxRef.current = -1;
+    if (!file || idx < 0) return;
+    if (!file.type.startsWith('image/')) { setError('Only image files are allowed'); return; }
+    if (file.size > 5 * 1024 * 1024) { setError('Image must be under 5 MB'); return; }
+    if ((sections[idx]?.images?.length ?? 0) >= 3) { setError('Maximum 3 images per section'); return; }
+    setUploadingIdx(idx);
+    setError('');
+    try {
+      const compressed = await compressImage(file);
+      const { url } = await contentApi.uploadImage(ci.id, compressed);
+      setSections((s) => s.map((sec, i) => i === idx ? { ...sec, images: [...(sec.images ?? []), url] } : sec));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Image upload failed');
+    } finally {
+      setUploadingIdx(null);
+    }
+  };
+
+  const removeImageFromSection = (sectionIdx: number, url: string) => {
+    setSections((s) => s.map((sec, i) => i === sectionIdx ? { ...sec, images: (sec.images ?? []).filter((u) => u !== url) } : sec));
+    contentApi.deleteImage(ci.id, url).catch(() => {/* ignore — orphan cleaned on item delete */});
+  };
 
   const formatOptions = contentType === 'exam_question' ? EXAM_QUESTION_FORMATS : EXERCISE_QUESTION_FORMATS;
   const availableOptions = sections
@@ -179,7 +216,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) { setError('Title is required'); return; }
-    if (!sections[0]?.content.trim()) { setError('Content is required'); return; }
+    if (!sections[0]?.content.trim() && !sections[0]?.images?.length) { setError('Content is required'); return; }
     if (isMultipleChoice && !correctOption) { setError('Please select the correct answer'); return; }
     setError('');
     try {
@@ -195,7 +232,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
           metadata: {
             ...(isCurrentQuestion ? { question_format: questionFormat } : {}),
             ...(isMultipleChoice && correctOption ? { correct_option: correctOption } : {}),
-            sections: sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: s.content })),
+            sections: sections.filter((s) => s.label.trim() || s.content.trim() || s.images?.length).map((s) => ({ label: s.label.trim() || 'Section', content: s.content, ...(s.images?.length ? { images: s.images } : {}) })),
           },
         },
       });
@@ -282,6 +319,31 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
                   )}
                 </div>
                 <LatexEditor value={sec.content} onChange={(v) => updateSection(i, 'content', v)} rows={3} />
+                {/* Per-section images */}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {(sec.images ?? []).map((url) => (
+                    <div key={url} className="relative group w-16 h-16 shrink-0">
+                      <img src={url} alt="" className="w-16 h-16 object-cover rounded border border-gray-200" />
+                      <button
+                        type="button"
+                        onClick={() => removeImageFromSection(i, url)}
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  {(sec.images?.length ?? 0) < 3 && (
+                    <button
+                      type="button"
+                      onClick={() => triggerImageUpload(i)}
+                      disabled={uploadingIdx === i}
+                      className="w-16 h-16 border-2 border-dashed border-gray-300 rounded text-gray-400 hover:border-gray-400 hover:text-gray-600 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors disabled:opacity-50"
+                    >
+                      {uploadingIdx === i ? '...' : <><span className="text-lg leading-none">+</span><span>Image</span></>}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
             {!isCurrentQuestion && (
@@ -314,6 +376,8 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
           <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
           <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="comma-separated" dir="auto" className={INPUT_CLS} />
         </div>
+
+        <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageAdd} />
 
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex items-center justify-between gap-2 pt-1">
@@ -362,6 +426,7 @@ function ViewModal({ item, onClose }: {
   const flashcardBack = meta?.sections?.find((s) => s.label === 'Back')?.content ?? content_item.solution ?? '';
   const [page, setPage] = useState(0);
   const [showSolution, setShowSolution] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -395,11 +460,21 @@ function ViewModal({ item, onClose }: {
   const isSolutionTab = (label?: string) =>
     !!label && (label.toLowerCase().includes('solution') || label === 'Proof Sketch');
 
+  const renderSectionImages = (imgs?: string[]) =>
+    imgs?.length ? (
+      <div className="flex flex-col gap-2 mb-3">
+        {imgs.map((url) => (
+          <img key={url} src={url} alt="" onClick={() => setLightboxUrl(url)}
+            className="w-full rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity" />
+        ))}
+      </div>
+    ) : null;
+
   const sections: { label: string; content: React.ReactNode }[] =
     (content_item.metadata?.sections?.length ?? 0) > 0
       ? content_item.metadata!.sections!.map((s) => ({
           label: s.label,
-          content: <div className="text-gray-600" dir={hDir(s.content)}><LatexContent content={s.content} /></div>,
+          content: <>{renderSectionImages(s.images)}<div className="text-gray-600" dir={hDir(s.content)}><LatexContent content={s.content} /></div></>,
         }))
       : isAlgorithm
         ? [
@@ -422,6 +497,20 @@ function ViewModal({ item, onClose }: {
 
   return (
     <Modal title={<LatexContent content={content_item.title} />} onClose={onClose} className="max-w-2xl">
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <img
+            src={lightboxUrl}
+            alt=""
+            className="max-w-full max-h-full rounded-lg shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
       <div ref={contentRef} className="text-sm">
         {/* Type + difficulty */}
         <div className="flex items-center gap-2 mb-4">

@@ -189,6 +189,18 @@ export class ContentService {
       throw new ForbiddenException('Only the author can delete this content item');
     }
 
+    // Clean up section images from storage
+    const sectionImages = (item.metadata?.sections ?? []).flatMap((s) => s.images ?? []);
+    if (sectionImages.length > 0) {
+      const marker = '/content-images/';
+      const paths = sectionImages
+        .map((url) => { const idx = url.indexOf(marker); return idx !== -1 ? url.slice(idx + marker.length) : null; })
+        .filter(Boolean) as string[];
+      if (paths.length > 0) {
+        await this.db.storage.from('content-images').remove(paths);
+      }
+    }
+
     const { error } = await this.db.from('content_items').delete().eq('id', id);
     if (error) throw new InternalServerErrorException(error.message);
   }
@@ -273,6 +285,54 @@ export class ContentService {
       subject: `Lambda – Mistake Report: "${item.title}"`,
       text: `${reporterLine}\n\nQuestion: "${item.title}"${linkLine}\n\nMistake description:\n${errorText}`,
     });
+  }
+
+  // ─── Upload image to storage (URL stored client-side in section metadata) ────
+
+  async uploadImage(
+    contentItemId: string,
+    file: { buffer: Buffer; size: number; mimetype: string },
+    userId: string,
+    isAdmin = false,
+  ): Promise<{ url: string }> {
+    const item = await this.getItem(contentItemId);
+    if (!isAdmin && item.author_id !== userId) {
+      throw new ForbiddenException('Only the author can upload images');
+    }
+    if (!file.mimetype.startsWith('image/')) {
+      throw new BadRequestException('Only image files are allowed');
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      throw new BadRequestException('Compressed image size exceeds 2 MB limit');
+    }
+
+    const imageId = crypto.randomUUID();
+    const storagePath = `${contentItemId}/${imageId}.webp`;
+
+    const { error: storageErr } = await this.db.storage
+      .from('content-images')
+      .upload(storagePath, file.buffer, { contentType: 'image/webp', upsert: false });
+
+    if (storageErr) throw new InternalServerErrorException(storageErr.message);
+
+    const { data: urlData } = this.db.storage.from('content-images').getPublicUrl(storagePath);
+    return { url: urlData.publicUrl };
+  }
+
+  // ─── Delete a single image from storage ─────────────────────────────────────
+
+  async deleteImage(contentItemId: string, imageUrl: string, userId: string, isAdmin = false): Promise<void> {
+    const item = await this.getItem(contentItemId);
+    if (!isAdmin && item.author_id !== userId) {
+      throw new ForbiddenException('Only the author can delete images');
+    }
+
+    const marker = '/content-images/';
+    const idx = imageUrl.indexOf(marker);
+    if (idx === -1) throw new BadRequestException('Invalid image URL');
+    const storagePath = imageUrl.slice(idx + marker.length);
+
+    await this.db.storage.from('content-images').remove([storagePath]);
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────

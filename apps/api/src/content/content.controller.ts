@@ -11,7 +11,10 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -110,6 +113,30 @@ export class ContentController {
     @CurrentUser() user: User,
   ) {
     return this.contentService.vote(id, dto, user.id);
+  }
+
+  @Post(':id/images')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 2 * 1024 * 1024 } }))
+  uploadImage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: any,
+    @CurrentUser() user: User,
+  ) {
+    return this.contentService.uploadImage(id, file, user.id, user.is_admin);
+  }
+
+  @Delete(':id/images')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteImage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { url: string },
+    @CurrentUser() user: User,
+  ) {
+    return this.contentService.deleteImage(id, body.url, user.id, user.is_admin);
   }
 
   @Post(':id/report')

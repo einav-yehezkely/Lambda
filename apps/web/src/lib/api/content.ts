@@ -1,6 +1,24 @@
 import { api } from './client';
 import type { Topic, VersionContentItem, AlgorithmMetadata } from '@lambda/shared';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+async function uploadContentImage(contentItemId: string, file: File): Promise<{ url: string }> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await fetch(`${API_URL}/api/content/${contentItemId}/images`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Upload failed');
+  }
+  return res.json();
+}
+
 export const topicsApi = {
   getByVersion: (versionId: string) =>
     api.get<Topic[]>(`/api/topics?version_id=${versionId}`),
@@ -53,4 +71,15 @@ export const contentApi = {
     tags?: string[];
     metadata?: AlgorithmMetadata;
   }) => api.post<VersionContentItem>('/api/content', body),
+
+  uploadImage: uploadContentImage,
+
+  deleteImage: async (contentItemId: string, url: string): Promise<void> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    await fetch(`${API_URL}/api/content/${contentItemId}/images`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ url }),
+    });
+  },
 };

@@ -69,7 +69,7 @@ export interface AlgorithmMetadata {
   algorithm?: string;
   proof?: string;
   runtime?: string;
-  sections?: Array<{ label: string; content: string }>;
+  sections?: Array<{ label: string; content: string; images?: string[] }>;
   question_format?: QuestionFormat;
   correct_option?: 'A' | 'B' | 'C' | 'D';
 }
