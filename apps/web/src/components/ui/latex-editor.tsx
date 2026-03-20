@@ -20,6 +20,9 @@ const UNICODE_TO_LATEX: [string, string][] = [
   ['∑', '\\sum'], ['∏', '\\prod'], ['∫', '\\int'],
   ['±', '\\pm'], ['×', '\\times'], ['÷', '\\div'], ['·', '\\cdot'],
   ['√', '\\sqrt'],
+  ['⋮', '\\vdots'], ['⋯', '\\cdots'], ['⋱', '\\ddots'], ['…', '\\ldots'],
+  ['ℂ', '\\mathbb{C}'], ['ℝ', '\\mathbb{R}'], ['ℤ', '\\mathbb{Z}'],
+  ['ℕ', '\\mathbb{N}'], ['ℚ', '\\mathbb{Q}'],
   ['Γ', '\\Gamma'], ['Δ', '\\Delta'], ['Θ', '\\Theta'], ['Λ', '\\Lambda'],
   ['Ξ', '\\Xi'], ['Π', '\\Pi'], ['Σ', '\\Sigma'], ['Υ', '\\Upsilon'],
   ['Φ', '\\Phi'], ['Ψ', '\\Psi'], ['Ω', '\\Omega'],
@@ -62,6 +65,7 @@ function hasMathContent(text: string): boolean {
   if (/[_^]\(/.test(text)) return true;
   if (/[⟹⟺→↦⇒⇐⇔≤≥≠≈∈∉⊆⊂∪∩∅∀∃∞∂±×÷∑∏∫√]/.test(text)) return true;
   if (/[αβγδεζηθικλμνξπρστυφχψωΓΔΘΛΞΠΣΥΦΨΩ]/.test(text)) return true;
+  if (text.includes('█')) return true; // Word matrix/vector notation
   // Inline equation: variable=expression, e.g. f=..., N=(V,E,c,s,t)
   if (/[a-zA-Z]\s*=\s*[a-zA-Z0-9(\\]/.test(text)) return true;
   // Fraction: x/y, (expr)/y, x/(expr), |x|/y
@@ -131,7 +135,12 @@ function wrapMathIslands(text: string): string {
       // Strip trailing sentence punctuation (but not math punctuation like })
       const stripped = trimmed.replace(/[.,:;!?]+$/, '');
       const punct = trimmed.slice(stripped.length);
-      result += `$${stripped}$${punct}`;
+      // Use display math ($$) for block environments like \begin{pmatrix}
+      if (/\\begin\{/.test(stripped)) {
+        result += `$$${stripped}$$${punct}`;
+      } else {
+        result += `$${stripped}$${punct}`;
+      }
     } else {
       result += seg;
     }
@@ -274,6 +283,54 @@ function convertFractions(text: string): string {
   return result;
 }
 
+/** Split `inner` by '@' at depth 0 (not inside parens/braces). */
+function splitMatrixRows(inner: string): string[] {
+  const rows: string[] = [];
+  let depth = 0;
+  let current = '';
+  for (const ch of inner) {
+    if (ch === '(' || ch === '{') depth++;
+    else if (ch === ')' || ch === '}') depth--;
+    else if (ch === '@' && depth === 0) { rows.push(current.trim()); current = ''; continue; }
+    current += ch;
+  }
+  rows.push(current.trim());
+  return rows.filter(Boolean);
+}
+
+/**
+ * Convert Word's █(row1@row2@row3) matrix/vector notation to \begin{pmatrix}...\end{pmatrix}.
+ * Uses balanced-paren scanning so rows containing P(x), f(x), etc. are handled correctly.
+ */
+function convertWordMatrices(text: string): string {
+  let result = '';
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] === '█' && text[i + 1] === '(') {
+      i += 2;
+      let depth = 1;
+      let inner = '';
+      while (i < text.length) {
+        if (text[i] === '(') { depth++; inner += text[i++]; }
+        else if (text[i] === ')') {
+          depth--;
+          if (depth === 0) { i++; break; }
+          inner += text[i++];
+        } else {
+          inner += text[i++];
+        }
+      }
+      const rows = splitMatrixRows(inner);
+      result += `\\begin{pmatrix} ${rows.join(' \\\\ ')} \\end{pmatrix}`;
+    } else {
+      result += text[i++];
+    }
+  }
+  // Strip redundant outer () wrapping a matrix: (\begin{pmatrix}...\end{pmatrix}) → \begin{...}...\end{...}
+  result = result.replace(/\(\\begin\{([^}]+)\}([\s\S]*?)\\end\{\1\}\)/g, '\\begin{$1}$2\\end{$1}');
+  return result;
+}
+
 /** Full pipeline: Word linear text → LaTeX with $...$ wrapping. */
 function wordMathToLatex(text: string): string {
   // 1. _(parens) → _{curly}, ^(parens) → ^{curly}
@@ -284,9 +341,17 @@ function wordMathToLatex(text: string): string {
   for (const [from, to] of UNICODE_TO_LATEX) text = text.split(from).join(to);
   // 4. Trim spaces inside {} (Word sometimes adds spacing there)
   text = text.replace(/\{([^{}]*)\}/g, (_, inner) => `{${inner.trim()}}`);
-  // 5. Convert fractions: a/b → \frac{a}{b}
+  // 5. Capital set letters before ^ → \mathbb: C^n → \mathbb{C}^n, R^n, Z^n, etc.
+  text = text.replace(/\b([CRNZQ])\^/g, '\\mathbb{$1}^');
+  // Also after \in without ^: \in C → \in \mathbb{C}
+  text = text.replace(/\\in\s+([CRNZQ])(?=[^a-zA-Z0-9]|$)/g, '\\in \\mathbb{$1}');
+  // 6. Word matrix/vector notation: █(r1@r2@r3) → \begin{pmatrix}...\end{pmatrix}
+  text = convertWordMatrices(text);
+  // 7. Remove spaces before ) – Word formatting artifact (e.g. P(\omega_n ) → P(\omega_n))
+  text = text.replace(/ +\)/g, ')');
+  // 8. Convert fractions: a/b → \frac{a}{b}
   text = convertFractions(text);
-  // 6. Wrap math islands in $...$
+  // 9. Wrap math islands in $...$ (or $$...$$ for block environments)
   return wrapMathIslands(text);
 }
 
@@ -458,6 +523,7 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
   const divRef = useRef<HTMLDivElement>(null);
   const focused = useRef(false);
   const [activeGroup, setActiveGroup] = useState(0);
+  const [wordMathEnabled, setWordMathEnabled] = useState(false);
   const [dir, setDir] = useState<'ltr' | 'rtl'>(() =>
     /[\u0590-\u05FF\u0600-\u06FF]/.test(value) ? 'rtl' : 'ltr'
   );
@@ -650,7 +716,7 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
     const plain = e.clipboardData.getData('text/plain');
 
     // Case 1: Word equation objects → MathML in HTML
-    if (html?.includes('<math')) {
+    if (wordMathEnabled && html?.includes('<math')) {
       e.preventDefault();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       doc.querySelectorAll('math').forEach((math) => {
@@ -662,7 +728,7 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
     }
 
     // Case 2: Word linear/UnicodeMath notation (x_(y), Δ, ⟹, etc.)
-    if (plain && hasMathContent(plain)) {
+    if (wordMathEnabled && plain && hasMathContent(plain)) {
       e.preventDefault();
       pasteText(wordMathToLatex(plain));
       return;
@@ -736,6 +802,18 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          title={wordMathEnabled ? 'Auto-convert math when pasting from Word (click to disable)' : 'Auto-convert math when pasting from Word (click to enable)'}
+          onMouseDown={(e) => { e.preventDefault(); setWordMathEnabled(v => !v); }}
+          className={`ml-auto mr-2 mb-0.5 px-2 py-0.5 text-xs rounded border transition-colors whitespace-nowrap ${
+            wordMathEnabled
+              ? 'bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100'
+              : 'bg-gray-100 border-gray-300 text-gray-400 hover:bg-gray-200'
+          }`}
+        >
+          W→𝑥
+        </button>
       </div>
 
       {/* Buttons */}
