@@ -172,6 +172,7 @@ export class PracticeService {
   async getSession(params: {
     version_id: string;
     topic_ids?: string[];
+    no_topic?: boolean;
     type?: string;
     question_formats?: string[];
     mode: PracticeMode;
@@ -186,8 +187,12 @@ export class PracticeService {
       .select('version_id, content_item_id, topic_id, content_item:content_items(*)')
       .eq('version_id', params.version_id);
 
-    if (params.topic_ids?.length) {
+    if (params.topic_ids?.length && params.no_topic) {
+      query = query.or(`topic_id.in.(${params.topic_ids.join(',')}),topic_id.is.null`);
+    } else if (params.topic_ids?.length) {
       query = query.in('topic_id', params.topic_ids);
+    } else if (params.no_topic) {
+      query = query.is('topic_id', null);
     }
 
     const { data, error } = await query;

@@ -64,18 +64,20 @@ export const practiceApi = {
     version_id: string;
     mode: PracticeMode;
     topic_ids?: string[];
+    no_topic?: boolean;
     type?: string;
     question_formats?: string[];
     with_solution?: boolean;
     limit?: number;
     progress_filter?: string;
   }) => {
-    const { topic_ids, question_formats, ...rest } = params;
+    const { topic_ids, no_topic, question_formats, ...rest } = params;
     const flat: Record<string, string> = {};
     for (const [k, v] of Object.entries(rest)) {
       if (v) flat[k] = String(v);
     }
     if (topic_ids?.length) flat['topic_id'] = topic_ids.join(',');
+    if (no_topic) flat['no_topic'] = 'true';
     if (question_formats?.length) flat['question_format'] = question_formats.join(',');
     const query = new URLSearchParams(flat).toString();
     return api.get<VersionContentItem[]>(`/api/practice/session?${query}`);

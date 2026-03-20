@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { practiceApi, type PracticeOptions, type ProgressCounts } from '@/lib/api/practice';
 import { useAuth } from '@/hooks/useAuth';
 import { LatexContent } from '@/components/content/latex-content';
@@ -70,29 +71,37 @@ const MIXED_PROGRESS_FILTERS: { id: string; label: string; statusId?: string }[]
   { id: 'easy',         label: 'Easy' },
 ];
 
+function getTopicFmtCount(id: FormatId, t: PracticeOptions['topics'][number], selectedContentType: string): number {
+  if (selectedContentType === 'review') return t.counts[id];
+  if (selectedContentType === 'mixed') return t.counts.format_by_type.exam_question[id] + t.counts.format_by_type.exercise_question[id];
+  const tk = selectedContentType === 'exam' ? 'exam_question' : 'exercise_question';
+  return t.counts.format_by_type[tk][id];
+}
+
+function getGlobalFmtCount(id: FormatId, counts: PracticeOptions['counts'], selectedContentType: string): number {
+  if (selectedContentType === 'review') return counts[id];
+  if (selectedContentType === 'mixed') return counts.format_by_type.exam_question[id] + counts.format_by_type.exercise_question[id];
+  const tk = selectedContentType === 'exam' ? 'exam_question' : 'exercise_question';
+  return counts.format_by_type[tk][id];
+}
+
 function getFormatCount(
   id: FormatId,
   counts: PracticeOptions['counts'],
   topics: PracticeOptions['topics'],
   selectedContentType: string,
   selectedTopicIds: Set<string>,
+  selectedNoTopic = false,
 ): number {
+  const noTopicCount = selectedNoTopic
+    ? Math.max(0, getGlobalFmtCount(id, counts, selectedContentType) - topics.reduce((s, t) => s + getTopicFmtCount(id, t, selectedContentType), 0))
+    : 0;
   if (selectedTopicIds.size > 0) {
     const sel = topics.filter((t) => selectedTopicIds.has(t.id));
-    if (selectedContentType === 'review') return sel.reduce((s, t) => s + t.counts[id], 0);
-    if (selectedContentType === 'mixed') {
-      return sel.reduce((s, t) =>
-        s + t.counts.format_by_type.exam_question[id] + t.counts.format_by_type.exercise_question[id], 0);
-    }
-    const tk = selectedContentType === 'exam' ? 'exam_question' : 'exercise_question';
-    return sel.reduce((s, t) => s + t.counts.format_by_type[tk][id], 0);
+    return sel.reduce((s, t) => s + getTopicFmtCount(id, t, selectedContentType), 0) + noTopicCount;
   }
-  if (selectedContentType === 'review') return counts[id];
-  if (selectedContentType === 'mixed') {
-    return counts.format_by_type.exam_question[id] + counts.format_by_type.exercise_question[id];
-  }
-  const tk = selectedContentType === 'exam' ? 'exam_question' : 'exercise_question';
-  return counts.format_by_type[tk][id];
+  if (selectedNoTopic) return noTopicCount;
+  return getGlobalFmtCount(id, counts, selectedContentType);
 }
 
 function isTopicDisabled(
@@ -130,6 +139,7 @@ function computeProgressCounts(
   selectedContentType: string,
   selectedTopicIds: Set<string>,
   selectedFormats: Set<FormatId>,
+  selectedNoTopic = false,
 ): ProgressCounts {
   const emptyP = (): ProgressCounts => ({ unseen: 0, incorrect: 0, needs_review: 0, solved: 0, easy: 0 });
   const addP = (a: ProgressCounts, b: ProgressCounts): ProgressCounts => ({
@@ -139,13 +149,19 @@ function computeProgressCounts(
     solved: a.solved + b.solved,
     easy: a.easy + b.easy,
   });
+  const subP = (a: ProgressCounts, b: ProgressCounts): ProgressCounts => ({
+    unseen: Math.max(0, a.unseen - b.unseen),
+    incorrect: Math.max(0, a.incorrect - b.incorrect),
+    needs_review: Math.max(0, a.needs_review - b.needs_review),
+    solved: Math.max(0, a.solved - b.solved),
+    easy: Math.max(0, a.easy - b.easy),
+  });
 
   // Returns global progress for given content type + format
   const getByTypeFormat = (fmt: FormatId): ProgressCounts => {
     const ptf = counts.progress_by_type_format;
     if (selectedContentType === 'exam')     return ptf.exam_question[fmt];
     if (selectedContentType === 'practice') return ptf.exercise_question[fmt];
-    // mixed or review: combine both question types
     return addP(ptf.exam_question[fmt], ptf.exercise_question[fmt]);
   };
 
@@ -154,25 +170,33 @@ function computeProgressCounts(
     if (selectedContentType === 'exam')     return counts.progress_by_type.exam_question;
     if (selectedContentType === 'practice') return counts.progress_by_type.exercise_question;
     if (selectedContentType === 'mixed')    return addP(counts.progress_by_type.exam_question, counts.progress_by_type.exercise_question);
-    return counts.progress; // review = all
+    return counts.progress;
   };
 
-  // Returns per-topic progress for given content type (no format filter — best we can do per-topic)
+  // Returns per-topic progress for given content type
   const getTopicByType = (t: PracticeOptions['topics'][number]): ProgressCounts => {
     if (selectedContentType === 'exam')     return t.counts.progress_by_type.exam_question;
     if (selectedContentType === 'practice') return t.counts.progress_by_type.exercise_question;
     if (selectedContentType === 'mixed')    return addP(t.counts.progress_by_type.exam_question, t.counts.progress_by_type.exercise_question);
-    return t.counts.progress; // review = all items in topic
+    return t.counts.progress;
   };
 
-  if (selectedTopicIds.size > 0) {
-    // Per-topic progress: accurate for content type, approximated for format (no per-topic-format data)
-    return topics
-      .filter((t) => selectedTopicIds.has(t.id))
-      .reduce((sum, t) => addP(sum, getTopicByType(t)), emptyP());
+  // "No topic" progress = global - sum(all topics)
+  const getNoTopicByType = (): ProgressCounts =>
+    subP(getByType(), topics.reduce((sum, t) => addP(sum, getTopicByType(t)), emptyP()));
+
+  if (selectedTopicIds.size > 0 || selectedNoTopic) {
+    let result = emptyP();
+    if (selectedTopicIds.size > 0) {
+      result = topics
+        .filter((t) => selectedTopicIds.has(t.id))
+        .reduce((sum, t) => addP(sum, getTopicByType(t)), result);
+    }
+    if (selectedNoTopic) result = addP(result, getNoTopicByType());
+    return result;
   }
 
-  // No topics — use precise global counts
+  // No filter — use precise global counts
   if (selectedFormats.size > 0) {
     return [...selectedFormats].reduce((sum, fmt) => addP(sum, getByTypeFormat(fmt)), emptyP());
   }
@@ -224,6 +248,7 @@ export default function PracticePage({
 }) {
   const { versionId } = use(params);
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   const [phase, setPhase] = useState<Phase>('setup');
   const [withSolution, setWithSolution] = useState(false);
@@ -242,6 +267,7 @@ export default function PracticePage({
   const [selectedContentType, setSelectedContentType] = useState<string>('mixed');
   const [selectedFormats, setSelectedFormats] = useState<Set<FormatId>>(new Set());
   const [selectedTopicIds, setSelectedTopicIds] = useState<Set<string>>(new Set());
+  const [selectedNoTopic, setSelectedNoTopic] = useState(false);
   const [sessionLength, setSessionLength] = useState<number | null>(10);
   const [progressFilters, setProgressFilters] = useState<Set<string>>(new Set());
   const [reappearedIds, setReappearedIds] = useState<Set<string>>(new Set());
@@ -290,6 +316,7 @@ export default function PracticePage({
         type: ct.type,
         question_formats: selectedFormats.size > 0 ? [...selectedFormats] : undefined,
         topic_ids: selectedTopicIds.size > 0 ? [...selectedTopicIds] : undefined,
+        no_topic: selectedNoTopic || undefined,
         with_solution: withSolution || undefined,
         limit: activeSessionLength ?? undefined,
         progress_filter: progressFilters.size > 0 ? [...progressFilters].join(',') : undefined,
@@ -375,7 +402,7 @@ export default function PracticePage({
 
   // ─── Progress counts (updates based on content type + topic selection) ────────
   const progressCounts: ProgressCounts | null = versionOptions
-    ? computeProgressCounts(versionOptions.counts, versionOptions.topics, selectedContentType, selectedTopicIds, selectedFormats)
+    ? computeProgressCounts(versionOptions.counts, versionOptions.topics, selectedContentType, selectedTopicIds, selectedFormats, selectedNoTopic)
     : null;
 
   // ─── Effective available count (for session length UI) ────────────────────────
@@ -384,13 +411,12 @@ export default function PracticePage({
     const ct = CONTENT_TYPES.find((c) => c.id === selectedContentType)!;
     let baseCount: number;
     if (selectedFormats.size > 0) {
-      // Sum format counts across all selected formats (content type + topic aware)
       baseCount = [...selectedFormats].reduce(
-        (sum, fmt) => sum + getFormatCount(fmt, versionOptions.counts, versionOptions.topics, selectedContentType, selectedTopicIds),
+        (sum, fmt) => sum + getFormatCount(fmt, versionOptions.counts, versionOptions.topics, selectedContentType, selectedTopicIds, selectedNoTopic),
         0,
       );
-    } else if (selectedTopicIds.size > 0) {
-      baseCount = versionOptions.topics
+    } else if (selectedTopicIds.size > 0 || selectedNoTopic) {
+      const topicSum = versionOptions.topics
         .filter((t) => selectedTopicIds.has(t.id))
         .reduce((sum, t) => {
           if (selectedContentType === 'exam')     return sum + t.counts.exam_question;
@@ -398,6 +424,17 @@ export default function PracticePage({
           if (selectedContentType === 'mixed')    return sum + t.counts.exam_question + t.counts.exercise_question;
           return sum + t.counts.total;
         }, 0);
+      let noTopicSum = 0;
+      if (selectedNoTopic) {
+        const allTopicsTotal = versionOptions.topics.reduce((sum, t) => {
+          if (selectedContentType === 'exam')     return sum + t.counts.exam_question;
+          if (selectedContentType === 'practice') return sum + t.counts.exercise_question;
+          if (selectedContentType === 'mixed')    return sum + t.counts.exam_question + t.counts.exercise_question;
+          return sum + t.counts.total;
+        }, 0);
+        noTopicSum = Math.max(0, getContentTypeCount(ct, versionOptions.counts) - allTopicsTotal);
+      }
+      baseCount = topicSum + noTopicSum;
     } else {
       baseCount = getContentTypeCount(ct, versionOptions.counts);
     }
@@ -423,12 +460,12 @@ export default function PracticePage({
     return (
       <div className="max-w-xl mx-auto">
         <div className="mb-8">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors mb-4">
+          <button onClick={() => router.back()} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors mb-4">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back
-          </Link>
+          </button>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Practice Session</h1>
           <p className="text-slate-500 mt-1 text-sm">Choose what to practice</p>
         </div>
@@ -507,7 +544,7 @@ export default function PracticePage({
                 All
               </button>
               {FORMAT_OPTIONS.map((fmt) => {
-                const count    = versionOptions ? getFormatCount(fmt.id, versionOptions.counts, versionOptions.topics, selectedContentType, selectedTopicIds) : null;
+                const count    = versionOptions ? getFormatCount(fmt.id, versionOptions.counts, versionOptions.topics, selectedContentType, selectedTopicIds, selectedNoTopic) : null;
                 const disabled = count !== null && count === 0;
                 const active   = selectedFormats.has(fmt.id);
                 return (
@@ -543,14 +580,24 @@ export default function PracticePage({
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Topic</p>
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setSelectedTopicIds(new Set())}
+                onClick={() => { setSelectedTopicIds(new Set()); setSelectedNoTopic(false); }}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
-                  selectedTopicIds.size === 0
+                  selectedTopicIds.size === 0 && !selectedNoTopic
                     ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
                 All topics
+              </button>
+              <button
+                onClick={() => setSelectedNoTopic((v) => !v)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                  selectedNoTopic
+                    ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                No topic
               </button>
               {versionOptions!.topics.map((t) => {
                 const disabled = isTopicDisabled(t.counts, selectedContentType, selectedFormats);
@@ -768,12 +815,12 @@ export default function PracticePage({
           >
             New session
           </button>
-          <Link
-            href="/"
+          <button
+            onClick={() => router.back()}
             className="flex-1 text-center border border-slate-300 text-slate-700 py-2.5 rounded-xl text-sm font-medium hover:border-slate-400 transition-colors"
           >
-            Home
-          </Link>
+            Back
+          </button>
         </div>
       </div>
     );

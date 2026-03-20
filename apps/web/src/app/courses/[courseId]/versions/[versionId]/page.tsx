@@ -4,7 +4,9 @@ import { use, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCourse, useVersion, useVersionProgress, useDeleteVersion, useUpdateVersion, useEnrollCourse, useActiveVersions } from '@/hooks/useCourses';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTopics, useVersionContent, useCreateContent, useCreateTopic, useDeleteTopic } from '@/hooks/useTopics';
+import { topicsApi } from '@/lib/api/content';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfileById, useCurrentUser } from '@/hooks/useUsers';
 import { ContentItemCard } from '@/components/content/content-item-card';
@@ -123,8 +125,27 @@ function ManageTopicsModal({
 }) {
   const createTopic = useCreateTopic();
   const deleteTopic = useDeleteTopic(versionId);
+  const queryClient = useQueryClient();
+  const [orderedTopics, setOrderedTopics] = useState(() => [...topics]);
   const [title, setTitle] = useState('');
   const [error, setError] = useState('');
+  const dragIndex = useRef<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+
+  useEffect(() => { setOrderedTopics([...topics]); }, [topics]);
+
+  const handleRename = async (id: string) => {
+    const trimmed = editingTitle.trim();
+    setEditingId(null);
+    if (!trimmed || trimmed === orderedTopics.find((t) => t.id === id)?.title) return;
+    try {
+      await topicsApi.updateTopic(id, { title: trimmed });
+      queryClient.invalidateQueries({ queryKey: ['topics', versionId] });
+    } catch {
+      setError('Failed to rename topic');
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,7 +155,7 @@ function ManageTopicsModal({
       await createTopic.mutateAsync({
         version_id: versionId,
         title: title.trim(),
-        order_index: topics.length,
+        order_index: orderedTopics.length,
       });
       setTitle('');
     } catch (e) {
@@ -142,14 +163,61 @@ function ManageTopicsModal({
     }
   };
 
+  const handleDragStart = (i: number) => { dragIndex.current = i; };
+  const handleDragOver = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    const from = dragIndex.current;
+    if (from === null || from === i) return;
+    const next = [...orderedTopics];
+    const [item] = next.splice(from, 1);
+    next.splice(i, 0, item);
+    dragIndex.current = i;
+    setOrderedTopics(next);
+  };
+  const handleDrop = async () => {
+    dragIndex.current = null;
+    const snapshot = [...orderedTopics];
+    try {
+      await Promise.all(snapshot.map((t, i) => topicsApi.updateTopic(t.id, { order_index: 10000 + i })));
+      await Promise.all(snapshot.map((t, i) => topicsApi.updateTopic(t.id, { order_index: i })));
+      queryClient.invalidateQueries({ queryKey: ['topics', versionId] });
+    } catch {
+      setError('Failed to reorder topics');
+    }
+  };
+
   return (
     <Modal title="Manage Topics" onClose={onClose}>
       <div className="space-y-4">
-        {topics.length > 0 ? (
+        {orderedTopics.length > 0 ? (
           <ul className="space-y-1">
-            {topics.map((t) => (
-              <li key={t.id} className="flex items-center justify-between gap-2 py-1.5 border-b border-gray-100 last:border-0">
-                <span className="text-sm text-gray-700">{t.title}</span>
+            {orderedTopics.map((t, i) => (
+              <li
+                key={t.id}
+                draggable={editingId !== t.id}
+                onDragStart={() => handleDragStart(i)}
+                onDragOver={(e) => handleDragOver(e, i)}
+                onDrop={handleDrop}
+                className="flex items-center gap-2 py-1.5 border-b border-gray-100 last:border-0 cursor-grab active:cursor-grabbing select-none"
+              >
+                <span className="text-gray-300 text-sm">⠿</span>
+                {editingId === t.id ? (
+                  <input
+                    autoFocus
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    onBlur={() => handleRename(t.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleRename(t.id); } if (e.key === 'Escape') setEditingId(null); }}
+                    dir="auto"
+                    className="flex-1 text-sm border border-gray-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-text select-text"
+                  />
+                ) : (
+                  <span
+                    className="text-sm text-gray-700 flex-1"
+                    onDoubleClick={() => { setEditingId(t.id); setEditingTitle(t.title); }}
+                    title="Double-click to rename"
+                  >{t.title}</span>
+                )}
                 <button
                   onClick={() => deleteTopic.mutate(t.id)}
                   disabled={deleteTopic.isPending}
@@ -422,7 +490,6 @@ function AddContentModal({
   const [questionFormat, setQuestionFormat] = useState('open');
   const [correctOption, setCorrectOption] = useState<'A' | 'B' | 'C' | 'D' | ''>('');
   const [title, setTitle] = useState('');
-  const [difficulty, setDifficulty] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [topicId, setTopicId] = useState('');
   const [formError, setFormError] = useState('');
@@ -485,7 +552,6 @@ function AddContentModal({
         type,
         title: title.trim(),
         content: sections[0]?.content || title.trim(),
-        difficulty: difficulty || undefined,
         tags: tagsInput ? tagsInput.split(',').map((t) => t.trim()).filter(Boolean) : [],
         metadata: {
           ...(isQuestion ? { question_format: questionFormat } : {}),
@@ -504,24 +570,13 @@ function AddContentModal({
   return (
     <Modal title="Add Content Item" onClose={onClose} className="max-w-2xl">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-            <select value={type} onChange={(e) => setType(e.target.value)} className={INPUT_CLS}>
-              {activeTypes.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className={INPUT_CLS}>
-              <option value="">None</option>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+          <select value={type} onChange={(e) => setType(e.target.value)} className={INPUT_CLS}>
+            {activeTypes.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
         </div>
 
         {isQuestion && (
@@ -680,7 +735,7 @@ export default function VersionPage({
   const [selectedType, setSelectedType] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<'default' | 'difficulty' | 'alpha'>('default');
+  const [sortBy, setSortBy] = useState<'default' | 'type' | 'alpha'>('default');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showAddContent, setShowAddContent] = useState(false);
   const [showManageTopics, setShowManageTopics] = useState(false);
@@ -713,7 +768,7 @@ export default function VersionPage({
     router.push(`/practice/${versionId}`);
   };
 
-  const DIFFICULTY_ORDER: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
+  const TYPE_ORDER: Record<string, number> = { exam_question: 0, exercise_question: 1, proof: 2, algorithm: 3, other: 4 };
 
   const allTags = Array.from(new Set(items?.flatMap((i) => i.content_item.tags) ?? [])).sort();
   const searchLower = search.toLowerCase();
@@ -726,10 +781,10 @@ export default function VersionPage({
   });
   const visibleItems = [...filteredItems].sort((a, b) => {
     if (sortBy === 'alpha') return a.content_item.title.localeCompare(b.content_item.title, undefined, { sensitivity: 'base' });
-    if (sortBy === 'difficulty') {
-      const da = DIFFICULTY_ORDER[a.content_item.difficulty ?? ''] ?? 3;
-      const db = DIFFICULTY_ORDER[b.content_item.difficulty ?? ''] ?? 3;
-      return da - db;
+    if (sortBy === 'type') {
+      const ta = TYPE_ORDER[a.content_item.type] ?? 5;
+      const tb = TYPE_ORDER[b.content_item.type] ?? 5;
+      return ta - tb;
     }
     // default: by creation time
     return new Date(a.content_item.created_at).getTime() - new Date(b.content_item.created_at).getTime();
@@ -975,13 +1030,13 @@ export default function VersionPage({
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6" /><line x1="6" y1="12" x2="18" y2="12" /><line x1="9" y1="18" x2="15" y2="18" />
               </svg>
-              {sortBy !== 'default' && <span>{sortBy === 'difficulty' ? 'Difficulty' : 'A–Z'}</span>}
+              {sortBy !== 'default' && <span>{sortBy === 'type' ? 'Type' : 'A–Z'}</span>}
             </button>
             {showSortMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
                 <div className="absolute right-0 top-full mt-1 z-20 w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-1 text-sm">
-                  {([['default', 'Date added'], ['difficulty', 'Difficulty'], ['alpha', 'A–Z']] as const).map(([val, lbl]) => (
+                  {([['default', 'Date added'], ['type', 'Type'], ['alpha', 'A–Z']] as const).map(([val, lbl]) => (
                     <button
                       key={val}
                       onClick={() => { setSortBy(val); setShowSortMenu(false); }}
@@ -1024,6 +1079,7 @@ export default function VersionPage({
                     isVersionAuthor={isAuthor}
                     isAdmin={isAdmin}
                     topics={topics ?? []}
+                    activeTypes={getActiveTypes(version)}
                     initialOpen={openItemId === item.content_item_id}
                     onSaveDefaultSections={isAuthor ? async (type, sections) => {
                       const current = getActiveTypes(version);

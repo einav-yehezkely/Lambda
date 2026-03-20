@@ -151,7 +151,7 @@ export class ContentService {
     const { data: newItem, error: copyError } = await this.db
       .from('content_items')
       .insert({
-        type: item.type,
+        type: itemData.type ?? item.type,
         title: itemData.title ?? item.title,
         content: itemData.content ?? item.content,
         solution: 'solution' in itemData ? itemData.solution : item.solution,

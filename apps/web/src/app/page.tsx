@@ -144,10 +144,10 @@ export default function HomePage() {
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div>
                       <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
-                        {v.course_title}
+                        {v.version_title}
                       </p>
                       <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#1e3a8a] transition-colors line-clamp-1">
-                        {v.version_title}
+                        {v.course_title}
                       </h3>
                     </div>
                     <span className="shrink-0 text-xs font-bold text-[#1e3a8a]">{pct}%</span>

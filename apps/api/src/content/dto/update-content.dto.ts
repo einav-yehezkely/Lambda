@@ -1,12 +1,18 @@
 import { IsArray, IsBoolean, IsEnum, IsObject, IsOptional, IsString, IsUUID, ValidateIf } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Difficulty } from '@lambda/shared';
+import type { ContentType } from '@lambda/shared';
 
 export class UpdateContentDto {
   @ApiPropertyOptional({ description: 'Version context for copy-on-write when editing shared content' })
   @IsUUID()
   @IsOptional()
   version_id?: string;
+
+  @ApiPropertyOptional({ enum: ['proof', 'exam_question', 'exercise_question', 'algorithm', 'other'] })
+  @IsEnum(['proof', 'exam_question', 'exercise_question', 'algorithm', 'other'])
+  @IsOptional()
+  type?: ContentType;
 
   @ApiPropertyOptional()
   @IsString()

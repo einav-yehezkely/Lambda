@@ -8,6 +8,9 @@ export const topicsApi = {
   createTopic: (body: { version_id: string; title: string; description?: string; order_index: number }) =>
     api.post<Topic>('/api/topics', body),
 
+  updateTopic: (id: string, body: { title?: string; order_index?: number }) =>
+    api.put<void>(`/api/topics/${id}`, body),
+
   deleteTopic: (id: string) =>
     api.delete<void>(`/api/topics/${id}`),
 };
@@ -26,6 +29,7 @@ export const contentApi = {
 
   updateItem: (id: string, body: {
     version_id?: string;
+    type?: string;
     title?: string;
     content?: string;
     solution?: string | null;

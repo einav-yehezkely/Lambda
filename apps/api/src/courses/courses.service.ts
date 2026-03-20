@@ -40,11 +40,11 @@ export class CoursesService {
     if (filters.search) {
       const term = `%${filters.search}%`;
 
-      // Find template_ids from versions whose institution matches
+      // Find template_ids from versions whose institution or description matches
       const { data: matchingVersions } = await this.db
         .from('course_versions')
         .select('template_id')
-        .ilike('institution', term);
+        .or(`institution.ilike.${term},description.ilike.${term}`);
 
       // Find template_ids from versions that contain matching content items
       const { data: matchingItems } = await this.db

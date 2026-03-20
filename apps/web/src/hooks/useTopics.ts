@@ -65,6 +65,17 @@ export function useDeleteContent() {
   });
 }
 
+export function useUpdateTopic(versionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof topicsApi.updateTopic>[1] }) =>
+      topicsApi.updateTopic(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['topics', versionId] });
+    },
+  });
+}
+
 export function useDeleteTopic(versionId: string) {
   const queryClient = useQueryClient();
   return useMutation({

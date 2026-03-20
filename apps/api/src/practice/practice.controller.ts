@@ -50,6 +50,7 @@ export class PracticeController {
   @ApiQuery({ name: 'with_solution', required: false, type: Boolean })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max items to return' })
   @ApiQuery({ name: 'progress_filter', required: false, description: 'Filter by past rating: unseen, incorrect, needs_review, solved, easy' })
+  @ApiQuery({ name: 'no_topic', required: false, type: Boolean, description: 'Include only items with no topic assigned' })
   getSession(
     @Query('version_id') version_id: string,
     @Query('mode') mode: PracticeMode,
@@ -60,10 +61,12 @@ export class PracticeController {
     @Query('with_solution') with_solution?: string,
     @Query('limit') limit?: string,
     @Query('progress_filter') progress_filter?: string,
+    @Query('no_topic') no_topic?: string,
   ) {
     return this.practiceService.getSession({
       version_id,
       topic_ids: topic_id ? topic_id.split(',') : undefined,
+      no_topic: no_topic === 'true',
       type,
       question_formats: question_format ? question_format.split(',') : undefined,
       mode, userId: user.id,

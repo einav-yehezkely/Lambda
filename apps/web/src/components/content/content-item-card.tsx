@@ -100,19 +100,20 @@ function getDefaultSections(type: string, format: string): Array<{ label: string
   ];
 }
 
-function EditModal({ item, topics, onSaveDefaultSections, onClose }: { item: VersionContentItem; topics: Topic[]; onSaveDefaultSections?: (type: string, sections: { label: string; content: string }[]) => Promise<void>; onClose: () => void }) {
+function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }: { item: VersionContentItem; topics: Topic[]; activeTypes?: { label: string; value: string }[]; onSaveDefaultSections?: (type: string, sections: { label: string; content: string }[]) => Promise<void>; onClose: () => void }) {
   const ci = item.content_item;
   const isAlgorithm = ci.type === 'algorithm';
-  const isQuestion = ci.type === 'exam_question' || ci.type === 'exercise_question';
   const updateContent = useUpdateContent();
 
   const [title, setTitle] = useState(ci.title);
-  const [difficulty, setDifficulty] = useState(ci.difficulty ?? '');
+  const [contentType, setContentType] = useState(ci.type);
   const [tagsInput, setTagsInput] = useState(ci.tags.join(', '));
   const [topicId, setTopicId] = useState(item.topic_id ?? '');
   const [questionFormat, setQuestionFormat] = useState<QuestionFormat>((ci.metadata?.question_format ?? 'open') as QuestionFormat);
   const [correctOption, setCorrectOption] = useState<'A' | 'B' | 'C' | 'D' | ''>(ci.metadata?.correct_option ?? '');
-  const isMultipleChoice = isQuestion && questionFormat === 'multiple_choice';
+  const isCurrentQuestion = contentType === 'exam_question' || contentType === 'exercise_question';
+  const isCurrentAlgorithm = contentType === 'algorithm';
+  const isMultipleChoice = isCurrentQuestion && questionFormat === 'multiple_choice';
   const [sections, setSections] = useState<Array<{ label: string; content: string }>>(() => {
     const meta = ci.metadata?.sections ?? [];
     if (meta.length > 0) return meta;
@@ -127,10 +128,25 @@ function EditModal({ item, topics, onSaveDefaultSections, onClose }: { item: Ver
       ...(ci.solution ? [{ label: ci.type === 'proof' ? 'Proof Sketch' : 'Solution', content: ci.solution }] : []),
     ];
   });
+
+  const isQuestionType = (t: string) => t === 'exam_question' || t === 'exercise_question';
+
+  const handleTypeChange = (newType: string) => {
+    const stayingQuestion = isQuestionType(contentType) && isQuestionType(newType);
+    if (!stayingQuestion && sections.some((s) => s.content.trim())) {
+      if (!window.confirm('Changing type will reset all sections. Continue?')) return;
+    }
+    setContentType(newType as typeof contentType);
+    if (!stayingQuestion) {
+      setQuestionFormat('open');
+      setCorrectOption('');
+      setSections(getDefaultSections(newType, 'open'));
+    }
+  };
   const [error, setError] = useState('');
   const [savedDefault, setSavedDefault] = useState(false);
 
-  const formatOptions = ci.type === 'exam_question' ? EXAM_QUESTION_FORMATS : EXERCISE_QUESTION_FORMATS;
+  const formatOptions = contentType === 'exam_question' ? EXAM_QUESTION_FORMATS : EXERCISE_QUESTION_FORMATS;
   const availableOptions = sections
     .map((s) => s.label.match(/^Option ([A-D])$/)?.[1])
     .filter(Boolean) as ('A' | 'B' | 'C' | 'D')[];
@@ -147,7 +163,7 @@ function EditModal({ item, topics, onSaveDefaultSections, onClose }: { item: Ver
     }
     setQuestionFormat(fmt);
     setCorrectOption('');
-    setSections(getDefaultSections(ci.type, fmt));
+    setSections(getDefaultSections(contentType, fmt));
   };
 
   const addSection = () => setSections((s) => [...s, { label: '', content: '' }]);
@@ -171,13 +187,13 @@ function EditModal({ item, topics, onSaveDefaultSections, onClose }: { item: Ver
         id: item.content_item_id,
         body: {
           version_id: item.version_id,
+          type: contentType,
           title: title.trim(),
           content: sections[0]?.content || title.trim(),
-          difficulty: difficulty || null,
           tags: tagsInput ? tagsInput.split(',').map((t) => t.trim()).filter(Boolean) : [],
           topic_id: topicId || null,
           metadata: {
-            ...(isQuestion ? { question_format: questionFormat } : {}),
+            ...(isCurrentQuestion ? { question_format: questionFormat } : {}),
             ...(isMultipleChoice && correctOption ? { correct_option: correctOption } : {}),
             sections: sections.filter((s) => s.label.trim() || s.content.trim()).map((s) => ({ label: s.label.trim() || 'Section', content: s.content })),
           },
@@ -194,22 +210,21 @@ function EditModal({ item, topics, onSaveDefaultSections, onClose }: { item: Ver
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {isAlgorithm ? 'Algorithm Name *' : 'Title *'}
+            {isCurrentAlgorithm ? 'Algorithm Name *' : 'Title *'}
           </label>
           <input autoFocus type="text" value={title} onChange={(e) => setTitle(e.target.value)} dir={hDir(title)} className={INPUT_CLS} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-          <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className={INPUT_CLS}>
-            <option value="">None</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+          <select value={contentType} onChange={(e) => handleTypeChange(e.target.value)} className={INPUT_CLS}>
+            {(activeTypes ?? Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label }))).map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
           </select>
         </div>
 
-        {isQuestion && (
+        {isCurrentQuestion && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Question Format *</label>
             <div className="flex gap-2 flex-wrap">
@@ -245,28 +260,35 @@ function EditModal({ item, topics, onSaveDefaultSections, onClose }: { item: Ver
             {sections.map((sec, i) => (
               <div key={i} className="border border-gray-200 rounded-md p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex flex-col gap-0.5 shrink-0">
-                    <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▲</button>
-                    <button type="button" onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▼</button>
-                  </div>
+                  {!isCurrentQuestion && (
+                    <div className="flex flex-col gap-0.5 shrink-0">
+                      <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▲</button>
+                      <button type="button" onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▼</button>
+                    </div>
+                  )}
                   <input
                     type="text"
                     value={sec.label}
                     onChange={(e) => updateSection(i, 'label', e.target.value)}
                     placeholder="Section name"
                     dir={hDir(sec.label)}
-                    className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    readOnly={isCurrentQuestion}
+                    className={`flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 ${isCurrentQuestion ? 'bg-gray-50 text-gray-500 cursor-default' : ''}`}
                   />
-                  <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 hover:text-red-500 shrink-0">
-                    Remove
-                  </button>
+                  {!isCurrentQuestion && (
+                    <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 hover:text-red-500 shrink-0">
+                      Remove
+                    </button>
+                  )}
                 </div>
                 <LatexEditor value={sec.content} onChange={(v) => updateSection(i, 'content', v)} rows={3} />
               </div>
             ))}
-            <button type="button" onClick={addSection} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
-              + Add Section
-            </button>
+            {!isCurrentQuestion && (
+              <button type="button" onClick={addSection} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
+                + Add Section
+              </button>
+            )}
           </div>
         </div>
 
@@ -564,6 +586,7 @@ export function ContentItemCard({
   isVersionAuthor,
   isAdmin,
   topics = [],
+  activeTypes,
   onSaveDefaultSections,
   initialOpen,
 }: {
@@ -573,6 +596,7 @@ export function ContentItemCard({
   isVersionAuthor?: boolean;
   isAdmin?: boolean;
   topics?: Topic[];
+  activeTypes?: { label: string; value: string }[];
   onSaveDefaultSections?: (type: string, sections: { label: string; content: string }[]) => Promise<void>;
   initialOpen?: boolean;
 }) {
@@ -666,7 +690,7 @@ export function ContentItemCard({
           onClose={() => setShowView(false)}
         />
       )}
-      {showEdit && <EditModal item={item} topics={topics} onSaveDefaultSections={onSaveDefaultSections} onClose={() => setShowEdit(false)} />}
+      {showEdit && <EditModal item={item} topics={topics} activeTypes={activeTypes} onSaveDefaultSections={onSaveDefaultSections} onClose={() => setShowEdit(false)} />}
     </>
   );
 }
