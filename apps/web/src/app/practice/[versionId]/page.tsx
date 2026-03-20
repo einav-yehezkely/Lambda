@@ -1,30 +1,186 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { practiceApi } from '@/lib/api/practice';
+import { practiceApi, type PracticeOptions, type ProgressCounts } from '@/lib/api/practice';
 import { useAuth } from '@/hooks/useAuth';
 import { LatexContent } from '@/components/content/latex-content';
 import { FlashCard } from '@/components/content/flash-card';
 import { CommunitySolutions } from '@/components/content/community-solutions';
 import { ReportErrorButton } from '@/components/content/report-error';
 import type { VersionContentItem, PracticeMode, ProgressStatus } from '@lambda/shared';
+import type { TopicCounts } from '@/lib/api/practice';
 
-interface SessionType {
+// ─── Content type definitions (what to practice) ──────────────────────────────
+
+interface ContentType {
   id: string;
   label: string;
   description: string;
+  icon: string;
   mode: PracticeMode;
   type?: string;
-  icon: string;
 }
 
-const SESSION_TYPES: SessionType[] = [
-  { id: 'exam_questions',     label: 'Exam Questions',     description: 'Exam-style questions only, in random order',           mode: 'exam',              type: 'exam_question', icon: '📝' },
-  { id: 'exercise_questions', label: 'Practice Questions', description: 'Exercise questions only, in random order',             mode: 'random',            type: 'exercise_question', icon: '✏️' },
-  { id: 'mixed',              label: 'Mixed Questions',    description: 'All question types in random order',                   mode: 'random',            icon: '🔀' },
-  { id: 'review',             label: 'General Review',     description: 'All content — prioritizes items that need review',     mode: 'spaced_repetition', icon: '🔁' },
+const CONTENT_TYPES: ContentType[] = [
+  { id: 'exam',    label: 'Exam Questions',     description: 'Past exam questions only',                   icon: '📝', mode: 'exam',              type: 'exam_question' },
+  { id: 'practice',label: 'Practice Questions', description: 'Exercise questions only',                     icon: '✏️', mode: 'random',            type: 'exercise_question' },
+  { id: 'mixed',   label: 'Mixed Questions',    description: 'All exam & practice questions, random order', icon: '🔀', mode: 'random',            type: 'exam_question,exercise_question' },
+  { id: 'review',  label: 'General Review',     description: 'All materials — prioritizes items that need review', icon: '🔁', mode: 'spaced_repetition' },
 ];
+
+function getContentTypeCount(ct: ContentType, counts: PracticeOptions['counts']): number {
+  if (ct.id === 'exam')     return counts.exam_question;
+  if (ct.id === 'practice') return counts.exercise_question;
+  if (ct.id === 'mixed')    return counts.exam_question + counts.exercise_question;
+  return counts.total; // review
+}
+
+// ─── Format filter definitions (multi-select) ─────────────────────────────────
+
+const FORMAT_OPTIONS = [
+  { id: 'flashcard',       label: 'Flashcards',     icon: '🃏' },
+  { id: 'multiple_choice', label: 'Multiple Choice', icon: '🔘' },
+  { id: 'open',            label: 'Open',            icon: '📄' },
+] as const;
+
+type FormatId = typeof FORMAT_OPTIONS[number]['id'];
+
+// ─── Progress filter definitions ──────────────────────────────────────────────
+
+const EXAM_PROGRESS_FILTERS = [
+  { id: 'unseen',    label: 'Unseen' },
+  { id: 'incorrect', label: 'Not Solved' },
+  { id: 'solved',    label: 'Solved' },
+] as const;
+
+const PRACTICE_PROGRESS_FILTERS = [
+  { id: 'unseen',       label: 'Unseen' },
+  { id: 'needs_review', label: 'Hard' },
+  { id: 'solved',       label: 'OK' },
+  { id: 'easy',         label: 'Easy' },
+] as const;
+
+const MIXED_PROGRESS_FILTERS: { id: string; label: string; statusId?: string }[] = [
+  { id: 'unseen',       label: 'Unseen' },
+  { id: 'incorrect',    label: 'Not Solved' },
+  { id: 'solved',       label: 'Solved' },
+  { id: 'needs_review', label: 'Hard' },
+  { id: 'ok',           label: 'OK', statusId: 'solved' },
+  { id: 'easy',         label: 'Easy' },
+];
+
+function getFormatCount(
+  id: FormatId,
+  counts: PracticeOptions['counts'],
+  topics: PracticeOptions['topics'],
+  selectedContentType: string,
+  selectedTopicIds: Set<string>,
+): number {
+  if (selectedTopicIds.size > 0) {
+    const sel = topics.filter((t) => selectedTopicIds.has(t.id));
+    if (selectedContentType === 'review') return sel.reduce((s, t) => s + t.counts[id], 0);
+    if (selectedContentType === 'mixed') {
+      return sel.reduce((s, t) =>
+        s + t.counts.format_by_type.exam_question[id] + t.counts.format_by_type.exercise_question[id], 0);
+    }
+    const tk = selectedContentType === 'exam' ? 'exam_question' : 'exercise_question';
+    return sel.reduce((s, t) => s + t.counts.format_by_type[tk][id], 0);
+  }
+  if (selectedContentType === 'review') return counts[id];
+  if (selectedContentType === 'mixed') {
+    return counts.format_by_type.exam_question[id] + counts.format_by_type.exercise_question[id];
+  }
+  const tk = selectedContentType === 'exam' ? 'exam_question' : 'exercise_question';
+  return counts.format_by_type[tk][id];
+}
+
+function isTopicDisabled(
+  tc: TopicCounts,
+  selectedContentType: string,
+  selectedFormats: Set<FormatId>,
+): boolean {
+  // Content-type effective count
+  let ctCount: number;
+  if (selectedContentType === 'exam')     ctCount = tc.exam_question;
+  else if (selectedContentType === 'practice') ctCount = tc.exercise_question;
+  else if (selectedContentType === 'mixed')    ctCount = tc.exam_question + tc.exercise_question;
+  else ctCount = tc.total; // review
+
+  if (ctCount === 0) return true;
+
+  // Format effective count (OR across selected formats), filtered by content type
+  if (selectedFormats.size === 0) return false;
+  const fmtCount = [...selectedFormats].reduce((sum, fmt) => {
+    if (selectedContentType === 'review') {
+      return sum + tc[fmt];
+    }
+    if (selectedContentType === 'mixed') {
+      return sum + tc.format_by_type.exam_question[fmt] + tc.format_by_type.exercise_question[fmt];
+    }
+    const tk = selectedContentType === 'exam' ? 'exam_question' : 'exercise_question';
+    return sum + tc.format_by_type[tk][fmt];
+  }, 0);
+  return fmtCount === 0;
+}
+
+function computeProgressCounts(
+  counts: PracticeOptions['counts'],
+  topics: PracticeOptions['topics'],
+  selectedContentType: string,
+  selectedTopicIds: Set<string>,
+  selectedFormats: Set<FormatId>,
+): ProgressCounts {
+  const emptyP = (): ProgressCounts => ({ unseen: 0, incorrect: 0, needs_review: 0, solved: 0, easy: 0 });
+  const addP = (a: ProgressCounts, b: ProgressCounts): ProgressCounts => ({
+    unseen: a.unseen + b.unseen,
+    incorrect: a.incorrect + b.incorrect,
+    needs_review: a.needs_review + b.needs_review,
+    solved: a.solved + b.solved,
+    easy: a.easy + b.easy,
+  });
+
+  // Returns global progress for given content type + format
+  const getByTypeFormat = (fmt: FormatId): ProgressCounts => {
+    const ptf = counts.progress_by_type_format;
+    if (selectedContentType === 'exam')     return ptf.exam_question[fmt];
+    if (selectedContentType === 'practice') return ptf.exercise_question[fmt];
+    // mixed or review: combine both question types
+    return addP(ptf.exam_question[fmt], ptf.exercise_question[fmt]);
+  };
+
+  // Returns global progress for given content type (no format filter)
+  const getByType = (): ProgressCounts => {
+    if (selectedContentType === 'exam')     return counts.progress_by_type.exam_question;
+    if (selectedContentType === 'practice') return counts.progress_by_type.exercise_question;
+    if (selectedContentType === 'mixed')    return addP(counts.progress_by_type.exam_question, counts.progress_by_type.exercise_question);
+    return counts.progress; // review = all
+  };
+
+  // Returns per-topic progress for given content type (no format filter — best we can do per-topic)
+  const getTopicByType = (t: PracticeOptions['topics'][number]): ProgressCounts => {
+    if (selectedContentType === 'exam')     return t.counts.progress_by_type.exam_question;
+    if (selectedContentType === 'practice') return t.counts.progress_by_type.exercise_question;
+    if (selectedContentType === 'mixed')    return addP(t.counts.progress_by_type.exam_question, t.counts.progress_by_type.exercise_question);
+    return t.counts.progress; // review = all items in topic
+  };
+
+  if (selectedTopicIds.size > 0) {
+    // Per-topic progress: accurate for content type, approximated for format (no per-topic-format data)
+    return topics
+      .filter((t) => selectedTopicIds.has(t.id))
+      .reduce((sum, t) => addP(sum, getTopicByType(t)), emptyP());
+  }
+
+  // No topics — use precise global counts
+  if (selectedFormats.size > 0) {
+    return [...selectedFormats].reduce((sum, fmt) => addP(sum, getByTypeFormat(fmt)), emptyP());
+  }
+
+  return getByType();
+}
+
+// ─── Display constants ────────────────────────────────────────────────────────
 
 const TYPE_LABEL: Record<string, string> = {
   proof: 'Proof',
@@ -70,7 +226,6 @@ export default function PracticePage({
   const { user, loading: authLoading } = useAuth();
 
   const [phase, setPhase] = useState<Phase>('setup');
-  const [sessionType, setSessionType] = useState<SessionType>(SESSION_TYPES[0]);
   const [withSolution, setWithSolution] = useState(false);
   const [items, setItems] = useState<VersionContentItem[]>([]);
   const [index, setIndex] = useState(0);
@@ -80,6 +235,27 @@ export default function PracticePage({
   const [results, setResults] = useState<SessionResult[]>([]);
   const [startedAt, setStartedAt] = useState<number>(0);
   const [error, setError] = useState('');
+
+  // Setup screen state
+  const [versionOptions, setVersionOptions] = useState<PracticeOptions | null>(null);
+  const [optionsLoading, setOptionsLoading] = useState(true);
+  const [selectedContentType, setSelectedContentType] = useState<string>('mixed');
+  const [selectedFormats, setSelectedFormats] = useState<Set<FormatId>>(new Set());
+  const [selectedTopicIds, setSelectedTopicIds] = useState<Set<string>>(new Set());
+  const [sessionLength, setSessionLength] = useState<number | null>(10);
+  const [progressFilters, setProgressFilters] = useState<Set<string>>(new Set());
+  const [reappearedIds, setReappearedIds] = useState<Set<string>>(new Set());
+  const [originalItemCount, setOriginalItemCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    setOptionsLoading(true);
+    practiceApi
+      .getOptions(versionId, withSolution || undefined)
+      .then(setVersionOptions)
+      .catch(() => {})
+      .finally(() => setOptionsLoading(false));
+  }, [versionId, user, withSolution]);
 
   if (authLoading) return null;
 
@@ -99,10 +275,20 @@ export default function PracticePage({
   const startSession = async () => {
     setPhase('loading');
     setError('');
+    const ct = CONTENT_TYPES.find((c) => c.id === selectedContentType)!;
     try {
-      const data = await practiceApi.getSession({ version_id: versionId, mode: sessionType.mode, type: sessionType.type, with_solution: withSolution || undefined });
+      const data = await practiceApi.getSession({
+        version_id: versionId,
+        mode: ct.mode,
+        type: ct.type,
+        question_formats: selectedFormats.size > 0 ? [...selectedFormats] : undefined,
+        topic_ids: selectedTopicIds.size > 0 ? [...selectedTopicIds] : undefined,
+        with_solution: withSolution || undefined,
+        limit: activeSessionLength ?? undefined,
+        progress_filter: progressFilters.size > 0 ? [...progressFilters].join(',') : undefined,
+      });
       if (data.length === 0) {
-        setError('No items found for this version.');
+        setError('No items found for this selection.');
         setPhase('setup');
         return;
       }
@@ -111,6 +297,8 @@ export default function PracticePage({
       setResults([]);
       setRevealed(false);
       setSelectedOption(null);
+      setReappearedIds(new Set());
+      setOriginalItemCount(data.length);
       setStartedAt(Date.now());
       setPhase('active');
     } catch (e) {
@@ -121,7 +309,7 @@ export default function PracticePage({
 
   // ─── Submit outcome ───────────────────────────────────────────────────────────
 
-  const submitOutcome = async (outcome: ProgressStatus) => {
+  const submitOutcome = async (outcome: ProgressStatus, requeue?: boolean) => {
     const item = items[index];
     const timeSpent = Math.round((Date.now() - startedAt) / 1000);
 
@@ -131,7 +319,7 @@ export default function PracticePage({
       await practiceApi.submitAttempt({
         version_id: versionId,
         content_item_id: item.content_item_id,
-        is_correct: outcome === 'solved',
+        is_correct: outcome === 'solved' || outcome === 'easy',
         status: outcome,
         time_spent_seconds: timeSpent,
       });
@@ -139,7 +327,17 @@ export default function PracticePage({
       // Non-blocking
     }
 
-    if (index + 1 >= items.length) {
+    // "Again" → re-add item to end of queue and continue
+    const shouldRequeue = requeue ?? (outcome === 'incorrect');
+    if (shouldRequeue) {
+      setReappearedIds((prev) => new Set([...prev, item.content_item_id]));
+      setItems((prev) => [...prev, item]);
+      setIndex((i) => i + 1);
+      setRevealed(false);
+      setRevealedSections(new Set());
+      setSelectedOption(null);
+      setStartedAt(Date.now());
+    } else if (index + 1 >= items.length) {
       setPhase('done');
     } else {
       setIndex((i) => i + 1);
@@ -149,6 +347,68 @@ export default function PracticePage({
       setStartedAt(Date.now());
     }
   };
+
+  // ─── Toggle format ────────────────────────────────────────────────────────────
+
+  const toggleFormat = (id: FormatId) => {
+    setSelectedFormats((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleTopic = (id: string) => {
+    setSelectedTopicIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  // ─── Progress counts (updates based on content type + topic selection) ────────
+  const progressCounts: ProgressCounts | null = versionOptions
+    ? computeProgressCounts(versionOptions.counts, versionOptions.topics, selectedContentType, selectedTopicIds, selectedFormats)
+    : null;
+
+  // ─── Effective available count (for session length UI) ────────────────────────
+  const effectiveCount: number | null = (() => {
+    if (!versionOptions) return null;
+    const ct = CONTENT_TYPES.find((c) => c.id === selectedContentType)!;
+    let baseCount: number;
+    if (selectedFormats.size > 0) {
+      // Sum format counts across all selected formats (content type + topic aware)
+      baseCount = [...selectedFormats].reduce(
+        (sum, fmt) => sum + getFormatCount(fmt, versionOptions.counts, versionOptions.topics, selectedContentType, selectedTopicIds),
+        0,
+      );
+    } else if (selectedTopicIds.size > 0) {
+      baseCount = versionOptions.topics
+        .filter((t) => selectedTopicIds.has(t.id))
+        .reduce((sum, t) => {
+          if (selectedContentType === 'exam')     return sum + t.counts.exam_question;
+          if (selectedContentType === 'practice') return sum + t.counts.exercise_question;
+          if (selectedContentType === 'mixed')    return sum + t.counts.exam_question + t.counts.exercise_question;
+          return sum + t.counts.total;
+        }, 0);
+    } else {
+      baseCount = getContentTypeCount(ct, versionOptions.counts);
+    }
+    if (progressFilters.size > 0 && progressCounts) {
+      const progressFilteredCount = [...progressFilters].reduce(
+        (sum, f) => sum + (progressCounts[f as keyof ProgressCounts] ?? 0),
+        0,
+      );
+      return Math.min(baseCount, progressFilteredCount);
+    }
+    return baseCount;
+  })();
+
+  // If the chosen session length exceeds what's available, treat it as "All"
+  const activeSessionLength =
+    sessionLength !== null && effectiveCount !== null && sessionLength > effectiveCount
+      ? null
+      : sessionLength;
 
   // ─── Setup screen ─────────────────────────────────────────────────────────────
 
@@ -163,37 +423,249 @@ export default function PracticePage({
             Back
           </Link>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Practice Session</h1>
-          <p className="text-slate-500 mt-1 text-sm">Choose a session type to get started</p>
+          <p className="text-slate-500 mt-1 text-sm">Choose what to practice</p>
         </div>
 
-        <div className="space-y-3 mb-8">
-          {SESSION_TYPES.map((s) => {
-            const active = sessionType.id === s.id;
-            return (
+        {/* ── Content type selection ── */}
+        <div className="mb-7">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Content</p>
+          {optionsLoading ? (
+            <div className="grid grid-cols-2 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-[72px] rounded-xl bg-slate-100 animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {CONTENT_TYPES.map((ct) => {
+                const count  = versionOptions ? getContentTypeCount(ct, versionOptions.counts) : null;
+                const active = selectedContentType === ct.id;
+                const disabled = count !== null && count === 0;
+                return (
+                  <button
+                    key={ct.id}
+                    onClick={() => { if (!disabled) { setSelectedContentType(ct.id); setProgressFilters(new Set()); if (ct.id === 'review') setSelectedFormats(new Set()); } }}
+                    disabled={disabled}
+                    className={`flex items-center gap-3 px-4 py-4 rounded-xl border-2 text-left transition-all ${
+                      disabled
+                        ? 'border-slate-100 bg-slate-50 opacity-40 cursor-not-allowed'
+                        : active
+                        ? 'border-[#1e3a8a] bg-[#1e3a8a]/5 shadow-sm'
+                        : 'border-slate-200 bg-white hover:border-slate-300 cursor-pointer'
+                    }`}
+                  >
+                    <span className="text-2xl leading-none shrink-0">{ct.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-semibold text-sm ${active && !disabled ? 'text-[#1e3a8a]' : 'text-slate-900'}`}>
+                        {ct.label}
+                      </div>
+                      {count !== null && (
+                        <div className="text-xs text-slate-400 mt-0.5 tabular-nums">
+                          {ct.id === 'review' ? 'All materials' : `${count} items`}
+                        </div>
+                      )}
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
+                      active && !disabled ? 'border-[#1e3a8a]' : 'border-slate-300'
+                    }`}>
+                      {active && !disabled && <div className="w-2 h-2 rounded-full bg-[#1e3a8a]" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Format filter (multi-select) ── */}
+        {selectedContentType !== 'review' && <div className="mb-7">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Question format</p>
+          {optionsLoading ? (
+            <div className="flex gap-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-8 w-24 rounded-full bg-slate-100 animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {/* All button */}
               <button
-                key={s.id}
-                onClick={() => setSessionType(s)}
-                className={`w-full text-left px-5 py-4 rounded-xl border-2 transition-all flex items-center gap-4 ${
-                  active
-                    ? 'border-[#1e3a8a] bg-[#1e3a8a]/5 shadow-sm'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                onClick={() => setSelectedFormats(new Set())}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                  selectedFormats.size === 0
+                    ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
                 }`}
               >
-                <span className="text-2xl">{s.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className={`font-semibold text-sm ${active ? 'text-[#1e3a8a]' : 'text-slate-900'}`}>{s.label}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{s.description}</div>
-                </div>
-                <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
-                  active ? 'border-[#1e3a8a]' : 'border-slate-300'
-                }`}>
-                  {active && <div className="w-2 h-2 rounded-full bg-[#1e3a8a]" />}
-                </div>
+                All
               </button>
-            );
-          })}
+              {FORMAT_OPTIONS.map((fmt) => {
+                const count    = versionOptions ? getFormatCount(fmt.id, versionOptions.counts, versionOptions.topics, selectedContentType, selectedTopicIds) : null;
+                const disabled = count !== null && count === 0;
+                const active   = selectedFormats.has(fmt.id);
+                return (
+                  <button
+                    key={fmt.id}
+                    onClick={() => !disabled && toggleFormat(fmt.id)}
+                    disabled={disabled}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                      disabled
+                        ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed'
+                        : active
+                        ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
+                    }`}
+                  >
+                    <span>{fmt.icon}</span>
+                    <span>{fmt.label}</span>
+                    {count !== null && !disabled && (
+                      <span className={`text-[11px] tabular-nums ${active ? 'text-white/70' : 'text-slate-400'}`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>}
+
+        {/* ── Topic filter (multi-select) ── */}
+        {(versionOptions?.topics.length ?? 0) > 0 && (
+          <div className="mb-7">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Topic</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedTopicIds(new Set())}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                  selectedTopicIds.size === 0
+                    ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                All topics
+              </button>
+              {versionOptions!.topics.map((t) => {
+                const disabled = isTopicDisabled(t.counts, selectedContentType, selectedFormats);
+                const active   = selectedTopicIds.has(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => !disabled && toggleTopic(t.id)}
+                    disabled={disabled}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                      disabled
+                        ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed'
+                        : active
+                        ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    {t.title}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Progress filter (exam + practice + mixed) ── */}
+        {(selectedContentType === 'exam' || selectedContentType === 'practice' || selectedContentType === 'mixed') && (() => {
+          const filters = selectedContentType === 'exam' ? EXAM_PROGRESS_FILTERS
+            : selectedContentType === 'practice' ? PRACTICE_PROGRESS_FILTERS
+            : MIXED_PROGRESS_FILTERS;
+          return (
+            <div className="mb-7">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">My progress</p>
+              {optionsLoading ? (
+                <div className="flex gap-2">
+                  {Array.from({ length: filters.length }).map((_, i) => (
+                    <div key={i} className="h-8 w-16 rounded-full bg-slate-100 animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setProgressFilters(new Set())}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                      progressFilters.size === 0
+                        ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {filters.map((pf) => {
+                    const statusId = ('statusId' in pf && pf.statusId) ? pf.statusId : pf.id;
+                    const count = progressCounts?.[statusId as keyof ProgressCounts] ?? 0;
+                    const disabled = count === 0;
+                    const active = progressFilters.has(statusId);
+                    return (
+                      <button
+                        key={pf.id}
+                        onClick={() => {
+                          if (disabled) return;
+                          setProgressFilters((prev) => {
+                            const next = new Set(prev);
+                            next.has(statusId) ? next.delete(statusId) : next.add(statusId);
+                            return next;
+                          });
+                        }}
+                        disabled={disabled}
+                        className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                          disabled
+                            ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed'
+                            : active
+                            ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
+                        }`}
+                      >
+                        <span>{pf.label}</span>
+                        {!disabled && (
+                          <span className={`text-[11px] tabular-nums ${active ? 'text-white/70' : 'text-slate-400'}`}>
+                            {count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── Session length ── */}
+        <div className="mb-7">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Session length</p>
+          <div className="flex flex-wrap gap-2">
+            {([10, 20, 50, null] as (number | null)[]).map((n) => {
+              const disabled = n !== null && effectiveCount !== null && effectiveCount < n;
+              const active   = !disabled && activeSessionLength === n;
+              const label    = n === null
+                ? effectiveCount !== null ? `All (${effectiveCount})` : 'All'
+                : String(n);
+              return (
+                <button
+                  key={n ?? 'all'}
+                  onClick={() => !disabled && setSessionLength(n)}
+                  disabled={disabled}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                    disabled
+                      ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed'
+                      : active
+                      ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
+        {/* ── Solution toggle ── */}
         <label className="flex items-center gap-3 mb-6 cursor-pointer select-none">
           <div
             onClick={() => setWithSolution((v) => !v)}
@@ -233,11 +705,12 @@ export default function PracticePage({
 
   if (phase === 'done') {
     const total = results.length;
-    const solved = results.filter((r) => r.outcome === 'solved').length;
-    const incorrect = results.filter((r) => r.outcome === 'incorrect').length;
-    const review = results.filter((r) => r.outcome === 'needs_review').length;
-    const skipped = results.filter((r) => r.outcome === 'skipped').length;
-    const pct = total > 0 ? Math.round((solved / total) * 100) : 0;
+    const nAgain    = results.filter((r) => r.outcome === 'incorrect').length;
+    const nHard     = results.filter((r) => r.outcome === 'needs_review').length;
+    const nOk       = results.filter((r) => r.outcome === 'solved').length;
+    const nEasy     = results.filter((r) => r.outcome === 'easy').length;
+    const nSkipped  = results.filter((r) => r.outcome === 'skipped').length;
+    const pct = total > 0 ? Math.round(((nOk + nEasy) / total) * 100) : 0;
 
     return (
       <div className="max-w-md mx-auto">
@@ -249,7 +722,6 @@ export default function PracticePage({
           <p className="text-slate-500 text-sm">{total} items reviewed · {pct}% correct</p>
         </div>
 
-        {/* Score ring / progress */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between text-xs text-slate-500 font-medium uppercase tracking-wide">
             <span>Score</span>
@@ -263,12 +735,13 @@ export default function PracticePage({
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-3 mb-8">
+        <div className="grid grid-cols-5 gap-2 mb-8">
           {[
-            { count: solved,    label: 'Correct',  color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' },
-            { count: incorrect, label: 'Incorrect', color: 'text-red-500',     bg: 'bg-red-50 border-red-100' },
-            { count: review,    label: 'Review',    color: 'text-amber-600',   bg: 'bg-amber-50 border-amber-100' },
-            { count: skipped,   label: 'Skipped',   color: 'text-slate-400',   bg: 'bg-slate-50 border-slate-100' },
+            { count: nAgain,   label: 'Again',   color: 'text-red-600',     bg: 'bg-red-50 border-red-100' },
+            { count: nHard,    label: 'Hard',    color: 'text-amber-600',   bg: 'bg-amber-50 border-amber-100' },
+            { count: nOk,      label: 'OK',      color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' },
+            { count: nEasy,    label: 'Easy',    color: 'text-blue-600',    bg: 'bg-blue-50 border-blue-100' },
+            { count: nSkipped, label: 'Skipped', color: 'text-slate-400',   bg: 'bg-slate-50 border-slate-100' },
           ].map(({ count, label, color, bg }) => (
             <div key={label} className={`border rounded-xl p-3 text-center ${bg}`}>
               <div className={`text-2xl font-bold ${color}`}>{count}</div>
@@ -279,7 +752,11 @@ export default function PracticePage({
 
         <div className="flex gap-3">
           <button
-            onClick={() => { setPhase('setup'); setItems([]); }}
+            onClick={() => {
+              setPhase('setup');
+              setItems([]);
+              practiceApi.getOptions(versionId).then(setVersionOptions).catch(() => {});
+            }}
             className="flex-1 bg-[#1e3a8a] text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-900 transition-colors"
           >
             New session
@@ -312,7 +789,8 @@ export default function PracticePage({
         : []
     : [];
 
-  const progressPct = (index / items.length) * 100;
+  const doneCount = results.filter((r) => r.outcome === 'solved' || r.outcome === 'easy').length;
+  const progressPct = originalItemCount > 0 ? (doneCount / originalItemCount) * 100 : 0;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -335,7 +813,27 @@ export default function PracticePage({
             <h2 className="text-base font-semibold text-slate-900 leading-snug flex-1" dir="auto">
               <LatexContent content={ci.title} />
             </h2>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+              {reappearedIds.has(current.content_item_id) && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-500 border border-red-200">
+                  ↩ Again
+                </span>
+              )}
+              {current.user_progress?.status === 'needs_review' && !reappearedIds.has(current.content_item_id) && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-600 border border-amber-200">
+                  Hard
+                </span>
+              )}
+              {current.user_progress?.status === 'solved' && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-600 border border-emerald-200">
+                  OK
+                </span>
+              )}
+              {current.user_progress?.status === 'easy' && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-600 border border-blue-200">
+                  Easy
+                </span>
+              )}
               {ci.difficulty && (
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
                   <span className={`w-1.5 h-1.5 rounded-full ${DIFFICULTY_DOT[ci.difficulty]}`} />
@@ -361,7 +859,6 @@ export default function PracticePage({
 
         {/* Card body */}
         <div className="px-6 py-5">
-          {/* Content (hidden for flashcards — shown inside FlashCard) */}
           {!isFlashcard && (
             <div
               className="text-slate-700 mb-6 leading-relaxed"
@@ -371,37 +868,41 @@ export default function PracticePage({
             </div>
           )}
 
-          {/* Solution / MC options */}
           {isFlashcard ? (
             <div>
               <FlashCard key={index} front={flashcardFront} back={flashcardBack} onFirstFlip={() => setRevealed(true)} />
-              {revealed && (
+              {revealed ? (
                 <>
                   <ReportErrorButton contentItemId={ci.id} />
-                  <OutcomeButtons isQuestion onSubmit={submitOutcome} />
+                  {ci.type === 'exam_question' ? <ExamOutcomeButtons onSubmit={submitOutcome} /> : <OutcomeButtons onSubmit={submitOutcome} />}
                 </>
+              ) : (
+                <SkipButton onSubmit={submitOutcome} />
               )}
             </div>
           ) : ci.metadata?.question_format === 'multiple_choice' ? (
             <div>
               {!revealed ? (
-                <div className="space-y-2">
-                  {(['A', 'B', 'C', 'D'] as const).map((opt) => {
-                    const sec = ci.metadata?.sections?.find((s) => s.label === `Option ${opt}`);
-                    if (!sec) return null;
-                    return (
-                      <button
-                        key={opt}
-                        onClick={() => { setSelectedOption(opt); setRevealed(true); }}
-                        className="w-full text-left flex items-start gap-3 px-4 py-3 rounded-xl border border-slate-200 text-sm hover:border-[#1e3a8a]/40 hover:bg-[#1e3a8a]/5 transition-all group"
-                      >
-                        <span className="font-bold text-slate-400 group-hover:text-[#1e3a8a] shrink-0 transition-colors">{opt}</span>
-                        <div className="text-slate-700" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
-                          <LatexContent content={sec.content} />
-                        </div>
-                      </button>
-                    );
-                  })}
+                <div>
+                  <div className="space-y-2">
+                    {(['A', 'B', 'C', 'D'] as const).map((opt) => {
+                      const sec = ci.metadata?.sections?.find((s) => s.label === `Option ${opt}`);
+                      if (!sec) return null;
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => { setSelectedOption(opt); setRevealed(true); }}
+                          className="w-full text-left flex items-start gap-3 px-4 py-3 rounded-xl border border-slate-200 text-sm hover:border-[#1e3a8a]/40 hover:bg-[#1e3a8a]/5 transition-all group"
+                        >
+                          <span className="font-bold text-slate-400 group-hover:text-[#1e3a8a] shrink-0 transition-colors">{opt}</span>
+                          <div className="text-slate-700" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
+                            <LatexContent content={sec.content} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <SkipButton onSubmit={submitOutcome} />
                 </div>
               ) : (
                 <div>
@@ -448,24 +949,21 @@ export default function PracticePage({
                   </div>
 
                   <ReportErrorButton contentItemId={ci.id} />
-
-                  <button
-                    onClick={() => submitOutcome(selectedOption === ci.metadata?.correct_option ? 'solved' : 'incorrect')}
-                    className="w-full mt-3 py-2.5 bg-[#1e3a8a] text-white rounded-xl text-sm font-semibold hover:bg-blue-900 transition-colors"
-                  >
-                    Next →
-                  </button>
+                  {ci.type === 'exam_question' ? <ExamOutcomeButtons onSubmit={submitOutcome} /> : <OutcomeButtons onSubmit={submitOutcome} />}
                 </div>
               )}
             </div>
           ) : isQuestion ? (
             !revealed ? (
-              <button
-                onClick={() => setRevealed(true)}
-                className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-[#1e3a8a]/40 hover:text-[#1e3a8a] hover:bg-[#1e3a8a]/5 transition-all font-medium"
-              >
-                Reveal solution
-              </button>
+              <div>
+                <button
+                  onClick={() => setRevealed(true)}
+                  className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-[#1e3a8a]/40 hover:text-[#1e3a8a] hover:bg-[#1e3a8a]/5 transition-all font-medium"
+                >
+                  Reveal solution
+                </button>
+                <SkipButton onSubmit={submitOutcome} />
+              </div>
             ) : (
               <div>
                 {ci.solution ? (
@@ -482,7 +980,7 @@ export default function PracticePage({
                 )}
                 {ci.metadata?.question_format !== 'flashcard' && <CommunitySolutions contentItemId={ci.id} />}
                 <ReportErrorButton contentItemId={ci.id} />
-                <OutcomeButtons isQuestion onSubmit={submitOutcome} />
+                {ci.type === 'exam_question' ? <ExamOutcomeButtons onSubmit={submitOutcome} /> : <OutcomeButtons onSubmit={submitOutcome} />}
               </div>
             )
           ) : (
@@ -517,11 +1015,13 @@ export default function PracticePage({
                   )}
                 </div>
               ))}
-              {(revealed || nonQuestionSections.length === 0) && (
+              {revealed || nonQuestionSections.length === 0 ? (
                 <>
                   <ReportErrorButton contentItemId={ci.id} />
-                  <OutcomeButtons isQuestion={false} onSubmit={submitOutcome} />
+                  {ci.type === 'exam_question' ? <ExamOutcomeButtons onSubmit={submitOutcome} /> : <OutcomeButtons onSubmit={submitOutcome} />}
                 </>
+              ) : (
+                <SkipButton onSubmit={submitOutcome} />
               )}
             </div>
           )}
@@ -533,39 +1033,65 @@ export default function PracticePage({
 
 // ─── Outcome buttons ──────────────────────────────────────────────────────────
 
-function OutcomeButtons({
-  isQuestion,
-  onSubmit,
-}: {
-  isQuestion: boolean;
-  onSubmit: (outcome: ProgressStatus) => void;
-}) {
+type OnSubmit = (outcome: ProgressStatus, requeue?: boolean) => void;
+
+function OutcomeButtons({ onSubmit }: { onSubmit: OnSubmit }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 mt-4">
-      <button
-        onClick={() => onSubmit('solved')}
-        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
-      >
-        {isQuestion ? 'Correct' : 'Knew it'}
-      </button>
+    <div className="grid grid-cols-4 gap-2 mt-4">
       <button
         onClick={() => onSubmit('incorrect')}
         className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors"
       >
-        {isQuestion ? 'Incorrect' : "Didn't know"}
+        Again
       </button>
       <button
         onClick={() => onSubmit('needs_review')}
         className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors"
       >
-        Review later
+        Hard
       </button>
       <button
-        onClick={() => onSubmit('skipped')}
-        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200 transition-colors"
+        onClick={() => onSubmit('solved')}
+        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
       >
-        Skip
+        OK
+      </button>
+      <button
+        onClick={() => onSubmit('easy')}
+        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
+      >
+        Easy
       </button>
     </div>
+  );
+}
+
+function ExamOutcomeButtons({ onSubmit }: { onSubmit: OnSubmit }) {
+  return (
+    <div className="grid grid-cols-2 gap-2 mt-4">
+      <button
+        onClick={() => onSubmit('incorrect', false)}
+        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors"
+      >
+        Not Solved
+      </button>
+      <button
+        onClick={() => onSubmit('solved', false)}
+        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+      >
+        Solved
+      </button>
+    </div>
+  );
+}
+
+function SkipButton({ onSubmit }: { onSubmit: OnSubmit }) {
+  return (
+    <button
+      onClick={() => onSubmit('skipped')}
+      className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors"
+    >
+      Skip
+    </button>
   );
 }

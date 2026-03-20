@@ -95,11 +95,12 @@ export interface VersionContentItem {
   content_item_id: string;
   topic_id: string | null;
   content_item: ContentItem;
+  user_progress?: { status: ProgressStatus; last_attempt_at: string | null } | null;
 }
 
 // ─── Progress ─────────────────────────────────────────────────────────────────
 
-export type ProgressStatus = 'solved' | 'incorrect' | 'needs_review' | 'skipped';
+export type ProgressStatus = 'solved' | 'incorrect' | 'needs_review' | 'skipped' | 'easy';
 
 export interface UserProgress {
   id: string;
@@ -143,6 +144,7 @@ export interface VersionProgressSummary {
   incorrect: number;
   needs_review: number;
   skipped: number;
+  easy: number;
   unseen: number;
 }
 
