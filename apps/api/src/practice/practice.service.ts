@@ -255,12 +255,20 @@ export class PracticeService {
     );
 
     // Filter by progress status if requested (comma-separated, OR logic)
+    // 'ok'     = flashcard with status 'solved'
+    // 'solved' = non-flashcard (open/MCQ) with status 'solved'
     if (params.progress_filter) {
       const filterSet = new Set(params.progress_filter.split(','));
       items = items.filter((i) => {
         const p = progressMap.get(i.content_item_id);
+        const isFlashcard = i.content_item.metadata?.question_format === 'flashcard';
         if (filterSet.has('unseen') && (!p || p.status === 'skipped')) return true;
-        if (p && p.status !== 'skipped' && filterSet.has(p.status)) return true;
+        if (!p || p.status === 'skipped') return false;
+        if (filterSet.has('ok')           && isFlashcard  && p.status === 'solved') return true;
+        if (filterSet.has('solved')       && !isFlashcard && p.status === 'solved') return true;
+        if (filterSet.has('incorrect')    && p.status === 'incorrect')    return true;
+        if (filterSet.has('needs_review') && p.status === 'needs_review') return true;
+        if (filterSet.has('easy')         && p.status === 'easy')         return true;
         return false;
       });
       if (items.length === 0) return [];

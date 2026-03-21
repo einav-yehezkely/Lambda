@@ -6,6 +6,7 @@ export interface ProgressCounts {
   incorrect: number;
   needs_review: number;
   solved: number;
+  ok: number;
   easy: number;
 }
 

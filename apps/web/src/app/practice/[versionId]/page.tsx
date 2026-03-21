@@ -55,19 +55,21 @@ const EXAM_PROGRESS_FILTERS = [
   { id: 'solved',    label: 'Solved' },
 ] as const;
 
-const PRACTICE_PROGRESS_FILTERS = [
+const PRACTICE_PROGRESS_FILTERS: { id: string; label: string; statusId?: string }[] = [
   { id: 'unseen',       label: 'Unseen' },
+  { id: 'incorrect',    label: 'Not Solved' },
+  { id: 'solved',       label: 'Solved' },
   { id: 'needs_review', label: 'Hard' },
-  { id: 'solved',       label: 'OK' },
+  { id: 'ok',           label: 'OK' },
   { id: 'easy',         label: 'Easy' },
-] as const;
+];
 
 const MIXED_PROGRESS_FILTERS: { id: string; label: string; statusId?: string }[] = [
   { id: 'unseen',       label: 'Unseen' },
   { id: 'incorrect',    label: 'Not Solved' },
   { id: 'solved',       label: 'Solved' },
   { id: 'needs_review', label: 'Hard' },
-  { id: 'ok',           label: 'OK', statusId: 'solved' },
+  { id: 'ok',           label: 'OK' },
   { id: 'easy',         label: 'Easy' },
 ];
 
@@ -141,12 +143,13 @@ function computeProgressCounts(
   selectedFormats: Set<FormatId>,
   selectedNoTopic = false,
 ): ProgressCounts {
-  const emptyP = (): ProgressCounts => ({ unseen: 0, incorrect: 0, needs_review: 0, solved: 0, easy: 0 });
+  const emptyP = (): ProgressCounts => ({ unseen: 0, incorrect: 0, needs_review: 0, solved: 0, ok: 0, easy: 0 });
   const addP = (a: ProgressCounts, b: ProgressCounts): ProgressCounts => ({
     unseen: a.unseen + b.unseen,
     incorrect: a.incorrect + b.incorrect,
     needs_review: a.needs_review + b.needs_review,
     solved: a.solved + b.solved,
+    ok: a.ok + b.ok,
     easy: a.easy + b.easy,
   });
   const subP = (a: ProgressCounts, b: ProgressCounts): ProgressCounts => ({
@@ -154,6 +157,7 @@ function computeProgressCounts(
     incorrect: Math.max(0, a.incorrect - b.incorrect),
     needs_review: Math.max(0, a.needs_review - b.needs_review),
     solved: Math.max(0, a.solved - b.solved),
+    ok: Math.max(0, a.ok - b.ok),
     easy: Math.max(0, a.easy - b.easy),
   });
 
@@ -185,6 +189,13 @@ function computeProgressCounts(
   const getNoTopicByType = (): ProgressCounts =>
     subP(getByType(), topics.reduce((sum, t) => addP(sum, getTopicByType(t)), emptyP()));
 
+  // Splits a raw ProgressCounts (where 'solved' = all solved) into ok+solved by format.
+  // ok = flashcard solved, solved = non-flashcard solved.
+  const splitOkSolved = (raw: ProgressCounts, flashcardSolved: number): ProgressCounts => {
+    const ok = Math.min(flashcardSolved, raw.solved);
+    return { ...raw, ok, solved: raw.solved - ok };
+  };
+
   if (selectedTopicIds.size > 0 || selectedNoTopic) {
     let result = emptyP();
     if (selectedTopicIds.size > 0) {
@@ -193,15 +204,22 @@ function computeProgressCounts(
         .reduce((sum, t) => addP(sum, getTopicByType(t)), result);
     }
     if (selectedNoTopic) result = addP(result, getNoTopicByType());
-    return result;
+    // No per-topic flashcard breakdown available — use global flashcard solved as best estimate
+    const flashcardSolved = selectedFormats.size > 0 && !selectedFormats.has('flashcard')
+      ? 0
+      : getByTypeFormat('flashcard').solved;
+    return splitOkSolved(result, flashcardSolved);
   }
 
   // No filter — use precise global counts
   if (selectedFormats.size > 0) {
-    return [...selectedFormats].reduce((sum, fmt) => addP(sum, getByTypeFormat(fmt)), emptyP());
+    const raw = [...selectedFormats].reduce((sum, fmt) => addP(sum, getByTypeFormat(fmt)), emptyP());
+    const flashcardSolved = selectedFormats.has('flashcard') ? getByTypeFormat('flashcard').solved : 0;
+    return splitOkSolved(raw, flashcardSolved);
   }
 
-  return getByType();
+  const raw = getByType();
+  return splitOkSolved(raw, getByTypeFormat('flashcard').solved);
 }
 
 // ─── Display constants ────────────────────────────────────────────────────────
@@ -258,6 +276,7 @@ export default function PracticePage({
   const [revealedSections, setRevealedSections] = useState<Set<number>>(new Set());
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [mcqOutcome, setMcqOutcome] = useState<ProgressStatus | null>(null);
   const [results, setResults] = useState<SessionResult[]>([]);
   const [startedAt, setStartedAt] = useState<number>(0);
   const [error, setError] = useState('');
@@ -371,6 +390,7 @@ export default function PracticePage({
       setRevealed(false);
       setRevealedSections(new Set());
       setSelectedOptions([]);
+      setMcqOutcome(null);
       setStartedAt(Date.now());
     } else if (index + 1 >= items.length) {
       setPhase('done');
@@ -379,6 +399,22 @@ export default function PracticePage({
       setRevealed(false);
       setRevealedSections(new Set());
       setSelectedOptions([]);
+      setMcqOutcome(null);
+      setStartedAt(Date.now());
+    }
+  };
+
+  // ─── Advance without re-submitting (used after MCQ auto-submit) ───────────────
+
+  const advanceItem = () => {
+    if (index + 1 >= items.length) {
+      setPhase('done');
+    } else {
+      setIndex((i) => i + 1);
+      setRevealed(false);
+      setRevealedSections(new Set());
+      setSelectedOptions([]);
+      setMcqOutcome(null);
       setStartedAt(Date.now());
     }
   };
@@ -651,10 +687,10 @@ export default function PracticePage({
                     All
                   </button>
                   {filters.map((pf) => {
-                    const statusId = ('statusId' in pf && pf.statusId) ? pf.statusId : pf.id;
-                    const count = progressCounts?.[statusId as keyof ProgressCounts] ?? 0;
+                    const countKey = ('statusId' in pf && pf.statusId) ? pf.statusId : pf.id;
+                    const count = progressCounts?.[countKey as keyof ProgressCounts] ?? 0;
                     const disabled = count === 0;
-                    const active = progressFilters.has(statusId);
+                    const active = progressFilters.has(pf.id);
                     return (
                       <button
                         key={pf.id}
@@ -662,7 +698,7 @@ export default function PracticePage({
                           if (disabled) return;
                           setProgressFilters((prev) => {
                             const next = new Set(prev);
-                            next.has(statusId) ? next.delete(statusId) : next.add(statusId);
+                            next.has(pf.id) ? next.delete(pf.id) : next.add(pf.id);
                             return next;
                           });
                         }}
@@ -974,7 +1010,25 @@ export default function PracticePage({
                     </div>
                     {selectedOptions.length > 0 && (
                       <button
-                        onClick={() => setRevealed(true)}
+                        onClick={() => {
+                          const isAnswerCorrect =
+                            correctOpts.length > 0 &&
+                            correctOpts.every((o) => selectedOptions.includes(o)) &&
+                            selectedOptions.every((o) => correctOpts.includes(o));
+                          const outcome: ProgressStatus = isAnswerCorrect ? 'solved' : 'incorrect';
+                          const item = items[index];
+                          const timeSpent = Math.round((Date.now() - startedAt) / 1000);
+                          setResults((prev) => [...prev, { content_item_id: item.content_item_id, outcome }]);
+                          practiceApi.submitAttempt({
+                            version_id: versionId,
+                            content_item_id: item.content_item_id,
+                            is_correct: outcome === 'solved',
+                            status: outcome,
+                            time_spent_seconds: timeSpent,
+                          }).catch(() => {});
+                          setMcqOutcome(outcome);
+                          setRevealed(true);
+                        }}
                         className="w-full mt-3 py-2.5 rounded-xl text-sm font-semibold bg-[#1e3a8a] text-white hover:bg-[#1e3a8a]/90 transition-colors"
                       >
                         Check
@@ -1041,16 +1095,21 @@ export default function PracticePage({
                             </div>
                           )}
                           <ReportErrorButton contentItemId={ci.id} />
-                          <button
-                            onClick={() => submitOutcome(isAnswerCorrect ? 'solved' : 'incorrect', false)}
-                            className={`w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                              isAnswerCorrect
-                                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                : 'bg-red-500 text-white hover:bg-red-600'
-                            }`}
-                          >
-                            Continue
-                          </button>
+                          <div className="mt-4 flex items-center gap-3">
+                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold ${mcqOutcome === 'solved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
+                              {mcqOutcome === 'solved' ? (
+                                <><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>Solved</>
+                              ) : (
+                                <><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>Not Solved</>
+                              )}
+                            </div>
+                            <button
+                              onClick={advanceItem}
+                              className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                            >
+                              Continue
+                            </button>
+                          </div>
                         </>
                       );
                     })()}
