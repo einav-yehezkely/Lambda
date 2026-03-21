@@ -962,13 +962,12 @@ export default function PracticePage({
                           <button
                             key={letter}
                             onClick={() => setSelectedOptions((prev) => prev.includes(letter) ? prev.filter((o) => o !== letter) : [...prev, letter])}
-                            className={`w-full text-left flex items-start gap-3 px-4 py-3 rounded-xl border text-sm transition-all group ${isSelected ? 'border-[#1e3a8a]/40 bg-[#1e3a8a]/5' : 'border-slate-200 hover:border-[#1e3a8a]/40 hover:bg-[#1e3a8a]/5'}`}
+                            className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl text-sm transition-all group text-start ${isSelected ? 'border-2 border-[#1e3a8a]/50 bg-[#1e3a8a]/5' : 'border border-slate-200 hover:border-[#1e3a8a]/40 hover:bg-[#1e3a8a]/5'}`}
                           >
                             <span className={`font-bold shrink-0 transition-colors ${isSelected ? 'text-[#1e3a8a]' : 'text-slate-400 group-hover:text-[#1e3a8a]'}`}>{letter}</span>
-                            <div className="text-slate-700" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
+                            <div className="flex-1 text-slate-700" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
                               <LatexContent content={sec.content} />
                             </div>
-                            {isSelected && <span className="ml-auto shrink-0 font-bold text-[#1e3a8a]">✓</span>}
                           </button>
                         );
                       })}
@@ -1000,34 +999,47 @@ export default function PracticePage({
                               return (
                                 <div
                                   key={letter}
-                                  className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm ${
-                                    isCorrect ? 'border-emerald-400 bg-emerald-50' : isSelected ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'
+                                  className={`flex items-start gap-3 px-4 py-3 rounded-xl text-sm ${
+                                    isCorrect && isSelected ? 'border-2 border-emerald-500 bg-emerald-50' :
+                                    isCorrect ? 'border border-emerald-300 bg-emerald-50' :
+                                    isSelected ? 'border-2 border-red-400 bg-red-50' :
+                                    'border border-slate-200 bg-white'
                                   }`}
                                 >
                                   <span className={`font-bold shrink-0 ${isCorrect ? 'text-emerald-600' : isSelected ? 'text-red-500' : 'text-slate-400'}`}>
                                     {letter}
                                   </span>
-                                  <div className={isCorrect ? 'text-emerald-700' : isSelected ? 'text-red-700' : 'text-slate-600'} dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
+                                  <div className={`flex-1 ${isCorrect ? 'text-emerald-700' : isSelected ? 'text-red-700' : 'text-slate-600'}`} dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
                                     <LatexContent content={sec.content} />
                                   </div>
-                                  {isCorrect && (
-                                    <span className="ml-auto shrink-0 text-emerald-600">
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    </span>
-                                  )}
-                                  {isSelected && !isCorrect && (
-                                    <span className="ml-auto shrink-0 text-red-400">
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                                      </svg>
-                                    </span>
-                                  )}
+                                  <div className="ml-auto flex items-center gap-1 shrink-0">
+                                    {isCorrect && (
+                                      <span className="text-emerald-600">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      </span>
+                                    )}
+                                    {isSelected && !isCorrect && (
+                                      <span className="text-red-400">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
                           </div>
+                          {ci.metadata?.explanation && (
+                            <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                              <p className="text-xs font-semibold text-blue-700 mb-1">Explanation</p>
+                              <div className="text-sm text-blue-800" dir={/[\u0590-\u05FF]/.test(ci.metadata.explanation) ? 'rtl' : undefined}>
+                                <LatexContent content={ci.metadata.explanation} />
+                              </div>
+                            </div>
+                          )}
                           <ReportErrorButton contentItemId={ci.id} />
                           <button
                             onClick={() => submitOutcome(isAnswerCorrect ? 'solved' : 'incorrect', false)}

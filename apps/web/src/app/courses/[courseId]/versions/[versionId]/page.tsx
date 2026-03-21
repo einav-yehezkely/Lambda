@@ -491,6 +491,7 @@ function AddContentModal({
   const [type, setType] = useState(() => activeTypes?.[0]?.value ?? 'proof');
   const [questionFormat, setQuestionFormat] = useState('open');
   const [correctOptions, setCorrectOptions] = useState<string[]>([]);
+  const [explanation, setExplanation] = useState('');
   const [title, setTitle] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [topicId, setTopicId] = useState('');
@@ -562,12 +563,14 @@ function AddContentModal({
   useEffect(() => {
     setQuestionFormat('open');
     setCorrectOptions([]);
+    setExplanation('');
     setSections(getSections(type, 'open').map((s) => ({ ...s, imageFiles: [] })));
   }, [type]);
 
   useEffect(() => {
     if (isQuestion) {
       setCorrectOptions([]);
+      setExplanation('');
       setSections(getSections(type, questionFormat).map((s) => ({ ...s, imageFiles: [] })));
     }
   }, [questionFormat]);
@@ -593,6 +596,7 @@ function AddContentModal({
         metadata: {
           ...(isQuestion ? { question_format: questionFormat } : {}),
           ...(isMultipleChoice && correctOptions.length > 0 ? { correct_option: correctOptions } : {}),
+          ...(isMultipleChoice && explanation.trim() ? { explanation: explanation.trim() } : {}),
           sections: sections.filter((s) => s.label.trim() || s.content.trim() || s.imageFiles?.length).map((s) => ({ label: s.label.trim() || 'Section', content: s.content })),
         },
       });
@@ -616,6 +620,7 @@ function AddContentModal({
             metadata: {
               ...(isQuestion ? { question_format: questionFormat } : {}),
               ...(isMultipleChoice && correctOptions.length > 0 ? { correct_option: correctOptions } : {}),
+              ...(isMultipleChoice && explanation.trim() ? { explanation: explanation.trim() } : {}),
               sections: sectionsWithUrls.filter((s) => s.label || s.content || (s as any).images?.length),
             },
           },
@@ -768,6 +773,13 @@ function AddContentModal({
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {isMultipleChoice && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Explanation (optional)</label>
+            <LatexEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain why the answer is correct..." />
           </div>
         )}
 

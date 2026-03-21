@@ -123,7 +123,7 @@ export function LatexContent({ content, className }: LatexContentProps) {
         }
         if (seg.type === 'code-inline') {
           return (
-            <code key={i} dir="ltr" className="font-mono text-xs bg-gray-900 text-green-400 px-1.5 py-0.5 rounded border border-gray-700">
+            <code key={i} dir="ltr" className="font-mono text-xs bg-gray-100 text-red-600 px-1.5 py-0.5 rounded border border-gray-200">
               {seg.value}
             </code>
           );

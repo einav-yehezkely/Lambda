@@ -116,6 +116,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
     const v = ci.metadata?.correct_option;
     return Array.isArray(v) ? v : v ? [v] : [];
   });
+  const [explanation, setExplanation] = useState(ci.metadata?.explanation ?? '');
   const isCurrentQuestion = contentType === 'exam_question' || contentType === 'exercise_question';
   const isCurrentAlgorithm = contentType === 'algorithm';
   const isMultipleChoice = isCurrentQuestion && questionFormat === 'multiple_choice';
@@ -201,6 +202,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
     }
     setQuestionFormat(fmt);
     setCorrectOptions([]);
+    setExplanation('');
     setSections(getDefaultSections(contentType, fmt));
   };
 
@@ -238,6 +240,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
           metadata: {
             ...(isCurrentQuestion ? { question_format: questionFormat } : {}),
             ...(isMultipleChoice && correctOptions.length > 0 ? { correct_option: correctOptions } : {}),
+            ...(isMultipleChoice && explanation.trim() ? { explanation: explanation.trim() } : {}),
             sections: sections.filter((s) => s.label.trim() || s.content.trim() || s.images?.length).map((s) => ({ label: s.label.trim() || 'Section', content: s.content, ...(s.images?.length ? { images: s.images } : {}) })),
           },
         },
@@ -380,6 +383,13 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {isMultipleChoice && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Explanation (optional)</label>
+            <LatexEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain why the answer is correct..." />
           </div>
         )}
 
@@ -543,17 +553,18 @@ function ViewModal({ item, onClose }: {
             {(() => {
               const raw = meta?.correct_option;
               const correctOpts = Array.isArray(raw) ? raw : raw ? [raw] : [];
-              const optionSections = sections.filter((s) => /^Option [A-Z]$/.test(s.label));
+              const rawSections = content_item.metadata?.sections ?? [];
+              const optionRawSections = rawSections.filter((s) => /^Option [A-Z]$/.test(s.label));
               return (
                 <>
                   <div className="mb-4">{sections[0]?.content}</div>
                   <div className="space-y-2 mb-4">
-                    {optionSections.map((sec) => {
-                      const letter = sec.label.replace('Option ', '');
+                    {optionRawSections.map((s) => {
+                      const letter = s.label.replace('Option ', '');
                       const isCorrect = showSolution && correctOpts.includes(letter);
                       return (
                         <div
-                          key={sec.label}
+                          key={s.label}
                           className={`flex items-start gap-3 p-3 rounded-lg border text-sm transition-colors ${
                             isCorrect ? 'border-green-500 bg-green-50' : 'border-gray-200'
                           }`}
@@ -561,7 +572,9 @@ function ViewModal({ item, onClose }: {
                           <span className={`font-semibold shrink-0 ${isCorrect ? 'text-green-600' : 'text-gray-500'}`}>
                             {letter}.
                           </span>
-                          <div className={isCorrect ? 'text-green-700' : 'text-gray-600'}>{sec.content}</div>
+                          <div className={`flex-1 ${isCorrect ? 'text-green-700' : 'text-gray-600'}`} dir={hDir(s.content)}>
+                            <LatexContent content={s.content} />
+                          </div>
                         </div>
                       );
                     })}
@@ -575,9 +588,19 @@ function ViewModal({ item, onClose }: {
                       Show solution
                     </button>
                   ) : (
-                    <p className="text-sm font-medium text-green-600">
-                      Correct answer{correctOpts.length > 1 ? 's' : ''}: {correctOpts.join(', ')}
-                    </p>
+                    <>
+                      <p className="text-sm font-medium text-green-600">
+                        Correct answer{correctOpts.length > 1 ? 's' : ''}: {correctOpts.join(', ')}
+                      </p>
+                      {meta?.explanation && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                          <p className="text-xs font-semibold text-blue-700 mb-1">Explanation</p>
+                          <div className="text-sm text-blue-800" dir={hDir(meta.explanation)}>
+                            <LatexContent content={meta.explanation} />
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               );

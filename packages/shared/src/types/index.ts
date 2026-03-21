@@ -72,6 +72,7 @@ export interface AlgorithmMetadata {
   sections?: Array<{ label: string; content: string; images?: string[] }>;
   question_format?: QuestionFormat;
   correct_option?: string | string[];
+  explanation?: string;
 }
 
 export interface ContentItem {
