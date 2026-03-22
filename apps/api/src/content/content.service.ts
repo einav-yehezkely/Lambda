@@ -236,6 +236,101 @@ export class ContentService {
 
   // ─── Report error ────────────────────────────────────────────────────────────
 
+  private buildReportErrorHtml(params: {
+    authorName: string;
+    itemTitle: string;
+    errorText: string;
+    itemLink: string | null;
+    reporterUsername: string | null;
+    appUrl: string;
+  }): string {
+    const { authorName, itemTitle, errorText, itemLink, reporterUsername, appUrl } = params;
+
+    const inlineLogo = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="44" viewBox="963 -194 979 1434" style="display:block;margin:0 auto 8px;"><path style="fill:#0f172a;fill-rule:evenodd" d="M1941.7986 938.2071L1905.7586 938.2071C1895.7486 1043.6671 1853.3686 1096.3871 1778.6186 1096.3871 1734.5686 1096.3871 1696.6886 1074.1971 1664.9886 1029.8171Q1617.4386 963.2371 1574.3886 766.0171L1503.3086 448.6681Q1428.2286 110.2941 1392.6886 2.6721C1368.9886-69.0729 1340.9586-119.7959 1308.5886-149.4969 1276.2186-179.195 1242.0186-194.0448 1205.9786-194.0462 1149.9186-194.0448 1103.1986-164.512 1065.8186-105.4479 1028.4486-46.3809 1008.7586 32.2061 1006.7586 130.3141L1042.7986 130.3141C1046.1386 69.5811 1061.9886 24.6981 1090.3486-4.3359 1118.7186-33.3669 1151.9186-47.8829 1189.9586-47.8839 1237.3486-47.8829 1277.0586-19.1839 1309.0886 38.2121Q1357.1486 124.3091 1391.1886 303.5061L962.7086 1226.5371 1151.9186 1226.5371 1450.2486 549.7801 1536.3486 938.2071C1567.0486 1076.3671 1601.7486 1161.2971 1640.4586 1192.9971 1679.1686 1224.6971 1719.5486 1240.5471 1761.5986 1240.5471 1812.9886 1240.5471 1855.8686 1216.5171 1890.2386 1168.4671 1924.6086 1120.4171 1941.7986 1043.6671 1941.7986 938.2071Z"/></svg>`;
+
+    const reporterHtml = reporterUsername
+      ? `<a href="${appUrl}/profile/${reporterUsername}" style="color:#1e3a8a;text-decoration:none;font-weight:600;">${reporterUsername}</a>`
+      : 'Anonymous';
+
+    const ctaButton = itemLink ? `
+              <table cellpadding="0" cellspacing="0" style="margin:24px 0 0;">
+                <tr>
+                  <td style="background:#1e3a8a;border-radius:8px;">
+                    <a href="${itemLink}"
+                      style="display:inline-block;padding:12px 28px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.1px;">
+                      View question →
+                    </a>
+                  </td>
+                </tr>
+              </table>` : '';
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              ${inlineLogo}
+              <span style="font-size:20px;font-weight:700;color:#0f172a;letter-spacing:-0.3px;">Lambda</span>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background:#ffffff;border-radius:12px;padding:36px 36px 32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+
+              <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">
+                Mistake report on your question
+              </p>
+              <p style="margin:0 0 24px;font-size:15px;color:#64748b;">
+                Hi ${authorName},
+              </p>
+
+              <p style="margin:0 0 16px;font-size:15px;color:#334155;line-height:1.6;">
+                ${reporterHtml} reported a possible mistake in your question:
+                <strong style="color:#0f172a;">${itemTitle}</strong>
+              </p>
+
+              <!-- Error box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
+                <tr>
+                  <td style="background:#f8fafc;border-left:3px solid #e2e8f0;border-radius:4px;padding:14px 16px;">
+                    <p style="margin:0;font-size:14px;color:#475569;line-height:1.6;white-space:pre-wrap;">${errorText}</p>
+                  </td>
+                </tr>
+              </table>
+              ${ctaButton}
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding-top:20px;">
+              <p style="margin:0;font-size:12px;color:#94a3b8;">
+                Lambda — the community learning platform<br />
+                <a href="${appUrl}" style="color:#94a3b8;">${appUrl}</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  }
+
   async reportError(contentItemId: string, errorText: string, reporterUsername?: string): Promise<void> {
     const { data: item } = await this.db
       .from('content_items')
@@ -272,18 +367,30 @@ export class ContentService {
 
     const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: smtpUser, pass } });
 
-    const reporterLine = reporterUsername
-      ? `Reported by: ${reporterUsername} (https://lambda-site.vercel.app/profile/${reporterUsername})`
-      : 'Reported by: Anonymous';
+    const appUrl = this.config.get<string>('APP_URL') ?? 'https://lambda-site.vercel.app';
 
+    const reporterLine = reporterUsername
+      ? `Reported by: ${reporterUsername} (${appUrl}/profile/${reporterUsername})`
+      : 'Reported by: Anonymous';
     const linkLine = itemLink ? `\nLink to question: ${itemLink}` : '';
+    const plainText = `${reporterLine}\n\nQuestion: "${item.title}"${linkLine}\n\nMistake description:\n${errorText}`;
+
+    const html = this.buildReportErrorHtml({
+      authorName: author?.username ?? 'there',
+      itemTitle: item.title,
+      errorText,
+      itemLink,
+      reporterUsername: reporterUsername ?? null,
+      appUrl,
+    });
 
     await transporter.sendMail({
       from: smtpUser,
       to: author?.email ?? smtpUser,
       cc: 'simplifye.solutions@gmail.com',
       subject: `Lambda – Mistake Report: "${item.title}"`,
-      text: `${reporterLine}\n\nQuestion: "${item.title}"${linkLine}\n\nMistake description:\n${errorText}`,
+      text: plainText,
+      html,
     });
   }
 
