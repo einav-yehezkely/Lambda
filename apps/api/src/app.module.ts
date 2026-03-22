@@ -11,6 +11,7 @@ import { FeedbackModule } from './feedback/feedback.module';
 import { SolutionsModule } from './solutions/solutions.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { VersionFilesModule } from './version-files/version-files.module';
+import { CourseRequestsModule } from './course-requests/course-requests.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { VersionFilesModule } from './version-files/version-files.module';
     SolutionsModule,
     AnnouncementsModule,
     VersionFilesModule,
+    CourseRequestsModule,
   ],
 })
 export class AppModule {}

@@ -3,7 +3,8 @@
 import { use, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCourse, useCourseVersions, useCreateVersion, useDeleteCourse, useActiveVersions, useEnrollCourse, useUnenrollCourse, useRateVersion } from '@/hooks/useCourses';
+import { useCourse, useCourseVersions, useCreateVersion, useDeleteCourse, useActiveVersions, useEnrollCourse, useUnenrollCourse, useRateVersion, useUpdateCourse } from '@/hooks/useCourses';
+import { useCurrentUser } from '@/hooks/useUsers';
 import { useAuth } from '@/hooks/useAuth';
 import { Modal } from '@/components/ui/modal';
 import type { CourseVersion } from '@lambda/shared';
@@ -176,10 +177,54 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
   const { courseId } = use(params);
   const router = useRouter();
   const { user } = useAuth();
+  const { data: currentUser } = useCurrentUser();
+  const isAdmin = !!currentUser?.is_admin;
   const { data: course, isLoading: courseLoading } = useCourse(courseId);
   const { data: versions, isLoading: versionsLoading } = useCourseVersions(courseId);
   const createVersion = useCreateVersion();
   const deleteCourse = useDeleteCourse();
+  const updateCourse = useUpdateCourse();
+
+  // Edit course modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editSubject, setEditSubject] = useState('cs');
+  const [editSubjectCustom, setEditSubjectCustom] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editError, setEditError] = useState('');
+
+  const openEdit = () => {
+    if (!course) return;
+    setEditTitle(course.title);
+    const knownSubjects = ['cs', 'math'];
+    if (knownSubjects.includes(course.subject)) {
+      setEditSubject(course.subject);
+      setEditSubjectCustom('');
+    } else {
+      setEditSubject('custom');
+      setEditSubjectCustom(course.subject);
+    }
+    setEditDesc(course.description ?? '');
+    setEditError('');
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTitle.trim()) { setEditError('Title is required'); return; }
+    const subj = editSubject === 'custom' ? editSubjectCustom.trim() : editSubject;
+    if (!subj) { setEditError('Subject is required'); return; }
+    setEditError('');
+    try {
+      await updateCourse.mutateAsync({
+        id: courseId,
+        body: { title: editTitle.trim(), subject: subj, description: editDesc.trim() || null },
+      });
+      setShowEditModal(false);
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : 'Failed to update course');
+    }
+  };
   const { data: activeVersions } = useActiveVersions(!!user);
   const enrollCourse = useEnrollCourse();
   const unenrollCourse = useUnenrollCourse();
@@ -318,7 +363,15 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                   <span className="text-base leading-none">+</span> New Version
                 </button>
               )}
-              {user?.id === course.created_by && (
+              {(isAdmin || user?.id === course.created_by) && (
+                <button
+                  onClick={openEdit}
+                  className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  Edit course
+                </button>
+              )}
+              {(isAdmin || user?.id === course.created_by) && (
                 <button
                   onClick={handleDeleteCourse}
                   disabled={deleteCourse.isPending}
@@ -363,6 +416,74 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
             />
           ))}
         </div>
+      )}
+
+      {/* Edit Course Modal */}
+      {showEditModal && (
+        <Modal title="Edit Course" onClose={() => setShowEditModal(false)}>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+              <input
+                autoFocus
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                dir="auto"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Subject *</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {[{ value: 'cs', label: 'Computer Science' }, { value: 'math', label: 'Mathematics' }, { value: 'custom', label: 'Other...' }].map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => setEditSubject(s.value)}
+                    className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
+                      editSubject === s.value
+                        ? 'bg-[#1e3a8a] text-white border-[#1e3a8a]'
+                        : 'border-slate-300 text-slate-600 hover:border-slate-400'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              {editSubject === 'custom' && (
+                <input
+                  type="text"
+                  value={editSubjectCustom}
+                  onChange={(e) => setEditSubjectCustom(e.target.value)}
+                  placeholder="e.g. Physics, Biology..."
+                  dir="auto"
+                  className={INPUT_CLS}
+                />
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                rows={2}
+                placeholder="Optional"
+                dir="auto"
+                className={`${INPUT_CLS} resize-none`}
+              />
+            </div>
+            {editError && <p className="text-sm text-red-500">{editError}</p>}
+            <div className="flex justify-end gap-2 pt-1">
+              <button type="button" onClick={() => setShowEditModal(false)} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">
+                Cancel
+              </button>
+              <button type="submit" disabled={updateCourse.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
+                {updateCourse.isPending ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* New Version / Fork Modal */}

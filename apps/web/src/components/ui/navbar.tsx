@@ -88,6 +88,14 @@ export function Navbar() {
               ) : (
                 <span className="text-sm font-medium text-slate-600">{displayName}</span>
               )}
+              {profile?.is_admin && (
+                <Link
+                  href="/admin/course-requests"
+                  className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  Admin
+                </Link>
+              )}
               <NotificationBell isAdmin={!!profile?.is_admin} />
               <button
                 onClick={signOut}

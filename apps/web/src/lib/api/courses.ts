@@ -22,6 +22,9 @@ export const coursesApi = {
   createCourse: (body: { title: string; subject: string; description?: string }) =>
     api.post<CourseTemplate>('/api/courses', body),
 
+  updateCourse: (id: string, body: { title?: string; subject?: string; description?: string | null }) =>
+    api.put<CourseTemplate>(`/api/courses/${id}`, body),
+
   updateVersion: (id: string, body: {
     institution?: string;
     year?: number;

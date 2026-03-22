@@ -110,6 +110,18 @@ export function useCreateCourse() {
   });
 }
 
+export function useUpdateCourse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: { title?: string; subject?: string; description?: string | null } }) =>
+      coursesApi.updateCourse(id, body),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['course', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+    },
+  });
+}
+
 export function useUpdateVersion() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -193,6 +193,23 @@ export interface Announcement {
   is_read: boolean;
 }
 
+// ─── Course Requests ──────────────────────────────────────────────────────────
+
+export interface CourseRequest {
+  id: string;
+  requester_id: string;
+  requester?: { id: string; username: string; display_name: string | null; email: string };
+  course_name: string;
+  subject: string | null;
+  description: string | null;
+  institution: string | null;
+  notes: string | null;
+  status: 'pending' | 'fulfilled';
+  course_template_id: string | null;
+  created_at: string;
+  fulfilled_at: string | null;
+}
+
 // ─── Practice ─────────────────────────────────────────────────────────────────
 
 export type PracticeMode = 'random' | 'topic' | 'exam' | 'spaced_repetition';

@@ -115,6 +115,32 @@ export class CoursesService {
     return data as CourseTemplate;
   }
 
+  async updateCourse(
+    id: string,
+    dto: { title?: string; description?: string | null; subject?: string },
+    userId: string,
+    isAdmin: boolean,
+  ): Promise<CourseTemplate> {
+    const { data: existing, error: fetchErr } = await this.db
+      .from('course_templates')
+      .select('created_by')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !existing) throw new NotFoundException('Course not found');
+    if (!isAdmin && existing.created_by !== userId) throw new ForbiddenException('Not allowed');
+
+    const { data, error } = await this.db
+      .from('course_templates')
+      .update(dto)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw new InternalServerErrorException(error.message);
+    return data as CourseTemplate;
+  }
+
   // ─── Course Versions ────────────────────────────────────────────────────────
 
   async listVersions(templateId: string): Promise<CourseVersion[]> {

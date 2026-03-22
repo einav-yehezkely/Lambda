@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
+import { UpdateCourseDto } from './dto/update-course.dto';
 import { CreateVersionDto } from './dto/create-version.dto';
 import { UpdateVersionDto } from './dto/update-version.dto';
 import { RateVersionDto } from './dto/rate-version.dto';
@@ -65,6 +66,18 @@ export class CoursesController {
   @ApiCreatedResponse({ description: 'Create a new course template' })
   createCourse(@Body() dto: CreateCourseDto, @CurrentUser() user: User) {
     return this.coursesService.createCourse(dto, user.id);
+  }
+
+  @Put(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ description: 'Update a course template (admin or creator)' })
+  updateCourse(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateCourseDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.coursesService.updateCourse(id, dto, user.id, user.is_admin);
   }
 
   @Get(':id/versions')
