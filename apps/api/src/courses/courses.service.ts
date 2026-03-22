@@ -4,6 +4,8 @@ import {
   ForbiddenException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
 import { getSupabaseClient } from '../common/supabase.client';
 import { CourseTemplate, CourseVersion, Topic } from '@lambda/shared';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -12,6 +14,8 @@ import { UpdateVersionDto } from './dto/update-version.dto';
 
 @Injectable()
 export class CoursesService {
+  constructor(private readonly config: ConfigService) {}
+
   private get db() {
     return getSupabaseClient();
   }
@@ -335,5 +339,52 @@ export class CoursesService {
       .insert(newJunctionRows);
 
     if (insertError) throw new InternalServerErrorException(insertError.message);
+  }
+
+  // ─── Version Reporting ──────────────────────────────────────────────────────
+
+  async reportVersion(versionId: string, reason: string, reporterUsername: string, reporterEmail?: string): Promise<void> {
+    const { data: version, error } = await this.db
+      .from('course_versions')
+      .select('id, template_id, institution, year, semester, course_templates(title)')
+      .eq('id', versionId)
+      .single();
+
+    if (error || !version) throw new NotFoundException('Version not found');
+
+    const courseTitle = (version as any).course_templates?.title ?? 'Unknown course';
+    const parts = [version.institution, version.year, version.semester].filter(Boolean);
+    const versionLabel = parts.length ? parts.join(' · ') : 'Unknown version';
+
+    const appUrl = this.config.get<string>('APP_URL') ?? '';
+    const versionUrl = `${appUrl}/courses/${version.template_id}/versions/${versionId}`;
+
+    const subject = `Lambda – Version Report: ${courseTitle} · ${versionLabel}`;
+    const text = [
+      `A user reported an issue with a course version.`,
+      ``,
+      `Reporter: ${reporterUsername}${reporterEmail ? ` <${reporterEmail}>` : ''}`,
+      `Course:   ${courseTitle}`,
+      `Version:  ${versionLabel}`,
+      `Link:     ${versionUrl}`,
+      ``,
+      `Reason:`,
+      reason,
+    ].join('\n');
+
+    await this.sendMail(subject, text);
+  }
+
+  private async sendMail(subject: string, text: string): Promise<void> {
+    const smtpUser = this.config.get<string>('SMTP_USER');
+    const smtpPass = this.config.get<string>('SMTP_PASS');
+    if (!smtpUser || !smtpPass) return;
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+
+    await transporter.sendMail({ from: smtpUser, to: smtpUser, subject, text });
   }
 }

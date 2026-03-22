@@ -126,6 +126,18 @@ export class CoursesController {
     return this.coursesService.rateVersion(id, dto.rating, user.id);
   }
 
+  @Post('versions/:id/report')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(204)
+  reportVersion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { reason: string },
+    @CurrentUser() user: User,
+  ) {
+    return this.coursesService.reportVersion(id, body.reason, user.username, user.email);
+  }
+
   @Delete('versions/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

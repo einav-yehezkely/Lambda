@@ -11,6 +11,7 @@ import { compressImage } from '@/lib/compress-image';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfileById, useCurrentUser } from '@/hooks/useUsers';
 import { ContentItemCard } from '@/components/content/content-item-card';
+import { ReportVersionButton } from '@/components/content/report-version';
 import { VersionDrive } from '@/components/version-drive';
 import { Modal } from '@/components/ui/modal';
 import { LatexEditor } from '@/components/ui/latex-editor';
@@ -931,7 +932,7 @@ export default function VersionPage({
       {/* Header + Tab bar card */}
       <div className="mb-6 border border-gray-200 rounded-xl bg-white shadow-sm">
         {/* Header */}
-        <div className="px-6 pt-6 pb-5">
+        <div className="px-6 pt-6 pb-5 relative">
           <div className="flex items-start gap-5">
             {/* Course icon */}
             <div className="shrink-0 w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-500">
@@ -993,6 +994,11 @@ export default function VersionPage({
               </button>
             </div>
           </div>
+          {user && (
+            <div className="absolute bottom-4 right-5">
+              <ReportVersionButton versionId={versionId} />
+            </div>
+          )}
         </div>
 
         {/* Tab bar */}

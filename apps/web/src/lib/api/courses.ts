@@ -43,6 +43,9 @@ export const coursesApi = {
   rateVersion: (id: string, rating: number) =>
     api.post<void>(`/api/courses/versions/${id}/rate`, { rating }),
 
+  reportVersion: (id: string, reason: string) =>
+    api.post<void>(`/api/courses/versions/${id}/report`, { reason }),
+
   createVersion: (body: {
     template_id: string;
     title: string;
