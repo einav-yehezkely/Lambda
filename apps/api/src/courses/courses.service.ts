@@ -44,7 +44,7 @@ export class CoursesService {
       const { data: matchingVersions } = await this.db
         .from('course_versions')
         .select('template_id')
-        .or(`institution.ilike.${term},description.ilike.${term}`);
+        .or(`institution.ilike.${term},description.ilike.${term},lecturer_name.ilike.${term},course_number.ilike.${term}`);
 
       // Find template_ids from versions that contain matching content items
       const { data: matchingItems } = await this.db
