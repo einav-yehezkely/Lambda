@@ -9,4 +9,7 @@ export const courseRequestsApi = {
 
   fulfill: (id: string, body: { title: string; subject: string; description?: string }) =>
     api.post<CourseTemplate>(`/api/course-requests/${id}/fulfill`, body),
+
+  respond: (id: string, body: { message: string }) =>
+    api.post<void>(`/api/course-requests/${id}/respond`, body),
 };

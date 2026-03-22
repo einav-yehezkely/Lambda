@@ -4,6 +4,7 @@ import * as nodemailer from 'nodemailer';
 import { getSupabaseClient } from '../common/supabase.client';
 import { CreateCourseRequestDto } from './dto/create-course-request.dto';
 import { FulfillCourseRequestDto } from './dto/fulfill-course-request.dto';
+import { RespondCourseRequestDto } from './dto/respond-course-request.dto';
 
 @Injectable()
 export class CourseRequestsService {
@@ -111,6 +112,81 @@ export class CourseRequestsService {
   </table>
 </body>
 </html>`;
+  }
+
+  private buildRespondHtml(params: { name: string; courseName: string; message: string }): string {
+    const { name, courseName, message } = params;
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <span style="font-size:20px;font-weight:700;color:#0f172a;letter-spacing:-0.3px;">Lambda</span>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background:#ffffff;border-radius:12px;padding:36px 36px 32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">
+                Update on your course request
+              </p>
+              <p style="margin:0 0 24px;font-size:15px;color:#64748b;">Hi ${name},</p>
+              <p style="margin:0 0 12px;font-size:14px;color:#64748b;">
+                You requested: <strong style="color:#0f172a;">${courseName}</strong>
+              </p>
+              <div style="background:#f8fafc;border-left:3px solid #1e3a8a;border-radius:4px;padding:14px 16px;margin:0 0 24px;">
+                <p style="margin:0;font-size:15px;color:#334155;line-height:1.6;white-space:pre-wrap;">${message}</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding-top:20px;">
+              <p style="margin:0;font-size:12px;color:#94a3b8;">Lambda — the community learning platform</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  }
+
+  async respond(id: string, dto: RespondCourseRequestDto) {
+    const { data: request, error: reqErr } = await this.db
+      .from('course_requests')
+      .select('*, requester:users!course_requests_requester_id_fkey(email, username, display_name)')
+      .eq('id', id)
+      .single();
+
+    if (reqErr || !request) throw new NotFoundException('Course request not found');
+
+    await this.db
+      .from('course_requests')
+      .update({ status: 'fulfilled', fulfilled_at: new Date().toISOString() })
+      .eq('id', id);
+
+    const requester = request.requester as { email?: string; username?: string; display_name?: string } | null;
+    if (requester?.email) {
+      const name = requester.display_name ?? requester.username ?? 'there';
+      const plainText = `Hi ${name},\n\nYou requested: "${request.course_name}"\n\n${dto.message}\n\nThe Lambda team`;
+      const html = this.buildRespondHtml({ name, courseName: request.course_name, message: dto.message });
+      await this.sendMail(requester.email, `Lambda – Update on your course request: "${request.course_name}"`, plainText, html);
+    }
   }
 
   async create(dto: CreateCourseRequestDto, requesterId: string) {

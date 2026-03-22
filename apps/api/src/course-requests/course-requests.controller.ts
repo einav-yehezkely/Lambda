@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
@@ -7,6 +7,7 @@ import { User } from '@lambda/shared';
 import { CourseRequestsService } from './course-requests.service';
 import { CreateCourseRequestDto } from './dto/create-course-request.dto';
 import { FulfillCourseRequestDto } from './dto/fulfill-course-request.dto';
+import { RespondCourseRequestDto } from './dto/respond-course-request.dto';
 
 @ApiTags('course-requests')
 @ApiBearerAuth()
@@ -30,5 +31,12 @@ export class CourseRequestsController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   fulfill(@Param('id') id: string, @Body() dto: FulfillCourseRequestDto, @CurrentUser() user: User) {
     return this.service.fulfill(id, dto, user.id);
+  }
+
+  @Post(':id/respond')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @HttpCode(204)
+  respond(@Param('id') id: string, @Body() dto: RespondCourseRequestDto) {
+    return this.service.respond(id, dto);
   }
 }

@@ -14,6 +14,17 @@ export function useCourseRequests() {
   });
 }
 
+export function useRespondCourseRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, message }: { id: string; message: string }) =>
+      courseRequestsApi.respond(id, { message }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['course-requests'] });
+    },
+  });
+}
+
 export function useFulfillCourseRequest() {
   const queryClient = useQueryClient();
   return useMutation({
