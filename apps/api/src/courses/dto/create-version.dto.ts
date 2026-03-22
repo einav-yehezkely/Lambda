@@ -29,6 +29,16 @@ export class CreateVersionDto {
   @IsOptional()
   semester?: string;
 
+  @ApiPropertyOptional({ example: 'Prof. Cohen' })
+  @IsString()
+  @IsOptional()
+  lecturer_name?: string;
+
+  @ApiPropertyOptional({ example: '67101' })
+  @IsString()
+  @IsOptional()
+  course_number?: string;
+
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()

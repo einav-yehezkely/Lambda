@@ -26,6 +26,8 @@ export const coursesApi = {
     institution?: string;
     year?: number;
     semester?: string;
+    lecturer_name?: string;
+    course_number?: string;
     description?: string;
     visibility?: string;
     content_types?: { label: string; value: string }[];
@@ -44,6 +46,8 @@ export const coursesApi = {
     institution?: string;
     year?: number;
     semester?: string;
+    lecturer_name?: string;
+    course_number?: string;
     description?: string;
     visibility?: string;
     based_on_version_id?: string;

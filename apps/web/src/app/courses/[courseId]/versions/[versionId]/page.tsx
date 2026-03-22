@@ -28,6 +28,8 @@ function EditVersionModal({ version, onClose }: { version: CourseVersion; onClos
   const [institution, setInstitution] = useState(version.institution ?? '');
   const [year, setYear] = useState(version.year ? String(version.year) : '');
   const [semester, setSemester] = useState(version.semester ?? '');
+  const [lecturerName, setLecturerName] = useState(version.lecturer_name ?? '');
+  const [courseNumber, setCourseNumber] = useState(version.course_number ?? '');
   const [description, setDescription] = useState(version.description ?? '');
   const [visibility, setVisibility] = useState<'public' | 'private'>(version.visibility);
   const [error, setError] = useState('');
@@ -42,6 +44,8 @@ function EditVersionModal({ version, onClose }: { version: CourseVersion; onClos
           institution: institution.trim() || undefined,
           year: year ? Number(year) : undefined,
           semester: semester || undefined,
+          lecturer_name: lecturerName.trim() || undefined,
+          course_number: courseNumber.trim() || undefined,
           description: description.trim() || undefined,
           visibility,
         },
@@ -73,6 +77,16 @@ function EditVersionModal({ version, onClose }: { version: CourseVersion; onClos
             <option value="B">Semester B</option>
             <option value="Summer">Summer</option>
           </select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Lecturer</label>
+            <input type="text" value={lecturerName} onChange={(e) => setLecturerName(e.target.value)} placeholder="e.g. Prof. Cohen" className={INPUT_CLS} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Course Number</label>
+            <input type="text" value={courseNumber} onChange={(e) => setCourseNumber(e.target.value)} placeholder="e.g. 67101" className={INPUT_CLS} />
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -952,8 +966,14 @@ export default function VersionPage({
                   </span>
                 )}
               </div>
-              {version.description && (
-                <p className="text-gray-500 text-sm whitespace-pre-wrap mt-2" dir={/[\u0590-\u05FF]/.test(version.description) ? 'rtl' : undefined}>{version.description}</p>
+              {(version.course_number || version.lecturer_name || version.description) && (
+                <p className="text-gray-500 text-sm whitespace-pre-wrap mt-2">
+                  {[
+                    version.course_number ?? null,
+                    version.lecturer_name ? `Lectures by ${version.lecturer_name}` : null,
+                    version.description ?? null,
+                  ].filter(Boolean).join('\n')}
+                </p>
               )}
               <div className="mt-2">
                 <VersionAuthor authorId={version.author_id} />

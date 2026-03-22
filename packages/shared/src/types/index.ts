@@ -34,6 +34,8 @@ export interface CourseVersion {
   institution: string | null;
   year: number | null;
   semester: string | null;
+  lecturer_name: string | null;
+  course_number: string | null;
   description: string | null;
   author_id: string;
   author?: { username: string; display_name: string | null; avatar_url: string | null };

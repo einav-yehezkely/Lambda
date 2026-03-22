@@ -126,9 +126,13 @@ function VersionRow({
             </p>
           )}
 
-          {version.description && (
-            <p className="text-sm text-gray-500 mt-1.5 whitespace-pre-line" dir={/[\u0590-\u05FF]/.test(version.description) ? 'rtl' : undefined}>
-              {version.description}
+          {(version.course_number || version.lecturer_name || version.description) && (
+            <p className="text-sm text-gray-500 mt-1.5 whitespace-pre-line">
+              {[
+                version.course_number ?? null,
+                version.lecturer_name ? `Lectures by ${version.lecturer_name}` : null,
+                version.description ?? null,
+              ].filter(Boolean).join('\n')}
             </p>
           )}
         </div>
@@ -204,12 +208,14 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
   const [vInstitution, setVInstitution] = useState('');
   const [vYear, setVYear] = useState('');
   const [vSemester, setVSemester] = useState('');
+  const [vLecturer, setVLecturer] = useState('');
+  const [vCourseNumber, setVCourseNumber] = useState('');
   const [vDesc, setVDesc] = useState('');
   const [vVisibility, setVVisibility] = useState<'public' | 'private'>('public');
   const [formError, setFormError] = useState('');
 
   const resetForm = () => {
-    setVInstitution(''); setVYear(''); setVSemester(''); setVDesc(''); setVVisibility('public');
+    setVInstitution(''); setVYear(''); setVSemester(''); setVLecturer(''); setVCourseNumber(''); setVDesc(''); setVVisibility('public');
     setFormError('');
   };
 
@@ -220,6 +226,8 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     setVInstitution(v.institution ?? '');
     setVYear(v.year ? String(v.year) : '');
     setVSemester(v.semester ?? '');
+    setVLecturer(v.lecturer_name ?? '');
+    setVCourseNumber(v.course_number ?? '');
     setVDesc('');
     setVVisibility('public');
     setFormError('');
@@ -241,6 +249,8 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         institution: vInstitution.trim() || undefined,
         year: vYear ? Number(vYear) : undefined,
         semester: vSemester || undefined,
+        lecturer_name: vLecturer.trim() || undefined,
+        course_number: vCourseNumber.trim() || undefined,
         description: vDesc.trim() || undefined,
         visibility: vVisibility,
         based_on_version_id: forkFrom?.id,
@@ -380,6 +390,16 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                 <option value="B">Semester B</option>
                 <option value="Summer">Summer</option>
               </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Lecturer</label>
+                <input type="text" value={vLecturer} onChange={(e) => setVLecturer(e.target.value)} placeholder="e.g. Prof. Cohen" className={INPUT_CLS} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Course Number</label>
+                <input type="text" value={vCourseNumber} onChange={(e) => setVCourseNumber(e.target.value)} placeholder="e.g. 67101" className={INPUT_CLS} />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
