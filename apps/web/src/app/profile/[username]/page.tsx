@@ -202,6 +202,9 @@ export default function ProfilePage({
             )}
           </div>
           <p className="text-sm text-gray-400">@{profile.username}</p>
+          {currentUser?.is_admin && profile.email && (
+            <p className="text-xs text-gray-400 mt-0.5">{profile.email}</p>
+          )}
           {stats && (
             <div className="flex gap-4 mt-2">
               <span className="text-xs text-gray-500">
