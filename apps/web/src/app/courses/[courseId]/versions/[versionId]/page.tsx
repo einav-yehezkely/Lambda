@@ -861,6 +861,7 @@ export default function VersionPage({
   const [selectedTag, setSelectedTag] = useState('');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'default' | 'type' | 'alpha'>('default');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showAddContent, setShowAddContent] = useState(false);
   const [showManageTopics, setShowManageTopics] = useState(false);
@@ -905,14 +906,16 @@ export default function VersionPage({
     return true;
   });
   const visibleItems = [...filteredItems].sort((a, b) => {
-    if (sortBy === 'alpha') return a.content_item.title.localeCompare(b.content_item.title, undefined, { sensitivity: 'base' });
-    if (sortBy === 'type') {
+    let cmp = 0;
+    if (sortBy === 'alpha') cmp = a.content_item.title.localeCompare(b.content_item.title, undefined, { sensitivity: 'base' });
+    else if (sortBy === 'type') {
       const ta = TYPE_ORDER[a.content_item.type] ?? 5;
       const tb = TYPE_ORDER[b.content_item.type] ?? 5;
-      return ta - tb;
+      cmp = ta - tb;
+    } else {
+      cmp = new Date(a.content_item.created_at).getTime() - new Date(b.content_item.created_at).getTime();
     }
-    // default: by creation time
-    return new Date(a.content_item.created_at).getTime() - new Date(b.content_item.created_at).getTime();
+    return sortDir === 'desc' ? -cmp : cmp;
   });
 
   if (versionLoading) return <div className="text-sm text-gray-400">Loading...</div>;
@@ -1167,6 +1170,15 @@ export default function VersionPage({
                 <line x1="3" y1="6" x2="21" y2="6" /><line x1="6" y1="12" x2="18" y2="12" /><line x1="9" y1="18" x2="15" y2="18" />
               </svg>
               {sortBy !== 'default' && <span>{sortBy === 'type' ? 'Type' : 'A–Z'}</span>}
+            {sortDir === 'asc' ? (
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" />
+              </svg>
+            ) : (
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" />
+              </svg>
+            )}
             </button>
             {showSortMenu && (
               <>
@@ -1175,11 +1187,29 @@ export default function VersionPage({
                   {([['default', 'Date added'], ['type', 'Type'], ['alpha', 'A–Z']] as const).map(([val, lbl]) => (
                     <button
                       key={val}
-                      onClick={() => { setSortBy(val); setShowSortMenu(false); }}
+                      onClick={() => {
+                        if (sortBy === val) {
+                          setSortDir((d) => d === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortBy(val);
+                          setSortDir('asc');
+                        }
+                        setShowSortMenu(false);
+                      }}
                       className={`w-full text-left px-4 py-2 transition-colors flex items-center justify-between ${sortBy === val ? 'text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
                       {lbl}
-                      {sortBy === val && <span className="text-gray-400">✓</span>}
+                      {sortBy === val && (
+                        sortDir === 'asc' ? (
+                          <svg className="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" />
+                          </svg>
+                        )
+                      )}
                     </button>
                   ))}
                 </div>
