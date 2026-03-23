@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import type { User as LambdaUser } from '@lambda/shared';
 import { NotificationBell } from './notification-bell';
+import { InfoButton } from './info-button';
 
 export function Navbar() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -59,6 +60,8 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           {loading ? null : user ? (
             <>
+              <InfoButton isAdmin={!!profile?.is_admin} />
+              <NotificationBell isAdmin={!!profile?.is_admin} />
               {user.user_metadata?.avatar_url && profileUsername ? (
                 <Link href={`/profile/${profileUsername}`} className="w-9 h-9 rounded-full border-2 border-white/20 overflow-hidden hover:opacity-80 transition-opacity">
                   <img
@@ -96,7 +99,6 @@ export function Navbar() {
                   Admin
                 </Link>
               )}
-              <NotificationBell isAdmin={!!profile?.is_admin} />
               <button
                 onClick={signOut}
                 className="text-sm text-slate-400 hover:text-slate-700 transition-colors"

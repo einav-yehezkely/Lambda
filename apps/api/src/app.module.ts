@@ -12,6 +12,7 @@ import { SolutionsModule } from './solutions/solutions.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { VersionFilesModule } from './version-files/version-files.module';
 import { CourseRequestsModule } from './course-requests/course-requests.module';
+import { SiteInfoModule } from './site-info/site-info.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CourseRequestsModule } from './course-requests/course-requests.module';
     AnnouncementsModule,
     VersionFilesModule,
     CourseRequestsModule,
+    SiteInfoModule,
   ],
 })
 export class AppModule {}
