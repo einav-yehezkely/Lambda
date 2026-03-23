@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException, NotFoundException } from '@ne
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { getSupabaseClient } from '../common/supabase.client';
+import { createNotification } from '../common/create-notification';
 import { CreateCourseRequestDto } from './dto/create-course-request.dto';
 import { FulfillCourseRequestDto } from './dto/fulfill-course-request.dto';
 import { RespondCourseRequestDto } from './dto/respond-course-request.dto';
@@ -169,7 +170,7 @@ export class CourseRequestsService {
   async respond(id: string, dto: RespondCourseRequestDto) {
     const { data: request, error: reqErr } = await this.db
       .from('course_requests')
-      .select('*, requester:users!course_requests_requester_id_fkey(email, username, display_name)')
+      .select('*, requester:users!course_requests_requester_id_fkey(id, email, username, display_name)')
       .eq('id', id)
       .single();
 
@@ -180,12 +181,20 @@ export class CourseRequestsService {
       .update({ status: 'fulfilled', fulfilled_at: new Date().toISOString() })
       .eq('id', id);
 
-    const requester = request.requester as { email?: string; username?: string; display_name?: string } | null;
+    const requester = request.requester as { id?: string; email?: string; username?: string; display_name?: string } | null;
     if (requester?.email) {
       const name = requester.display_name ?? requester.username ?? 'there';
       const plainText = `Hi ${name},\n\nYou requested: "${request.course_name}"\n\n${dto.message}\n\nThe Lambda team`;
       const html = this.buildRespondHtml({ name, courseName: request.course_name, message: dto.message });
       await this.sendMail(requester.email, `Lambda – Update on your course request: "${request.course_name}"`, plainText, html);
+
+      if (requester.id) {
+        await createNotification({
+          targetUserId: requester.id,
+          title: `Update on your course request: "${request.course_name}"`,
+          content: dto.message,
+        });
+      }
     }
   }
 
@@ -244,7 +253,7 @@ export class CourseRequestsService {
   async fulfill(id: string, dto: FulfillCourseRequestDto, adminId: string) {
     const { data: request, error: reqErr } = await this.db
       .from('course_requests')
-      .select('*, requester:users!course_requests_requester_id_fkey(email, username, display_name)')
+      .select('*, requester:users!course_requests_requester_id_fkey(id, email, username, display_name)')
       .eq('id', id)
       .single();
 
@@ -270,8 +279,8 @@ export class CourseRequestsService {
       .update({ status: 'fulfilled', course_template_id: course.id, fulfilled_at: new Date().toISOString() })
       .eq('id', id);
 
-    // HTML email to the requester
-    const requester = request.requester as { email?: string; username?: string; display_name?: string } | null;
+    // HTML email + in-app notification to the requester
+    const requester = request.requester as { id?: string; email?: string; username?: string; display_name?: string } | null;
     if (requester?.email) {
       const appUrl = this.config.get('APP_URL') ?? 'http://localhost:3000';
       const courseUrl = `${appUrl}/courses/${course.id}`;
@@ -301,6 +310,15 @@ export class CourseRequestsService {
         plainText,
         html,
       );
+
+      if (requester.id) {
+        await createNotification({
+          targetUserId: requester.id,
+          title: `Your course "${request.course_name}" has been added!`,
+          content: `The course you requested is now live. Add your version: ${courseUrl}`,
+          createdBy: adminId,
+        });
+      }
     }
 
     return course;

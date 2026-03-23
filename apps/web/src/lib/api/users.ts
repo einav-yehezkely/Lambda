@@ -49,4 +49,7 @@ export const usersApi = {
 
   getUserSolutions: (username: string) =>
     api.get<UserSolution[]>(`/api/users/${username}/solutions`),
+
+  sendMessage: (username: string, subject: string, message: string) =>
+    api.post<{ success: boolean }>(`/api/users/${username}/send-message`, { subject, message }),
 };

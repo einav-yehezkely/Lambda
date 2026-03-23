@@ -1,6 +1,10 @@
-import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { AdminGuard } from '../common/guards/admin.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '@lambda/shared';
 
 @ApiTags('users')
 @Controller('users')
@@ -47,5 +51,17 @@ export class UsersController {
   @ApiOkResponse({ description: 'Get all solutions submitted by a user' })
   async getUserSolutions(@Param('username') username: string) {
     return this.usersService.getSolutionsByUsername(username);
+  }
+
+  @Post(':username/send-message')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiOkResponse({ description: 'Send a custom email to a user (admin only)' })
+  async sendMessage(
+    @Param('username') username: string,
+    @Body() body: { subject: string; message: string },
+    @CurrentUser() admin: User,
+  ) {
+    await this.usersService.sendMessageToUser(username, body.subject, body.message, admin.id);
+    return { success: true };
   }
 }

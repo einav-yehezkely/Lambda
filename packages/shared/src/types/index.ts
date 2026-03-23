@@ -188,9 +188,10 @@ export interface Announcement {
   id: string;
   title: string;
   content: string | null;
-  created_by: string;
+  created_by: string | null;
   created_at: string;
   is_read: boolean;
+  target_user_id?: string | null;
 }
 
 // ─── Course Requests ──────────────────────────────────────────────────────────

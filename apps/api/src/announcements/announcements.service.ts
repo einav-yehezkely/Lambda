@@ -11,7 +11,11 @@ export class AnnouncementsService {
 
   async list(userId: string): Promise<Announcement[]> {
     const [announcementsResult, readsResult] = await Promise.all([
-      this.db.from('announcements').select('*').order('created_at', { ascending: false }),
+      this.db
+        .from('announcements')
+        .select('*')
+        .or(`target_user_id.is.null,target_user_id.eq.${userId}`)
+        .order('created_at', { ascending: false }),
       this.db.from('announcement_reads').select('announcement_id').eq('user_id', userId),
     ]);
 
@@ -39,7 +43,10 @@ export class AnnouncementsService {
   }
 
   async markAllRead(userId: string): Promise<void> {
-    const { data: announcements } = await this.db.from('announcements').select('id');
+    const { data: announcements } = await this.db
+      .from('announcements')
+      .select('id')
+      .or(`target_user_id.is.null,target_user_id.eq.${userId}`);
     if (!announcements || announcements.length === 0) return;
 
     const { data: reads } = await this.db

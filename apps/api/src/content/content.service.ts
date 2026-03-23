@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { getSupabaseClient } from '../common/supabase.client';
+import { createNotification } from '../common/create-notification';
 import { ContentItem, VersionContentItem } from '@lambda/shared';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
@@ -392,6 +393,15 @@ export class ContentService {
       text: plainText,
       html,
     });
+
+    if (item.author_id) {
+      const reporterLabel = reporterUsername ? `by @${reporterUsername}` : 'anonymously';
+      await createNotification({
+        targetUserId: item.author_id,
+        title: `Mistake reported in "${item.title}"`,
+        content: `A mistake was reported ${reporterLabel}:\n${errorText}`,
+      });
+    }
   }
 
   // ─── Upload image to storage (URL stored client-side in section metadata) ────

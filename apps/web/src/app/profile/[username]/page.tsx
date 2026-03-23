@@ -2,8 +2,9 @@
 
 import { use, useState } from 'react';
 import Link from 'next/link';
-import { useUserProfile, useUserVersions, useUserStats, useUserSolutions } from '@/hooks/useUsers';
+import { useUserProfile, useUserVersions, useUserStats, useUserSolutions, useCurrentUser } from '@/hooks/useUsers';
 import { LatexContent } from '@/components/content/latex-content';
+import { usersApi } from '@/lib/api/users';
 import type { CourseVersionWithTemplate } from '@lambda/shared';
 import type { UserSolution } from '@/lib/api/users';
 
@@ -141,6 +142,31 @@ export default function ProfilePage({
   const { data: versions, isLoading: versionsLoading } = useUserVersions(username);
   const { data: stats } = useUserStats(username);
   const { data: solutions, isLoading: solutionsLoading } = useUserSolutions(username);
+  const { data: currentUser } = useCurrentUser();
+
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [msgSubject, setMsgSubject] = useState('');
+  const [msgBody, setMsgBody] = useState('');
+  const [msgSending, setMsgSending] = useState(false);
+  const [msgError, setMsgError] = useState<string | null>(null);
+  const [msgSent, setMsgSent] = useState(false);
+
+  async function handleSendMessage() {
+    if (!msgSubject.trim() || !msgBody.trim()) return;
+    setMsgSending(true);
+    setMsgError(null);
+    try {
+      await usersApi.sendMessage(username, msgSubject.trim(), msgBody.trim());
+      setMsgSent(true);
+      setMsgSubject('');
+      setMsgBody('');
+      setTimeout(() => { setMsgOpen(false); setMsgSent(false); }, 1500);
+    } catch (e: unknown) {
+      setMsgError(e instanceof Error ? e.message : 'Failed to send');
+    } finally {
+      setMsgSending(false);
+    }
+  }
 
   if (profileLoading) return <div className="text-sm text-gray-400">Loading...</div>;
   if (profileError || !profile) return <div className="text-sm text-red-500">User not found.</div>;
@@ -161,10 +187,20 @@ export default function ProfilePage({
             {profile.username[0].toUpperCase()}
           </div>
         )}
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">
-            {profile.display_name ?? profile.username}
-          </h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-xl font-bold text-gray-900">
+              {profile.display_name ?? profile.username}
+            </h1>
+            {currentUser?.is_admin && (
+              <button
+                onClick={() => { setMsgOpen(true); setMsgSent(false); setMsgError(null); }}
+                className="text-xs px-3 py-1 rounded-full border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
+              >
+                Send Message
+              </button>
+            )}
+          </div>
           <p className="text-sm text-gray-400">@{profile.username}</p>
           {stats && (
             <div className="flex gap-4 mt-2">
@@ -226,6 +262,65 @@ export default function ProfilePage({
           ← Home
         </Link>
       </div>
+
+      {/* Send Message Modal (admin only) */}
+      {msgOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={(e) => { if (e.target === e.currentTarget) setMsgOpen(false); }}
+        >
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-4">
+              Send message to @{username}
+            </h2>
+
+            {msgSent ? (
+              <p className="text-sm text-green-600 text-center py-4">Message sent successfully!</p>
+            ) : (
+              <>
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Subject</label>
+                  <input
+                    type="text"
+                    value={msgSubject}
+                    onChange={(e) => setMsgSubject(e.target.value)}
+                    placeholder="e.g. Your contribution to Lambda"
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Message</label>
+                  <textarea
+                    value={msgBody}
+                    onChange={(e) => setMsgBody(e.target.value)}
+                    rows={6}
+                    placeholder="Write your message here..."
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none"
+                  />
+                </div>
+                {msgError && (
+                  <p className="text-xs text-red-500 mb-3">{msgError}</p>
+                )}
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setMsgOpen(false)}
+                    className="text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={msgSending || !msgSubject.trim() || !msgBody.trim()}
+                    className="text-sm px-4 py-2 rounded-lg bg-blue-900 text-white font-medium hover:bg-blue-800 disabled:opacity-50 transition-colors"
+                  >
+                    {msgSending ? 'Sending...' : 'Send'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
