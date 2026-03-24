@@ -31,15 +31,37 @@ export class CoursesService {
     return subjects.sort();
   }
 
+  async getInstitutions(): Promise<string[]> {
+    const { data, error } = await this.db
+      .from('course_versions')
+      .select('institution')
+      .not('institution', 'is', null)
+      .neq('institution', '');
+    if (error) throw new InternalServerErrorException(error.message);
+    const institutions = [...new Set((data ?? []).map((r: any) => r.institution).filter(Boolean))];
+    return institutions.sort();
+  }
+
   async listCourses(filters: {
     subject?: string;
     search?: string;
     sort?: 'popular' | 'recent';
+    institution?: string;
   }): Promise<CourseTemplate[]> {
     let query = this.db.from('course_templates').select('*');
 
     if (filters.subject) {
       query = query.eq('subject', filters.subject);
+    }
+
+    if (filters.institution) {
+      const { data: instVersions } = await this.db
+        .from('course_versions')
+        .select('template_id')
+        .eq('institution', filters.institution);
+      const instTemplateIds = [...new Set((instVersions ?? []).map((v: any) => v.template_id))];
+      if (instTemplateIds.length === 0) return [];
+      query = query.in('id', instTemplateIds);
     }
     if (filters.search) {
       const term = `%${filters.search}%`;

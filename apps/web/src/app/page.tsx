@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useCourses, useCourseSubjects, useCreateCourse, useActiveVersions } from '@/hooks/useCourses';
+import { useCourses, useCourseSubjects, useCourseInstitutions, useCreateCourse, useActiveVersions } from '@/hooks/useCourses';
 import { useAuth } from '@/hooks/useAuth';
 import { CourseCard } from '@/components/course/course-card';
 import { Modal } from '@/components/ui/modal';
@@ -23,6 +23,9 @@ export default function HomePage() {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [subject, setSubject] = useState('');
+  const [institution, setInstitution] = useState('');
+  const [institutionOpen, setInstitutionOpen] = useState(false);
+  const [subjectOpen, setSubjectOpen] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
 
@@ -34,12 +37,14 @@ export default function HomePage() {
 
   const { data: activeVersions } = useActiveVersions(!!user);
   const { data: uniqueSubjects = [] } = useCourseSubjects();
+  const { data: uniqueInstitutions = [] } = useCourseInstitutions();
 
   const progressByCourseId = new Map((activeVersions ?? []).map((v) => [v.course_id, v]));
 
   const { data: courses, isLoading, error } = useCourses({
     search: debouncedSearch || undefined,
     subject: subject || undefined,
+    institution: institution || undefined,
     sort: 'recent',
   });
 
@@ -96,31 +101,83 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Subject filter tags */}
-        <div className="flex gap-2 mt-4 flex-wrap justify-center">
-          <button
-            onClick={() => setSubject('')}
-            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
-              subject === ''
-                ? 'bg-[#1e3a8a]/10 text-[#1e3a8a] border-[#1e3a8a]/20'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            All
-          </button>
-          {uniqueSubjects.map((s) => (
-            <button
-              key={s}
-              onClick={() => setSubject(s)}
-              className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
-                subject === s
-                  ? 'bg-[#1e3a8a]/10 text-[#1e3a8a] border-[#1e3a8a]/20'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
-            >
-              {formatSubject(s)}
-            </button>
-          ))}
+        {/* Filters */}
+        <div className="flex gap-2 mt-4 flex-wrap justify-center items-center">
+          {/* Subject filter */}
+          {uniqueSubjects.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => { setSubjectOpen((v) => !v); setInstitutionOpen(false); }}
+                className={`flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                  subject
+                    ? 'bg-[#1e3a8a]/10 text-[#1e3a8a] border-[#1e3a8a]/20'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                {subject ? formatSubject(subject) : 'Subject'}
+                <svg className={`w-3 h-3 transition-transform ${subjectOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {subjectOpen && (
+                <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 min-w-[160px]">
+                  <button
+                    onClick={() => { setSubject(''); setSubjectOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${!subject ? 'font-semibold text-[#1e3a8a]' : 'text-slate-700 dark:text-slate-300'}`}
+                  >
+                    All subjects
+                  </button>
+                  {uniqueSubjects.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => { setSubject(s); setSubjectOpen(false); }}
+                      className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${subject === s ? 'font-semibold text-[#1e3a8a]' : 'text-slate-700 dark:text-slate-300'}`}
+                    >
+                      {formatSubject(s)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Institution filter */}
+          {uniqueInstitutions.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => { setInstitutionOpen((v) => !v); setSubjectOpen(false); }}
+                className={`flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                  institution
+                    ? 'bg-[#1e3a8a]/10 text-[#1e3a8a] border-[#1e3a8a]/20'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                {institution || 'University'}
+                <svg className={`w-3 h-3 transition-transform ${institutionOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {institutionOpen && (
+                <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 min-w-[180px] max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => { setInstitution(''); setInstitutionOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${!institution ? 'font-semibold text-[#1e3a8a]' : 'text-slate-700 dark:text-slate-300'}`}
+                  >
+                    All universities
+                  </button>
+                  {uniqueInstitutions.map((inst) => (
+                    <button
+                      key={inst}
+                      onClick={() => { setInstitution(inst); setInstitutionOpen(false); }}
+                      className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${institution === inst ? 'font-semibold text-[#1e3a8a]' : 'text-slate-700 dark:text-slate-300'}`}
+                    >
+                      {inst}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -10,7 +10,14 @@ export function useCourseSubjects() {
   });
 }
 
-export function useCourses(filters?: { subject?: string; search?: string; sort?: string }) {
+export function useCourseInstitutions() {
+  return useQuery({
+    queryKey: ['course-institutions'],
+    queryFn: () => coursesApi.institutions(),
+  });
+}
+
+export function useCourses(filters?: { subject?: string; search?: string; sort?: string; institution?: string }) {
   return useQuery({
     queryKey: ['courses', filters],
     queryFn: () => coursesApi.list(filters),

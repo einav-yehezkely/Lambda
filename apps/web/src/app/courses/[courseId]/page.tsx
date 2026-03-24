@@ -84,17 +84,15 @@ function VersionRow({
 }) {
   const [showLoginMsg, setShowLoginMsg] = useState(false);
   return (
-    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl hover:shadow-sm hover:border-gray-300 dark:hover:border-slate-600 transition-all">
+    <div className="relative bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl hover:shadow-sm hover:border-gray-300 dark:hover:border-slate-600 transition-all cursor-pointer">
+      <Link href={`/courses/${courseId}/versions/${version.id}`} className="absolute inset-0 rounded-xl" aria-label={formatVersionLabel(version)} />
       <div className="px-5 py-4 flex items-start gap-4">
         {/* Left: info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              href={`/courses/${courseId}/versions/${version.id}`}
-              className="font-semibold text-gray-900 dark:text-slate-100 hover:text-[#1e3a8a] dark:hover:text-blue-400 transition-colors"
-            >
+            <span className="font-semibold text-gray-900 dark:text-slate-100">
               {formatVersionLabel(version)}
-            </Link>
+            </span>
             {version.is_recommended && (
               <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
                 Recommended
@@ -103,13 +101,13 @@ function VersionRow({
             <span className={`text-xs px-2 py-0.5 rounded-full border ${version.visibility === 'public' ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400'}`}>
               {version.visibility === 'public' ? 'Public' : 'Private'}
             </span>
-            <StarRating version={version} courseId={courseId} isLoggedIn={isLoggedIn} />
+            <span className="relative z-10"><StarRating version={version} courseId={courseId} isLoggedIn={isLoggedIn} /></span>
           </div>
 
           {version.author && (
             <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
               by{' '}
-              <Link href={`/profile/${version.author.username}`} className="hover:text-gray-600 dark:hover:text-slate-300 underline underline-offset-2">
+              <Link href={`/profile/${version.author.username}`} className="relative z-10 hover:text-gray-600 dark:hover:text-slate-300 underline underline-offset-2">
                 {version.author.display_name ?? version.author.username}
               </Link>
             </p>
@@ -120,7 +118,7 @@ function VersionRow({
               forked from{' '}
               <Link
                 href={`/courses/${courseId}/versions/${parentVersion.id}`}
-                className="hover:text-gray-600 underline underline-offset-2"
+                className="relative z-10 hover:text-gray-600 underline underline-offset-2"
               >
                 {formatVersionLabel(parentVersion)}
               </Link>
@@ -139,7 +137,7 @@ function VersionRow({
         </div>
 
         {/* Right: actions */}
-        <div className="shrink-0 flex flex-col items-end gap-2">
+        <div className="relative z-10 shrink-0 flex flex-col items-end gap-2">
           {(onEnroll || onUnenroll) && (
             <button
               onClick={isEnrolled ? onUnenroll : onEnroll}

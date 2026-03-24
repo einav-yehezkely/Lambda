@@ -40,18 +40,26 @@ export class CoursesController {
   @ApiQuery({ name: 'subject', required: false, enum: ['cs', 'math', 'other'] })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'sort', required: false, enum: ['popular', 'recent'] })
+  @ApiQuery({ name: 'institution', required: false })
   listCourses(
     @Query('subject') subject?: string,
     @Query('search') search?: string,
     @Query('sort') sort?: 'popular' | 'recent',
+    @Query('institution') institution?: string,
   ) {
-    return this.coursesService.listCourses({ subject, search, sort });
+    return this.coursesService.listCourses({ subject, search, sort, institution });
   }
 
   @Get('subjects')
   @ApiOkResponse({ description: 'Get all unique course subjects' })
   getSubjects() {
     return this.coursesService.getSubjects();
+  }
+
+  @Get('institutions')
+  @ApiOkResponse({ description: 'Get all unique institutions from published versions' })
+  getInstitutions() {
+    return this.coursesService.getInstitutions();
   }
 
   @Get(':id')
