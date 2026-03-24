@@ -42,11 +42,9 @@ function VersionRow({ version }: { version: CourseVersionWithTemplate }) {
       className="flex items-center justify-between gap-3 py-3 border-b border-gray-100 dark:border-slate-800 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-800 -mx-2 px-2 rounded-md transition-colors"
     >
       <div className="min-w-0">
-        <div className="text-sm font-medium text-gray-900 dark:text-slate-100">{formatVersionLabel(version)}</div>
+        <div className="text-sm font-medium text-gray-900 dark:text-slate-100">{template?.title}</div>
         <div className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
-          {template?.title}
-          {version.institution && ` · ${version.institution}`}
-          {version.year && ` · ${version.year}`}
+          {formatVersionLabel(version)}
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
