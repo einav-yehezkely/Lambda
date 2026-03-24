@@ -28,7 +28,7 @@ export function ReportVersionButton({ versionId }: { versionId: string }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         title="Report version"
-        className={`p-1.5 rounded-lg transition-colors ${open ? 'text-red-500 bg-red-50' : 'text-gray-300 hover:text-red-400 hover:bg-red-50'}`}
+        className={`p-1.5 rounded-lg transition-colors ${open ? 'text-red-500 bg-red-50 dark:bg-red-900/20' : 'text-gray-300 dark:text-slate-600 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
@@ -39,12 +39,12 @@ export function ReportVersionButton({ versionId }: { versionId: string }) {
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => { setOpen(false); setText(''); setStatus('idle'); }} />
-          <div className="absolute bottom-full right-0 mb-2 z-20 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3">
+          <div className="absolute bottom-full right-0 mb-2 z-20 w-64 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg p-3">
             {status === 'success' ? (
               <p className="text-xs text-green-600 font-medium py-1">Report sent. Thank you!</p>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-2">
-                <p className="text-xs font-medium text-gray-700">Report an issue with this version</p>
+                <p className="text-xs font-medium text-gray-700 dark:text-slate-300">Report an issue with this version</p>
                 <textarea
                   autoFocus
                   value={text}
@@ -52,7 +52,7 @@ export function ReportVersionButton({ versionId }: { versionId: string }) {
                   placeholder="Describe the issue..."
                   rows={3}
                   dir="auto"
-                  className="w-full text-xs border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                  className="w-full text-xs border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500"
                 />
                 {status === 'error' && (
                   <p className="text-xs text-red-500">Failed to send. Please try again.</p>
@@ -68,7 +68,7 @@ export function ReportVersionButton({ versionId }: { versionId: string }) {
                   <button
                     type="button"
                     onClick={() => { setOpen(false); setText(''); setStatus('idle'); }}
-                    className="text-xs px-3 py-1.5 border border-gray-300 rounded-md hover:border-gray-500"
+                    className="text-xs px-3 py-1.5 border border-gray-300 dark:border-slate-600 rounded-md hover:border-gray-500 dark:text-slate-300 dark:hover:border-slate-400"
                   >
                     Cancel
                   </button>

@@ -1013,9 +1013,9 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
   }
 
   return (
-    <div className="border border-gray-300 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-gray-900">
+    <div className="border border-gray-300 dark:border-slate-700 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-gray-900 dark:focus-within:ring-slate-500">
       {/* Group tabs */}
-      <div className="bg-gray-50 border-b border-gray-200 flex items-center overflow-x-auto">
+      <div className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center overflow-x-auto">
         <div className="flex px-1 pt-1 gap-0.5">
           {GROUPS.map((g, i) => (
             <button
@@ -1024,8 +1024,8 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
               onMouseDown={(e) => { e.preventDefault(); setActiveGroup(i); }}
               className={`px-2.5 py-1 text-xs rounded-t-sm whitespace-nowrap transition-colors ${
                 activeGroup === i
-                  ? 'bg-white border border-b-white border-gray-200 text-gray-900 font-medium relative z-10'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  ? 'bg-white dark:bg-slate-900 border border-b-white dark:border-b-slate-900 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-slate-100 font-medium relative z-10'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700'
               }`}
             >
               {g.name}
@@ -1038,8 +1038,8 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
           onMouseDown={(e) => { e.preventDefault(); setWordMathEnabled(v => !v); }}
           className={`ml-auto mr-2 mb-0.5 px-2 py-0.5 text-xs rounded border transition-colors whitespace-nowrap ${
             wordMathEnabled
-              ? 'bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100'
-              : 'bg-gray-100 border-gray-300 text-gray-400 hover:bg-gray-200'
+              ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+              : 'bg-gray-100 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-400 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-600'
           }`}
         >
           W→𝑥
@@ -1047,14 +1047,14 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
       </div>
 
       {/* Buttons */}
-      <div className="bg-gray-50 border-b border-gray-200 px-2 py-1.5 flex flex-wrap gap-1">
+      <div className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-2 py-1.5 flex flex-wrap gap-1">
         {GROUPS[activeGroup].buttons.map((btn) => (
           <button
             key={btn.title}
             type="button"
             title={btn.title}
             onMouseDown={(e) => { e.preventDefault(); btn.action === 'code-block' ? insertCodeBlock() : insertSnippet(btn); }}
-            className={`px-1.5 py-0.5 text-sm bg-white border border-gray-200 rounded hover:bg-gray-100 hover:border-gray-300 text-gray-700 min-w-[2rem] text-center leading-tight ${
+            className={`px-1.5 py-0.5 text-sm bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded hover:bg-gray-100 dark:hover:bg-slate-600 hover:border-gray-300 dark:hover:border-slate-500 text-gray-700 dark:text-slate-300 min-w-[2rem] text-center leading-tight ${
               btn.title.startsWith('Bold') ? 'font-bold' :
               btn.title.startsWith('Italic') ? 'italic font-serif' :
               btn.title.startsWith('Underline') ? 'underline' :
@@ -1081,12 +1081,12 @@ export function LatexEditor({ value, onChange, rows = 4, placeholder }: LatexEdi
         dir={dir}
         data-placeholder={placeholder}
         style={{ minHeight: `${rows * 1.6}rem`, whiteSpace: 'pre-wrap' }}
-        className="px-3 py-2 text-sm focus:outline-none leading-relaxed
-          before:content-[attr(data-placeholder)] before:text-gray-400 before:pointer-events-none
+        className="px-3 py-2 text-sm focus:outline-none leading-relaxed bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100
+          before:content-[attr(data-placeholder)] before:text-gray-400 dark:before:text-slate-500 before:pointer-events-none
           [&:not(:empty)]:before:hidden
           [&_.math-span]:cursor-pointer [&_.math-span]:inline-block [&_.math-span]:align-middle
           [&_.math-span:hover]:outline [&_.math-span:hover]:outline-1 [&_.math-span:hover]:outline-blue-300 [&_.math-span:hover]:rounded
-          [&_.code-inline]:font-mono [&_.code-inline]:text-xs [&_.code-inline]:bg-gray-100 [&_.code-inline]:text-red-600 [&_.code-inline]:px-1.5 [&_.code-inline]:py-0.5 [&_.code-inline]:rounded [&_.code-inline]:border [&_.code-inline]:border-gray-200 [&_.code-inline]:cursor-pointer [&_.code-inline:hover]:bg-gray-200
+          [&_.code-inline]:font-mono [&_.code-inline]:text-xs [&_.code-inline]:bg-gray-100 dark:[&_.code-inline]:bg-slate-700 [&_.code-inline]:text-red-600 dark:[&_.code-inline]:text-red-400 [&_.code-inline]:px-1.5 [&_.code-inline]:py-0.5 [&_.code-inline]:rounded [&_.code-inline]:border [&_.code-inline]:border-gray-200 dark:[&_.code-inline]:border-slate-600 [&_.code-inline]:cursor-pointer [&_.code-inline:hover]:bg-gray-200 dark:[&_.code-inline:hover]:bg-slate-600
           [&_.code-block-wrapper]:flex [&_.code-block-wrapper]:overflow-x-auto [&_.code-block-wrapper]:rounded [&_.code-block-wrapper]:my-1.5 [&_.code-block-wrapper]:border [&_.code-block-wrapper]:border-gray-700 [&_.code-block-wrapper]:bg-gray-900
           [&_.code-line-nums]:font-mono [&_.code-line-nums]:text-sm [&_.code-line-nums]:text-gray-500 [&_.code-line-nums]:p-3 [&_.code-line-nums]:pr-4 [&_.code-line-nums]:border-r [&_.code-line-nums]:border-gray-700 [&_.code-line-nums]:select-none [&_.code-line-nums]:text-right [&_.code-line-nums]:whitespace-pre [&_.code-line-nums]:leading-relaxed
           [&_.code-block]:font-mono [&_.code-block]:text-sm [&_.code-block]:text-green-400 [&_.code-block]:p-3 [&_.code-block]:flex-1 [&_.code-block]:whitespace-pre [&_.code-block]:leading-relaxed [&_.code-block]:focus:outline-none"

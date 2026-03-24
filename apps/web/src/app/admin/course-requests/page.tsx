@@ -108,19 +108,19 @@ export default function AdminCourseRequestsPage() {
   return (
     <div className="max-w-3xl mx-auto py-10 px-4">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Course Requests</h1>
-        <p className="text-sm text-slate-500 mt-1">Review and fulfil course requests from users.</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Course Requests</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Review and fulfil course requests from users.</p>
       </div>
 
-      {isLoading && <div className="text-sm text-gray-400">Loading...</div>}
+      {isLoading && <div className="text-sm text-gray-400 dark:text-slate-500">Loading...</div>}
 
       {!isLoading && pending.length === 0 && (
-        <div className="text-sm text-gray-400">No pending requests.</div>
+        <div className="text-sm text-gray-400 dark:text-slate-500">No pending requests.</div>
       )}
 
       {pending.length > 0 && (
         <div className="space-y-3 mb-10">
-          <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Pending ({pending.length})</h2>
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Pending ({pending.length})</h2>
           {pending.map((req) => (
             <RequestCard
               key={req.id}
@@ -144,7 +144,7 @@ export default function AdminCourseRequestsPage() {
       {/* Fulfill / Create course modal */}
       {selected && (
         <Modal title={`Create course: "${selected.course_name}"`} onClose={closeFulfillModal}>
-          <div className="mb-4 p-3 bg-slate-50 rounded-md text-sm text-slate-600 space-y-1">
+          <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-md text-sm text-slate-600 dark:text-slate-300 space-y-1">
             {selected.subject && <p><span className="font-medium">Subject:</span> {selected.subject}</p>}
             {selected.institution && <p><span className="font-medium">Institution:</span> {selected.institution}</p>}
             {selected.description && <p><span className="font-medium">Description:</span> {selected.description}</p>}
@@ -153,14 +153,14 @@ export default function AdminCourseRequestsPage() {
           </div>
           <form onSubmit={handleFulfill} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Course title *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Course title *</label>
               <input
                 autoFocus
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 dir="auto"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500"
               />
             </div>
             <div>
@@ -193,19 +193,19 @@ export default function AdminCourseRequestsPage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
                 placeholder="Optional"
                 dir="auto"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500 resize-none"
               />
             </div>
             {formError && <p className="text-sm text-red-500">{formError}</p>}
             <div className="flex justify-end gap-2 pt-1">
-              <button type="button" onClick={closeFulfillModal} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">
+              <button type="button" onClick={closeFulfillModal} className="text-sm px-4 py-2 border border-gray-300 dark:border-slate-600 dark:text-slate-300 rounded-md hover:border-gray-500 dark:hover:border-slate-400">
                 Cancel
               </button>
               <button type="submit" disabled={fulfill.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
@@ -219,15 +219,15 @@ export default function AdminCourseRequestsPage() {
       {/* Respond modal */}
       {respondTarget && (
         <Modal title={`Send response: "${respondTarget.course_name}"`} onClose={closeRespondModal}>
-          <div className="mb-4 p-3 bg-slate-50 rounded-md text-sm text-slate-600">
+          <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-md text-sm text-slate-600 dark:text-slate-300">
             <p><span className="font-medium">Requested by:</span> {respondTarget.requester?.display_name ?? respondTarget.requester?.username ?? '—'}</p>
             {respondTarget.requester?.email && (
-              <p className="text-xs text-slate-400 mt-0.5">{respondTarget.requester.email}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{respondTarget.requester.email}</p>
             )}
           </div>
           <form onSubmit={handleRespond} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Message to user *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Message to user *</label>
               <textarea
                 autoFocus
                 value={respondMessage}
@@ -235,12 +235,12 @@ export default function AdminCourseRequestsPage() {
                 rows={4}
                 dir="auto"
                 placeholder="e.g. This course already exists at..."
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500 resize-none"
               />
             </div>
             {respondError && <p className="text-sm text-red-500">{respondError}</p>}
             <div className="flex justify-end gap-2 pt-1">
-              <button type="button" onClick={closeRespondModal} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">
+              <button type="button" onClick={closeRespondModal} className="text-sm px-4 py-2 border border-gray-300 dark:border-slate-600 dark:text-slate-300 rounded-md hover:border-gray-500 dark:hover:border-slate-400">
                 Cancel
               </button>
               <button type="submit" disabled={respond.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
@@ -264,11 +264,11 @@ function RequestCard({
   onRespond?: () => void;
 }) {
   return (
-    <div className={`border rounded-lg p-4 bg-white ${req.status === 'fulfilled' ? 'opacity-60' : ''}`}>
+    <div className={`border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-900 ${req.status === 'fulfilled' ? 'opacity-60' : ''}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-slate-800 text-sm">{req.course_name}</p>
-          <div className="mt-1 space-y-0.5 text-xs text-slate-500">
+          <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{req.course_name}</p>
+          <div className="mt-1 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
             {req.subject && <p>Subject: {req.subject}</p>}
             {req.institution && <p>Institution: {req.institution}</p>}
             {req.description && <p>{req.description}</p>}
@@ -282,7 +282,7 @@ function RequestCard({
         </div>
         <div className="shrink-0">
           {req.status === 'fulfilled' ? (
-            <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">Fulfilled</span>
+            <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">Fulfilled</span>
           ) : (
             <div className="flex flex-col gap-1.5">
               {onFulfill && (
@@ -296,7 +296,7 @@ function RequestCard({
               {onRespond && (
                 <button
                   onClick={onRespond}
-                  className="text-xs px-3 py-1.5 border border-slate-300 text-slate-600 rounded-md hover:border-slate-500 font-medium"
+                  className="text-xs px-3 py-1.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-md hover:border-slate-500 dark:hover:border-slate-400 font-medium"
                 >
                   Send response
                 </button>

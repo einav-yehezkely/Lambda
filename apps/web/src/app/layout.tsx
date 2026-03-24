@@ -15,8 +15,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${publicSans.variable} font-display antialiased bg-[#f8f9fa] text-slate-900`}>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{__html: `try{if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`}} />
+      </head>
+      <body className={`${publicSans.variable} font-display antialiased bg-[#f8f9fa] dark:bg-slate-950 text-slate-900 dark:text-slate-100`}>
         <Providers>
           <BackgroundAnimation />
           <Navbar />

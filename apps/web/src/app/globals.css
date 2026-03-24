@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #1e3a8a;
   --color-primary-light: #2563eb;
@@ -13,10 +15,18 @@ body {
   font-family: "Public Sans", Inter, system-ui, sans-serif;
 }
 
+.dark body {
+  background: var(--color-canvas-dark);
+}
+
 .glass {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   background: rgba(255, 255, 255, 0.8);
+}
+
+.dark .glass {
+  background: rgba(15, 20, 35, 0.85);
 }
 
 .glass-card {
@@ -24,6 +34,11 @@ body {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(30, 58, 138, 0.1);
+}
+
+.dark .glass-card {
+  background: rgba(15, 20, 35, 0.75);
+  border-color: rgba(100, 140, 200, 0.15);
 }
 
 .katex-display {

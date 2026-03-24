@@ -14,19 +14,19 @@ export function LeaderboardPanel() {
 
   return (
     <aside className="w-64 shrink-0 ml-auto">
-      <div className="glass-card rounded-xl border border-slate-200 p-4 sticky top-24">
+      <div className="glass-card rounded-xl border border-slate-200 dark:border-slate-700 p-4 sticky top-24">
         <div className="flex items-center gap-2 mb-4">
           <span className="text-lg">🏆</span>
-          <h2 className="text-sm font-bold text-slate-900">Top Contributors</h2>
+          <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Top Contributors</h2>
         </div>
 
         {isLoading && (
           <div className="space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="flex items-center gap-2 animate-pulse">
-                <div className="w-6 h-4 bg-slate-100 rounded" />
-                <div className="w-7 h-7 bg-slate-100 rounded-full shrink-0" />
-                <div className="h-3 bg-slate-100 rounded flex-1" />
+                <div className="w-6 h-4 bg-slate-100 dark:bg-slate-700 rounded" />
+                <div className="w-7 h-7 bg-slate-100 dark:bg-slate-700 rounded-full shrink-0" />
+                <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded flex-1" />
               </div>
             ))}
           </div>
@@ -67,11 +67,11 @@ export function LeaderboardPanel() {
                 <div className="flex-1 min-w-0">
                   <Link
                     href={`/profile/${entry.username}`}
-                    className="text-xs font-semibold text-slate-800 hover:text-[#1e3a8a] truncate block transition-colors"
+                    className="text-xs font-semibold text-slate-800 dark:text-slate-200 hover:text-[#1e3a8a] dark:hover:text-blue-400 truncate block transition-colors"
                   >
                     {entry.display_name ?? entry.username}
                   </Link>
-                  <p className="text-[10px] text-slate-400">{entry.contribution_count} contribution{entry.contribution_count !== 1 ? 's' : ''}</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">{entry.contribution_count} contribution{entry.contribution_count !== 1 ? 's' : ''}</p>
                 </div>
               </li>
             ))}

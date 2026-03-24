@@ -39,7 +39,7 @@ export default function AnnouncementsPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Announcements</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Announcements</h1>
         {isAdmin && (
           <button
             type="button"
@@ -52,27 +52,27 @@ export default function AnnouncementsPage() {
       </div>
 
       {showCreate && isAdmin && (
-        <form onSubmit={handleCreate} className="mb-6 bg-white border border-slate-200 rounded-xl p-5 space-y-3 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-700">New announcement</h2>
+        <form onSubmit={handleCreate} className="mb-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 space-y-3 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">New announcement</h2>
           <input
             type="text"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="Title"
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <textarea
             value={newContent}
             onChange={(e) => setNewContent(e.target.value)}
             placeholder="Content (optional)"
             rows={4}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
           <div className="flex gap-2 justify-end">
             <button
               type="button"
               onClick={() => setShowCreate(false)}
-              className="text-sm px-4 py-2 border border-slate-300 rounded-lg hover:border-slate-500 transition-colors"
+              className="text-sm px-4 py-2 border border-slate-300 dark:border-slate-600 dark:text-slate-300 rounded-lg hover:border-slate-500 dark:hover:border-slate-400 transition-colors"
             >
               Cancel
             </button>
@@ -96,7 +96,7 @@ export default function AnnouncementsPage() {
           {announcements.map((a) => (
             <div
               key={a.id}
-              className={`bg-white border rounded-xl p-5 shadow-sm ${!a.is_read ? 'border-blue-300 bg-blue-50' : 'border-slate-200'}`}
+              className={`border rounded-xl p-5 shadow-sm ${!a.is_read ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-900/40' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -104,9 +104,9 @@ export default function AnnouncementsPage() {
                     {!a.is_read && (
                       <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
                     )}
-                    <h2 className="font-semibold text-slate-900">{a.title}</h2>
+                    <h2 className="font-semibold text-slate-900 dark:text-slate-100">{a.title}</h2>
                   </div>
-                  {a.content && <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{a.content}</p>}
+                  {a.content && <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{a.content}</p>}
                   <p className="text-xs text-slate-400 mt-2">{formatDate(a.created_at)}</p>
                 </div>
                 {isAdmin && (

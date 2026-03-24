@@ -53,7 +53,7 @@ function FileCard({
   };
 
   return (
-    <div className="group relative bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-300 hover:shadow-sm transition-all">
+    <div className="group relative bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 hover:border-gray-300 dark:hover:border-slate-600 hover:shadow-sm transition-all">
       {/* Author actions — top-right corner */}
       {isAuthor && (
         <div className={`absolute top-2 right-2 flex items-center gap-0.5 transition-opacity ${editing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
@@ -61,7 +61,7 @@ function FileCard({
             <button
               onClick={(e) => { e.stopPropagation(); setEditName(file.display_name); setEditing(true); }}
               title="Rename"
-              className="p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              className="p-1 rounded text-gray-300 dark:text-slate-600 hover:text-gray-600 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -72,7 +72,7 @@ function FileCard({
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(file.id); }}
             title="Delete"
-            className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="p-1 rounded text-gray-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="3 6 5 6 21 6" />
@@ -118,12 +118,12 @@ function FileCard({
               onKeyDown={handleRenameKeyDown}
               onClick={(e) => e.stopPropagation()}
               dir="auto"
-              className="w-full text-sm border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-gray-900"
+              className="w-full text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500"
             />
           ) : (
-            <p className="text-sm text-gray-800 truncate" dir="auto">{file.display_name}</p>
+            <p className="text-sm text-gray-800 dark:text-slate-200 truncate" dir="auto">{file.display_name}</p>
           )}
-          <p className="text-xs text-gray-400">{formatBytes(file.size_bytes)}</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500">{formatBytes(file.size_bytes)}</p>
         </div>
       </button>
     </div>
@@ -172,18 +172,18 @@ function UploadForm({ versionId, fileCount }: { versionId: string; fileCount: nu
   return (
     <>
       {selectedFile ? (
-        <div className="mt-4 p-3 border border-gray-200 rounded-lg space-y-2 bg-white">
+        <div className="mt-4 p-3 border border-gray-200 dark:border-slate-700 rounded-lg space-y-2 bg-white dark:bg-slate-900">
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="Display name..."
             dir="auto"
-            className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500"
           />
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 flex-1 truncate">{selectedFile.name} · {formatBytes(selectedFile.size)}</span>
-            <button onClick={handleCancel} className="text-xs text-gray-400 hover:text-gray-700 px-2 py-1 border border-gray-200 rounded-md">Cancel</button>
+            <span className="text-xs text-gray-500 dark:text-slate-400 flex-1 truncate">{selectedFile.name} · {formatBytes(selectedFile.size)}</span>
+            <button onClick={handleCancel} className="text-xs text-gray-400 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 px-2 py-1 border border-gray-200 dark:border-slate-700 rounded-md">Cancel</button>
             <button onClick={handleUpload} disabled={upload.isPending} className="text-xs px-3 py-1 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
               {upload.isPending ? 'Uploading...' : 'Upload'}
             </button>
@@ -193,7 +193,7 @@ function UploadForm({ versionId, fileCount }: { versionId: string; fileCount: nu
       ) : (
         <button
           onClick={() => inputRef.current?.click()}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors mt-1"
+          className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors mt-1"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -231,15 +231,15 @@ export function VersionDrive({
       {/* Header row */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-sm font-medium text-gray-700">Study Materials</p>
-          {isAuthor && <p className="text-xs text-gray-400">PDF only · up to {MAX_SIZE_MB} MB · max 20 files</p>}
+          <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Study Materials</p>
+          {isAuthor && <p className="text-xs text-gray-400 dark:text-slate-500">PDF only · up to {MAX_SIZE_MB} MB · max 20 files</p>}
         </div>
       </div>
 
-      {isLoading && <p className="text-sm text-gray-400">Loading...</p>}
+      {isLoading && <p className="text-sm text-gray-400 dark:text-slate-500">Loading...</p>}
 
       {!isLoading && (!files || files.length === 0) && (
-        <p className="text-sm text-gray-400">{isAuthor ? 'No files yet.' : 'No study materials available.'}</p>
+        <p className="text-sm text-gray-400 dark:text-slate-500">{isAuthor ? 'No files yet.' : 'No study materials available.'}</p>
       )}
 
       {files && files.length > 0 && (

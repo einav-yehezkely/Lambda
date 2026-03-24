@@ -119,7 +119,7 @@ export default function CoursesPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Courses</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Courses</h1>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -129,7 +129,7 @@ export default function CoursesPage() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           dir="auto"
-          className="flex-1 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+          className="flex-1 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 dark:text-slate-100 dark:placeholder:text-slate-500 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500"
         />
         <div className="flex flex-wrap gap-2">
           <button
@@ -137,7 +137,7 @@ export default function CoursesPage() {
             className={`text-sm px-3 py-2 rounded-md border transition-colors ${
               subject === ''
                 ? 'bg-gray-900 text-white border-gray-900'
-                : 'bg-white border-gray-300 text-gray-600 hover:border-gray-500'
+                : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-gray-500 dark:hover:border-slate-400'
             }`}
           >
             All
@@ -149,7 +149,7 @@ export default function CoursesPage() {
               className={`text-sm px-3 py-2 rounded-md border transition-colors ${
                 subject === s
                   ? 'bg-gray-900 text-white border-gray-900'
-                  : 'bg-white border-gray-300 text-gray-600 hover:border-gray-500'
+                  : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-gray-500 dark:hover:border-slate-400'
               }`}
             >
               {formatSubject(s)}
@@ -158,9 +158,9 @@ export default function CoursesPage() {
         </div>
       </div>
 
-      {isLoading && <div className="text-sm text-gray-400">Loading courses...</div>}
+      {isLoading && <div className="text-sm text-gray-400 dark:text-slate-500">Loading courses...</div>}
       {error && <div className="text-sm text-red-500">Failed to load courses.</div>}
-      {courses && courses.length === 0 && <div className="text-sm text-gray-400">No courses found.</div>}
+      {courses && courses.length === 0 && <div className="text-sm text-gray-400 dark:text-slate-500">No courses found.</div>}
       {courses && courses.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {courses.map((course) => (
@@ -201,7 +201,7 @@ export default function CoursesPage() {
         <Modal title="New Course" onClose={() => setShowCreateModal(false)}>
           <form onSubmit={handleCreateCourse} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Title *</label>
               <input
                 autoFocus
                 type="text"
@@ -209,7 +209,7 @@ export default function CoursesPage() {
                 onChange={(e) => setCourseTitle(e.target.value)}
                 placeholder="e.g. Algorithms"
                 dir="auto"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500"
               />
             </div>
             <div>
@@ -242,19 +242,19 @@ export default function CoursesPage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Description</label>
               <textarea
                 value={courseDesc}
                 onChange={(e) => setCourseDesc(e.target.value)}
                 rows={2}
                 placeholder="Optional"
                 dir="auto"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500 resize-none"
               />
             </div>
             {createError && <p className="text-sm text-red-500">{createError}</p>}
             <div className="flex justify-end gap-2 pt-1">
-              <button type="button" onClick={() => setShowCreateModal(false)} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="text-sm px-4 py-2 border border-gray-300 dark:border-slate-600 dark:text-slate-300 rounded-md hover:border-gray-500 dark:hover:border-slate-400">
                 Cancel
               </button>
               <button type="submit" disabled={createCourse.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
@@ -270,8 +270,8 @@ export default function CoursesPage() {
         <Modal title="Request a Course" onClose={closeRequestModal}>
           {reqSuccess ? (
             <div className="py-4 text-center space-y-3">
-              <p className="text-sm text-slate-700 font-medium">Your request has been submitted!</p>
-              <p className="text-sm text-slate-500">We&apos;ll notify you by email once the course is added.</p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">Your request has been submitted!</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">We&apos;ll notify you by email once the course is added.</p>
               <div className="flex justify-center pt-2">
                 <button onClick={closeRequestModal} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700">
                   Done
@@ -281,7 +281,7 @@ export default function CoursesPage() {
           ) : (
             <form onSubmit={handleRequestCourse} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Course name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Course name *</label>
                 <input
                   autoFocus
                   type="text"
@@ -289,7 +289,7 @@ export default function CoursesPage() {
                   onChange={(e) => setReqName(e.target.value)}
                   placeholder="e.g. Algorithms"
                   dir="auto"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500"
                 />
               </div>
               <div>
@@ -333,41 +333,41 @@ export default function CoursesPage() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Short description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Short description</label>
                 <textarea
                   value={reqDesc}
                   onChange={(e) => setReqDesc(e.target.value)}
                   rows={2}
                   placeholder="What is this course about?"
                   dir="auto"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                  className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500 resize-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Institution</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Institution</label>
                 <input
                   type="text"
                   value={reqInstitution}
                   onChange={(e) => setReqInstitution(e.target.value)}
                   placeholder="e.g. Tel Aviv University"
                   dir="auto"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Additional notes</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Additional notes</label>
                 <textarea
                   value={reqNotes}
                   onChange={(e) => setReqNotes(e.target.value)}
                   rows={2}
                   placeholder="Any other details..."
                   dir="auto"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                  className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500 resize-none"
                 />
               </div>
               {reqError && <p className="text-sm text-red-500">{reqError}</p>}
               <div className="flex justify-end gap-2 pt-1">
-                <button type="button" onClick={closeRequestModal} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">
+                <button type="button" onClick={closeRequestModal} className="text-sm px-4 py-2 border border-gray-300 dark:border-slate-600 dark:text-slate-300 rounded-md hover:border-gray-500 dark:hover:border-slate-400">
                   Cancel
                 </button>
                 <button type="submit" disabled={createRequest.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">

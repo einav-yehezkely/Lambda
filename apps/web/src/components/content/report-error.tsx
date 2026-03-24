@@ -48,13 +48,13 @@ export function ReportErrorButton({ contentItemId }: { contentItemId: string }) 
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+          className="text-xs text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors"
         >
           Report a mistake
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-2">
-          <p className="text-xs font-medium text-gray-600">What is the mistake?</p>
+          <p className="text-xs font-medium text-gray-600 dark:text-slate-300">What is the mistake?</p>
           <textarea
             autoFocus
             value={text}
@@ -62,7 +62,7 @@ export function ReportErrorButton({ contentItemId }: { contentItemId: string }) 
             placeholder="Describe the mistake..."
             rows={3}
             dir="auto"
-            className="w-full text-xs border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+            className="w-full text-xs border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500"
           />
           {status === 'error' && (
             <p className="text-xs text-red-500">Failed to send. Please try again.</p>
@@ -78,7 +78,7 @@ export function ReportErrorButton({ contentItemId }: { contentItemId: string }) 
             <button
               type="button"
               onClick={() => { setOpen(false); setText(''); setStatus('idle'); }}
-              className="text-xs px-3 py-1.5 border border-gray-300 rounded-md hover:border-gray-500"
+              className="text-xs px-3 py-1.5 border border-gray-300 dark:border-slate-600 rounded-md hover:border-gray-500 dark:text-slate-300 dark:hover:border-slate-400"
             >
               Cancel
             </button>

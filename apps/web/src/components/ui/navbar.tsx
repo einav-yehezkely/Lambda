@@ -7,9 +7,11 @@ import { useEffect, useState } from 'react';
 import type { User as LambdaUser } from '@lambda/shared';
 import { NotificationBell } from './notification-bell';
 import { InfoButton } from './info-button';
+import { useTheme } from '@/contexts/theme-context';
 
 export function Navbar() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
+  const { isDark, toggle } = useTheme();
   const [profile, setProfile] = useState<LambdaUser | null>(null);
   const [cachedUsername, setCachedUsername] = useState<string | null>(null);
 
@@ -45,19 +47,34 @@ export function Navbar() {
     ?? user?.user_metadata?.full_name ?? user?.email;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-[#f8f9fa]/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-700 bg-[#f8f9fa]/80 dark:bg-slate-950/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo + Nav */}
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/lambda_icon_black.svg" alt="Lambda" className="h-7 w-auto" />
-            <span className="text-xl font-bold tracking-tight text-slate-900">Lambda</span>
+            <img src="/lambda_icon_black.svg" alt="Lambda" className="h-7 w-auto dark:hidden" />
+            <img src="/lambda_icon_white.svg" alt="Lambda" className="h-7 w-auto hidden dark:block" />
+            <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Lambda</span>
           </Link>
 
         </div>
 
         {/* Right side */}
         <div className="flex items-center gap-4">
+          <button
+            onClick={toggle}
+            aria-label="Toggle dark mode"
+            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            {/* Moon icon – visible in light mode */}
+            <svg className="w-5 h-5 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+            {/* Sun icon – visible in dark mode */}
+            <svg className="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </button>
           {loading ? null : user ? (
             <>
               <InfoButton isAdmin={!!profile?.is_admin} />

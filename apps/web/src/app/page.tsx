@@ -77,7 +77,7 @@ export default function HomePage() {
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_256px] gap-x-8">
       {/* Hero / Search Section - spans both columns */}
       <div className="lg:col-span-2 flex flex-col items-center text-center mb-14">
-        <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
+        <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">
           What will you master today?
         </h1>
         <div className="w-full max-w-2xl relative">
@@ -92,7 +92,7 @@ export default function HomePage() {
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
             dir="auto"
-            className="w-full h-14 pl-12 pr-4 rounded-xl border-none bg-white shadow-xl shadow-slate-200/50 ring-1 ring-slate-200 focus:ring-2 focus:ring-[#1e3a8a] focus:outline-none transition-all text-slate-900 placeholder:text-slate-400"
+            className="w-full h-14 pl-12 pr-4 rounded-xl border-none bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-[#1e3a8a] focus:outline-none transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
         </div>
 
@@ -103,7 +103,7 @@ export default function HomePage() {
             className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
               subject === ''
                 ? 'bg-[#1e3a8a]/10 text-[#1e3a8a] border-[#1e3a8a]/20'
-                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             All
@@ -115,7 +115,7 @@ export default function HomePage() {
               className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
                 subject === s
                   ? 'bg-[#1e3a8a]/10 text-[#1e3a8a] border-[#1e3a8a]/20'
-                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               {formatSubject(s)}
@@ -130,7 +130,7 @@ export default function HomePage() {
       {user && activeVersions && activeVersions.some((v) => v.enrolled) && (
         <section className="mb-16">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900">In Progress</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">In Progress</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeVersions.filter((v) => v.enrolled).map((v) => {
@@ -146,13 +146,13 @@ export default function HomePage() {
                       <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
                         {v.version_title}
                       </p>
-                      <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#1e3a8a] transition-colors line-clamp-1">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#1e3a8a] transition-colors line-clamp-1">
                         {v.course_title}
                       </h3>
                     </div>
                     <span className="shrink-0 text-xs font-bold text-[#1e3a8a]">{pct}%</span>
                   </div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-[#1e3a8a] rounded-full transition-all"
                       style={{ width: `${pct}%` }}
@@ -169,7 +169,7 @@ export default function HomePage() {
       {/* Course Grid */}
       <section className="mb-16">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl font-bold text-slate-900">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
             {subject ? formatSubject(subject) : 'All Courses'}
           </h2>
           <a href="/courses" className="text-sm font-semibold text-[#1e3a8a] hover:underline">
@@ -180,11 +180,11 @@ export default function HomePage() {
         {isLoading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-xl bg-white border border-slate-200 overflow-hidden animate-pulse">
-                <div className="h-36 bg-slate-100" />
+              <div key={i} className="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
+                <div className="h-36 bg-slate-100 dark:bg-slate-700" />
                 <div className="p-5 space-y-3">
-                  <div className="h-4 bg-slate-100 rounded w-3/4" />
-                  <div className="h-3 bg-slate-100 rounded w-full" />
+                  <div className="h-4 bg-slate-100 dark:bg-slate-700 rounded w-3/4" />
+                  <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded w-full" />
                 </div>
               </div>
             ))}
@@ -196,7 +196,7 @@ export default function HomePage() {
         )}
 
         {!isLoading && courses && courses.length === 0 && (
-          <div className="text-center py-16 text-slate-400">
+          <div className="text-center py-16 text-slate-400 dark:text-slate-500">
             <div className="text-4xl mb-3">∅</div>
             <p className="text-sm">No courses found.</p>
           </div>

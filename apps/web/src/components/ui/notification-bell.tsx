@@ -32,30 +32,30 @@ function NotificationModal({ notification, onClose }: { notification: Announceme
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-            <h2 className="text-base font-semibold text-slate-900">{notification.title}</h2>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{notification.title}</h2>
             {notification.target_user_id && (
-              <span className="text-[10px] font-medium bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full shrink-0">
+              <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full shrink-0">
                 Personal
               </span>
             )}
           </div>
           <button
             onClick={onClose}
-            className="text-slate-300 hover:text-slate-600 transition-colors text-xl leading-none shrink-0"
+            className="text-slate-300 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-xl leading-none shrink-0"
             aria-label="Close"
           >
             ×
           </button>
         </div>
         {notification.content && (
-          <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap mb-4">
+          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap mb-4">
             {notification.content}
           </p>
         )}
-        <p className="text-xs text-slate-400">{formatDate(notification.created_at)}</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500">{formatDate(notification.created_at)}</p>
       </div>
     </div>
   );
@@ -112,7 +112,7 @@ export function NotificationBell({ isAdmin }: { isAdmin: boolean }) {
       <button
         type="button"
         onClick={handleOpen}
-        className="relative p-1.5 text-slate-500 hover:text-slate-800 transition-colors"
+        className="relative p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
         aria-label="Announcements"
       >
         <BellIcon />
@@ -124,9 +124,9 @@ export function NotificationBell({ isAdmin }: { isAdmin: boolean }) {
       </button>
 
       {open && (
-        <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-            <span className="font-semibold text-slate-800 text-sm">Notifications</span>
+        <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-50 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+            <span className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Notifications</span>
             {isAdmin && (
               <button
                 type="button"
@@ -139,20 +139,20 @@ export function NotificationBell({ isAdmin }: { isAdmin: boolean }) {
           </div>
 
           {showCreate && isAdmin && (
-            <form onSubmit={handleCreate} className="px-4 py-3 border-b border-slate-100 space-y-2 bg-slate-50">
+            <form onSubmit={handleCreate} className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 space-y-2 bg-slate-50 dark:bg-slate-800">
               <input
                 type="text"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 placeholder="Title"
-                className="w-full border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               />
               <textarea
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
                 placeholder="Content (optional)"
                 rows={3}
-                className="w-full border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               />
               <button
                 type="submit"
@@ -166,13 +166,13 @@ export function NotificationBell({ isAdmin }: { isAdmin: boolean }) {
 
           <div className="max-h-72 overflow-y-auto">
             {announcements.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-8">No notifications</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-8">No notifications</p>
             ) : (
               announcements.slice(0, 5).map((a) => (
                 <div
                   key={a.id}
                   onClick={() => setSelected(a)}
-                  className={`px-4 py-3 border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50 transition-colors ${!a.is_read ? 'bg-blue-50 hover:bg-blue-100/60' : ''}`}
+                  className={`px-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${!a.is_read ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100/60 dark:hover:bg-blue-900/30' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -180,21 +180,21 @@ export function NotificationBell({ isAdmin }: { isAdmin: boolean }) {
                         {!a.is_read && (
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 mt-0.5" />
                         )}
-                        <p className="text-sm font-semibold text-slate-800 truncate">{a.title}</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{a.title}</p>
                         {a.target_user_id && (
-                          <span className="text-[10px] font-medium bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full shrink-0">
+                          <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full shrink-0">
                             Personal
                           </span>
                         )}
                       </div>
-                      {a.content && <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{a.content}</p>}
-                      <p className="text-[10px] text-slate-400 mt-1">{formatDate(a.created_at)}</p>
+                      {a.content && <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2">{a.content}</p>}
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{formatDate(a.created_at)}</p>
                     </div>
                     {isAdmin && !a.target_user_id && (
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); deleteAnnouncement.mutate(a.id); }}
-                        className="text-slate-300 hover:text-red-500 transition-colors shrink-0 text-lg leading-none"
+                        className="text-slate-300 dark:text-slate-600 hover:text-red-500 transition-colors shrink-0 text-lg leading-none"
                         aria-label="Delete"
                       >
                         ×
@@ -206,11 +206,11 @@ export function NotificationBell({ isAdmin }: { isAdmin: boolean }) {
             )}
           </div>
 
-          <div className="border-t border-slate-100">
+          <div className="border-t border-slate-100 dark:border-slate-800">
             <Link
               href="/announcements"
               onClick={() => setOpen(false)}
-              className="block w-full text-center text-xs text-blue-600 hover:text-blue-800 hover:bg-slate-50 py-2.5 transition-colors"
+              className="block w-full text-center text-xs text-blue-600 hover:text-blue-800 hover:bg-slate-50 dark:hover:bg-slate-800 py-2.5 transition-colors"
             >
               All notifications
             </Link>

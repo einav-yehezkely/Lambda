@@ -233,11 +233,11 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 const TYPE_COLOR: Record<string, string> = {
-  proof:             'bg-purple-100 text-purple-700',
-  exam_question:     'bg-blue-100 text-blue-700',
-  exercise_question: 'bg-amber-100 text-amber-700',
-  algorithm:         'bg-teal-100 text-teal-700',
-  other:             'bg-slate-100 text-slate-600',
+  proof:             'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  exam_question:     'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  exercise_question: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  algorithm:         'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+  other:             'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
 };
 
 const DIFFICULTY_DOT: Record<string, string> = {
@@ -315,7 +315,7 @@ export default function PracticePage({
   if (!user) {
     return (
       <div className="max-w-md mx-auto mt-20 text-center">
-        <p className="text-slate-500 mb-4">Sign in to start a practice session.</p>
+        <p className="text-slate-500 dark:text-slate-400 mb-4">Sign in to start a practice session.</p>
         <Link href="/" className="text-sm text-[#1e3a8a] hover:underline font-medium">
           Go home
         </Link>
@@ -497,23 +497,23 @@ export default function PracticePage({
     return (
       <div className="max-w-xl mx-auto">
         <div className="mb-8">
-          <button onClick={() => router.back()} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors mb-4">
+          <button onClick={() => router.back()} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors mb-4">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back
           </button>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Practice Session</h1>
-          <p className="text-slate-500 mt-1 text-sm">Choose what to practice</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Practice Session</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">Choose what to practice</p>
         </div>
 
         {/* ── Content type selection ── */}
         <div className="mb-7">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Content</p>
+          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Content</p>
           {optionsLoading ? (
             <div className="grid grid-cols-2 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-[72px] rounded-xl bg-slate-100 animate-pulse" />
+                <div key={i} className="h-[72px] rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
               ))}
             </div>
           ) : (
@@ -529,25 +529,25 @@ export default function PracticePage({
                     disabled={disabled}
                     className={`flex items-center gap-3 px-4 py-4 rounded-xl border-2 text-left transition-all ${
                       disabled
-                        ? 'border-slate-100 bg-slate-50 opacity-40 cursor-not-allowed'
+                        ? 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900 opacity-40 cursor-not-allowed'
                         : active
                         ? 'border-[#1e3a8a] bg-[#1e3a8a]/5 shadow-sm'
-                        : 'border-slate-200 bg-white hover:border-slate-300 cursor-pointer'
+                        : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer'
                     }`}
                   >
                     <span className="text-2xl leading-none shrink-0">{ct.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <div className={`font-semibold text-sm ${active && !disabled ? 'text-[#1e3a8a]' : 'text-slate-900'}`}>
+                      <div className={`font-semibold text-sm ${active && !disabled ? 'text-[#1e3a8a]' : 'text-slate-900 dark:text-white'}`}>
                         {ct.label}
                       </div>
                       {count !== null && (
-                        <div className="text-xs text-slate-400 mt-0.5 tabular-nums">
+                        <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 tabular-nums">
                           {ct.id === 'review' ? 'All materials' : `${count} items`}
                         </div>
                       )}
                     </div>
                     <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
-                      active && !disabled ? 'border-[#1e3a8a]' : 'border-slate-300'
+                      active && !disabled ? 'border-[#1e3a8a]' : 'border-slate-300 dark:border-slate-600'
                     }`}>
                       {active && !disabled && <div className="w-2 h-2 rounded-full bg-[#1e3a8a]" />}
                     </div>
@@ -560,11 +560,11 @@ export default function PracticePage({
 
         {/* ── Format filter (multi-select) ── */}
         {selectedContentType !== 'review' && <div className="mb-7">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Question format</p>
+          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Question format</p>
           {optionsLoading ? (
             <div className="flex gap-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-8 w-24 rounded-full bg-slate-100 animate-pulse" />
+                <div key={i} className="h-8 w-24 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse" />
               ))}
             </div>
           ) : (
@@ -575,7 +575,7 @@ export default function PracticePage({
                 className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors border ${
                   selectedFormats.size === 0
                     ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800 cursor-pointer'
                 }`}
               >
                 All
@@ -591,16 +591,16 @@ export default function PracticePage({
                     disabled={disabled}
                     className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors border ${
                       disabled
-                        ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed'
+                        ? 'border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-600 cursor-not-allowed'
                         : active
                         ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800 cursor-pointer'
                     }`}
                   >
                     <span>{fmt.icon}</span>
                     <span>{fmt.label}</span>
                     {count !== null && !disabled && (
-                      <span className={`text-[11px] tabular-nums ${active ? 'text-white/70' : 'text-slate-400'}`}>
+                      <span className={`text-[11px] tabular-nums ${active ? 'text-white/70' : 'text-slate-400 dark:text-slate-500'}`}>
                         {count}
                       </span>
                     )}
@@ -614,14 +614,14 @@ export default function PracticePage({
         {/* ── Topic filter (multi-select) ── */}
         {(versionOptions?.topics.length ?? 0) > 0 && (
           <div className="mb-7">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Topic</p>
+            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Topic</p>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => { setSelectedTopicIds(new Set()); setSelectedNoTopic(false); }}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
                   selectedTopicIds.size === 0 && !selectedNoTopic
                     ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800'
                 }`}
               >
                 All topics
@@ -631,7 +631,7 @@ export default function PracticePage({
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
                   selectedNoTopic
                     ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800'
                 }`}
               >
                 No topic
@@ -646,10 +646,10 @@ export default function PracticePage({
                     disabled={disabled}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
                       disabled
-                        ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed'
+                        ? 'border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-600 cursor-not-allowed'
                         : active
                         ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800'
                     }`}
                   >
                     {t.title}
@@ -667,11 +667,11 @@ export default function PracticePage({
             : MIXED_PROGRESS_FILTERS;
           return (
             <div className="mb-7">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">My progress</p>
+              <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">My progress</p>
               {optionsLoading ? (
                 <div className="flex gap-2">
                   {Array.from({ length: filters.length }).map((_, i) => (
-                    <div key={i} className="h-8 w-16 rounded-full bg-slate-100 animate-pulse" />
+                    <div key={i} className="h-8 w-16 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse" />
                   ))}
                 </div>
               ) : (
@@ -681,7 +681,7 @@ export default function PracticePage({
                     className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors border ${
                       progressFilters.size === 0
                         ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800 cursor-pointer'
                     }`}
                   >
                     All
@@ -705,15 +705,15 @@ export default function PracticePage({
                         disabled={disabled}
                         className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors border ${
                           disabled
-                            ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed'
+                            ? 'border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-600 cursor-not-allowed'
                             : active
                             ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
-                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800 cursor-pointer'
                         }`}
                       >
                         <span>{pf.label}</span>
                         {!disabled && (
-                          <span className={`text-[11px] tabular-nums ${active ? 'text-white/70' : 'text-slate-400'}`}>
+                          <span className={`text-[11px] tabular-nums ${active ? 'text-white/70' : 'text-slate-400 dark:text-slate-500'}`}>
                             {count}
                           </span>
                         )}
@@ -728,7 +728,7 @@ export default function PracticePage({
 
         {/* ── Session length ── */}
         <div className="mb-7">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Session length</p>
+          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Session length</p>
           <div className="flex flex-wrap gap-2">
             {([5, 10, 20, 50, null] as (number | null)[]).map((n) => {
               const disabled = n !== null && effectiveCount !== null && effectiveCount < n;
@@ -743,10 +743,10 @@ export default function PracticePage({
                   disabled={disabled}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
                     disabled
-                      ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed'
+                      ? 'border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-600 cursor-not-allowed'
                       : active
                       ? 'border-[#1e3a8a] bg-[#1e3a8a] text-white'
-                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800'
                   }`}
                 >
                   {label}
@@ -760,11 +760,11 @@ export default function PracticePage({
         <label className="flex items-center gap-3 mb-6 cursor-pointer select-none">
           <div
             onClick={() => setWithSolution((v) => !v)}
-            className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 flex items-center px-0.5 ${withSolution ? 'bg-[#1e3a8a]' : 'bg-slate-200'}`}
+            className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 flex items-center px-0.5 ${withSolution ? 'bg-[#1e3a8a]' : 'bg-slate-200 dark:bg-slate-700'}`}
           >
             <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${withSolution ? 'translate-x-4' : 'translate-x-0'}`} />
           </div>
-          <span className="text-sm text-slate-700">Only questions with solutions</span>
+          <span className="text-sm text-slate-700 dark:text-slate-300">Only questions with solutions</span>
         </label>
 
         {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
@@ -786,7 +786,7 @@ export default function PracticePage({
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-[#1e3a8a] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-slate-400">Loading session...</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">Loading session...</p>
         </div>
       </div>
     );
@@ -809,16 +809,16 @@ export default function PracticePage({
           <div className="w-20 h-20 rounded-full bg-[#1e3a8a]/10 flex items-center justify-center mx-auto mb-4">
             <span className="text-4xl">{pct >= 80 ? '🎉' : pct >= 50 ? '👍' : '💪'}</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Session complete</h1>
-          <p className="text-slate-500 text-sm">{total} items reviewed · {pct}% correct</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">Session complete</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">{total} items reviewed · {pct}% correct</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between text-xs text-slate-500 font-medium uppercase tracking-wide">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 mb-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">
             <span>Score</span>
             <span className="text-[#1e3a8a] font-bold text-base">{pct}%</span>
           </div>
-          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
             <div
               className="h-full bg-[#1e3a8a] rounded-full transition-all"
               style={{ width: `${pct}%` }}
@@ -828,15 +828,15 @@ export default function PracticePage({
 
         <div className="grid grid-cols-5 gap-2 mb-8">
           {[
-            { count: nAgain,   label: 'Again',   color: 'text-red-600',     bg: 'bg-red-50 border-red-100' },
-            { count: nHard,    label: 'Hard',    color: 'text-amber-600',   bg: 'bg-amber-50 border-amber-100' },
-            { count: nOk,      label: 'OK',      color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' },
-            { count: nEasy,    label: 'Easy',    color: 'text-blue-600',    bg: 'bg-blue-50 border-blue-100' },
-            { count: nSkipped, label: 'Skipped', color: 'text-slate-400',   bg: 'bg-slate-50 border-slate-100' },
+            { count: nAgain,   label: 'Again',   color: 'text-red-600',     bg: 'bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-900/40' },
+            { count: nHard,    label: 'Hard',    color: 'text-amber-600',   bg: 'bg-amber-50 border-amber-100 dark:bg-amber-900/20 dark:border-amber-900/40' },
+            { count: nOk,      label: 'OK',      color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-900/40' },
+            { count: nEasy,    label: 'Easy',    color: 'text-blue-600',    bg: 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/40' },
+            { count: nSkipped, label: 'Skipped', color: 'text-slate-400',   bg: 'bg-slate-50 border-slate-100 dark:bg-slate-800 dark:border-slate-700' },
           ].map(({ count, label, color, bg }) => (
             <div key={label} className={`border rounded-xl p-3 text-center ${bg}`}>
               <div className={`text-2xl font-bold ${color}`}>{count}</div>
-              <div className="text-xs text-slate-500 mt-0.5">{label}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{label}</div>
             </div>
           ))}
         </div>
@@ -854,7 +854,7 @@ export default function PracticePage({
           </button>
           <button
             onClick={() => router.back()}
-            className="flex-1 text-center border border-slate-300 text-slate-700 py-2.5 rounded-xl text-sm font-medium hover:border-slate-400 transition-colors"
+            className="flex-1 text-center border border-slate-300 text-slate-700 py-2.5 rounded-xl text-sm font-medium hover:border-slate-400 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 transition-colors"
           >
             Back
           </button>
@@ -888,46 +888,46 @@ export default function PracticePage({
     <div className="max-w-2xl mx-auto">
       {/* Progress bar + counter */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
           <div
             className="h-full bg-[#1e3a8a] rounded-full transition-all duration-500"
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <span className="text-xs text-slate-400 font-medium shrink-0 tabular-nums">{index + 1} / {items.length}</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium shrink-0 tabular-nums">{index + 1} / {items.length}</span>
       </div>
 
       {/* Card */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
         {/* Card header */}
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100">
+        <div className="px-6 pt-6 pb-5 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-start justify-between gap-3 mb-3">
-            <h2 className="text-base font-semibold text-slate-900 leading-snug flex-1" dir="auto">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white leading-snug flex-1" dir="auto">
               <LatexContent content={ci.title} />
             </h2>
             <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
               {reappearedIds.has(current.content_item_id) && (
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-500 border border-red-200">
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-500 border border-red-200 dark:bg-red-900/20 dark:border-red-900/40 dark:text-red-400">
                   ↩ Again
                 </span>
               )}
               {current.user_progress?.status === 'needs_review' && !reappearedIds.has(current.content_item_id) && (
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-600 border border-amber-200">
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-900/40 dark:text-amber-400">
                   Hard
                 </span>
               )}
               {current.user_progress?.status === 'solved' && (
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-600 border border-emerald-200">
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-900/40 dark:text-emerald-400">
                   OK
                 </span>
               )}
               {current.user_progress?.status === 'easy' && (
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-600 border border-blue-200">
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-900/40 dark:text-blue-400">
                   Easy
                 </span>
               )}
               {ci.difficulty && (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                   <span className={`w-1.5 h-1.5 rounded-full ${DIFFICULTY_DOT[ci.difficulty]}`} />
                   {DIFFICULTY_LABEL[ci.difficulty]}
                 </span>
@@ -941,7 +941,7 @@ export default function PracticePage({
           {ci.tags.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {ci.tags.map((tag) => (
-                <span key={tag} className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                <span key={tag} className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full dark:bg-slate-800 dark:text-slate-400">
                   {tag}
                 </span>
               ))}
@@ -951,7 +951,7 @@ export default function PracticePage({
 
         {/* Section 0 images — full-width above card body */}
         {!isFlashcard && (ci.metadata?.sections?.[0]?.images?.length ?? 0) > 0 && (
-          <div className="border-b border-slate-200">
+          <div className="border-b border-slate-200 dark:border-slate-700">
             {ci.metadata!.sections![0].images!.map((url) => (
               <img key={url} src={url} alt="" onClick={() => setLightboxUrl(url)}
                 className="w-full block cursor-pointer hover:opacity-90 transition-opacity" />
@@ -963,7 +963,7 @@ export default function PracticePage({
         <div className="px-6 py-5">
           {!isFlashcard && (
             <div
-              className="text-slate-700 mb-6 leading-relaxed"
+              className="text-slate-700 dark:text-slate-300 mb-6 leading-relaxed"
               dir={/[\u0590-\u05FF]/.test(ci.content) ? 'rtl' : undefined}
             >
               <LatexContent content={ci.content} />
@@ -998,10 +998,10 @@ export default function PracticePage({
                           <button
                             key={letter}
                             onClick={() => setSelectedOptions((prev) => prev.includes(letter) ? prev.filter((o) => o !== letter) : [...prev, letter])}
-                            className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl text-sm transition-all group text-start ${isSelected ? 'border-2 border-[#1e3a8a]/50 bg-[#1e3a8a]/5' : 'border border-slate-200 hover:border-[#1e3a8a]/40 hover:bg-[#1e3a8a]/5'}`}
+                            className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl text-sm transition-all group text-start ${isSelected ? 'border-2 border-[#1e3a8a]/50 bg-[#1e3a8a]/5' : 'border border-slate-200 dark:border-slate-700 hover:border-[#1e3a8a]/40 hover:bg-[#1e3a8a]/5'}`}
                           >
-                            <span className={`font-bold shrink-0 transition-colors ${isSelected ? 'text-[#1e3a8a]' : 'text-slate-400 group-hover:text-[#1e3a8a]'}`}>{letter}</span>
-                            <div className="flex-1 text-slate-700" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
+                            <span className={`font-bold shrink-0 transition-colors ${isSelected ? 'text-[#1e3a8a]' : 'text-slate-400 dark:text-slate-500 group-hover:text-[#1e3a8a]'}`}>{letter}</span>
+                            <div className="flex-1 text-slate-700 dark:text-slate-300" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
                               <LatexContent content={sec.content} />
                             </div>
                           </button>
@@ -1054,16 +1054,16 @@ export default function PracticePage({
                                 <div
                                   key={letter}
                                   className={`flex items-start gap-3 px-4 py-3 rounded-xl text-sm ${
-                                    isCorrect && isSelected ? 'border-2 border-emerald-500 bg-emerald-50' :
-                                    isCorrect ? 'border border-emerald-300 bg-emerald-50' :
-                                    isSelected ? 'border-2 border-red-400 bg-red-50' :
-                                    'border border-slate-200 bg-white'
+                                    isCorrect && isSelected ? 'border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' :
+                                    isCorrect ? 'border border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20' :
+                                    isSelected ? 'border-2 border-red-400 bg-red-50 dark:bg-red-900/20' :
+                                    'border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'
                                   }`}
                                 >
-                                  <span className={`font-bold shrink-0 ${isCorrect ? 'text-emerald-600' : isSelected ? 'text-red-500' : 'text-slate-400'}`}>
+                                  <span className={`font-bold shrink-0 ${isCorrect ? 'text-emerald-600 dark:text-emerald-400' : isSelected ? 'text-red-500 dark:text-red-400' : 'text-slate-400 dark:text-slate-500'}`}>
                                     {letter}
                                   </span>
-                                  <div className={`flex-1 ${isCorrect ? 'text-emerald-700' : isSelected ? 'text-red-700' : 'text-slate-600'}`} dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
+                                  <div className={`flex-1 ${isCorrect ? 'text-emerald-700 dark:text-emerald-300' : isSelected ? 'text-red-700 dark:text-red-300' : 'text-slate-600 dark:text-slate-300'}`} dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
                                     <LatexContent content={sec.content} />
                                   </div>
                                   <div className="ml-auto flex items-center gap-1 shrink-0">
@@ -1087,16 +1087,16 @@ export default function PracticePage({
                             })}
                           </div>
                           {ci.metadata?.explanation && (
-                            <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                              <p className="text-xs font-semibold text-blue-700 mb-1">Explanation</p>
-                              <div className="text-sm text-blue-800" dir={/[\u0590-\u05FF]/.test(ci.metadata.explanation) ? 'rtl' : undefined}>
+                            <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/40">
+                              <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">Explanation</p>
+                              <div className="text-sm text-blue-800 dark:text-blue-200" dir={/[\u0590-\u05FF]/.test(ci.metadata.explanation) ? 'rtl' : undefined}>
                                 <LatexContent content={ci.metadata.explanation} />
                               </div>
                             </div>
                           )}
                           <ReportErrorButton contentItemId={ci.id} />
                           <div className="mt-4 flex items-center gap-3">
-                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold ${mcqOutcome === 'solved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
+                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold ${mcqOutcome === 'solved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/40' : 'bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/40'}`}>
                               {mcqOutcome === 'solved' ? (
                                 <><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>Solved</>
                               ) : (
@@ -1105,7 +1105,7 @@ export default function PracticePage({
                             </div>
                             <button
                               onClick={advanceItem}
-                              className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                              className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors"
                             >
                               Continue
                             </button>
@@ -1122,7 +1122,7 @@ export default function PracticePage({
               <div>
                 <button
                   onClick={() => setRevealed(true)}
-                  className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-sm text-slate-400 hover:border-[#1e3a8a]/40 hover:text-[#1e3a8a] hover:bg-[#1e3a8a]/5 transition-all font-medium"
+                  className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-400 dark:text-slate-500 hover:border-[#1e3a8a]/40 hover:text-[#1e3a8a] hover:bg-[#1e3a8a]/5 transition-all font-medium"
                 >
                   Reveal solution
                 </button>
@@ -1133,20 +1133,20 @@ export default function PracticePage({
                 {(() => {
                   const solutionImages = (ci.metadata?.sections?.slice(1) ?? []).flatMap((s) => s.images ?? []);
                   return ci.solution || solutionImages.length > 0 ? (
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden mb-5">
-                      <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest px-4 pt-4 mb-2">Solution</div>
+                    <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden mb-5">
+                      <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-4 pt-4 mb-2">Solution</div>
                       {solutionImages.map((url) => (
                         <img key={url} src={url} alt="" onClick={() => setLightboxUrl(url)}
                           className="w-full block cursor-pointer hover:opacity-90 transition-opacity" />
                       ))}
                       {ci.solution && (
-                        <div className="px-4 pb-4 text-sm text-slate-700 leading-relaxed" dir={/[\u0590-\u05FF]/.test(ci.solution) ? 'rtl' : undefined}>
+                        <div className="px-4 pb-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed" dir={/[\u0590-\u05FF]/.test(ci.solution) ? 'rtl' : undefined}>
                           <LatexContent content={ci.solution} />
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5 text-sm text-slate-400">
+                    <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 mb-5 text-sm text-slate-400 dark:text-slate-500">
                       No official solution available. Add your own below.
                     </div>
                   );
@@ -1169,27 +1169,27 @@ export default function PracticePage({
                       });
                       setRevealed(true);
                     }}
-                    className="w-full py-2.5 px-4 flex items-center justify-between border border-slate-200 rounded-xl text-sm text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition-all"
+                    className="w-full py-2.5 px-4 flex items-center justify-between border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:bg-slate-50 dark:hover:border-slate-600 dark:hover:bg-slate-800 transition-all"
                   >
                     <span className="font-semibold">{sec.label}</span>
                     <svg
-                      className={`w-4 h-4 text-slate-400 transition-transform ${revealedSections.has(i) ? 'rotate-180' : ''}`}
+                      className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform ${revealedSections.has(i) ? 'rotate-180' : ''}`}
                       fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
                   {revealedSections.has(i) && (
-                    <div className="bg-slate-50 border border-slate-200 border-t-0 rounded-b-xl overflow-hidden">
+                    <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-t-0 rounded-b-xl overflow-hidden">
                       {(sec.images?.length ?? 0) > 0 && (
-                        <div className="border-b border-slate-200">
+                        <div className="border-b border-slate-200 dark:border-slate-700">
                           {sec.images!.map((url) => (
                             <img key={url} src={url} alt="" onClick={() => setLightboxUrl(url)}
                               className="w-full block cursor-pointer hover:opacity-90 transition-opacity" />
                           ))}
                         </div>
                       )}
-                      <div className="px-4 py-4 text-sm text-slate-700 leading-relaxed" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
+                      <div className="px-4 py-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed" dir={/[\u0590-\u05FF]/.test(sec.content) ? 'rtl' : undefined}>
                         <LatexContent content={sec.content} />
                       </div>
                     </div>
@@ -1231,25 +1231,25 @@ function OutcomeButtons({ onSubmit }: { onSubmit: OnSubmit }) {
     <div className="grid grid-cols-4 gap-2 mt-4">
       <button
         onClick={() => onSubmit('incorrect')}
-        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors"
+        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 dark:border-red-900/40 transition-colors"
       >
         Again
       </button>
       <button
         onClick={() => onSubmit('needs_review')}
-        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors"
+        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/30 dark:border-amber-900/40 transition-colors"
       >
         Hard
       </button>
       <button
         onClick={() => onSubmit('solved')}
-        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/30 dark:border-emerald-900/40 transition-colors"
       >
         OK
       </button>
       <button
         onClick={() => onSubmit('easy')}
-        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
+        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 dark:border-blue-900/40 transition-colors"
       >
         Easy
       </button>
@@ -1262,13 +1262,13 @@ function ExamOutcomeButtons({ onSubmit }: { onSubmit: OnSubmit }) {
     <div className="grid grid-cols-2 gap-2 mt-4">
       <button
         onClick={() => onSubmit('incorrect', false)}
-        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors"
+        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 dark:border-red-900/40 transition-colors"
       >
         Not Solved
       </button>
       <button
         onClick={() => onSubmit('solved', false)}
-        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+        className="py-2.5 px-3 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/30 dark:border-emerald-900/40 transition-colors"
       >
         Solved
       </button>
@@ -1280,7 +1280,7 @@ function SkipButton({ onSubmit }: { onSubmit: OnSubmit }) {
   return (
     <button
       onClick={() => onSubmit('skipped')}
-      className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors"
+      className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
     >
       Skip
     </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTheme } from '@/contexts/theme-context';
 
 const NODE_COUNT    = 90;
 const MAX_DIST      = 200;
@@ -14,9 +15,15 @@ type Node = {
 };
 
 export function BackgroundAnimation() {
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const rawMouse   = useRef({ x: -1000, y: -1000 });
+  const canvasRef    = useRef<HTMLCanvasElement>(null);
+  const rawMouse     = useRef({ x: -1000, y: -1000 });
   const smoothCursor = useRef({ x: -1000, y: -1000 });
+  const { isDark }   = useTheme();
+  const isDarkRef    = useRef(isDark);
+
+  useEffect(() => {
+    isDarkRef.current = isDark;
+  }, [isDark]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -54,12 +61,19 @@ export function BackgroundAnimation() {
     function tick() {
       ctx.clearRect(0, 0, W, H);
 
-      // Background gradient
+      // Background gradient – switches based on theme
       const bg = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.hypot(W, H) * 0.62);
-      bg.addColorStop(0,    '#f5f8fc');
-      bg.addColorStop(0.48, '#eaf0f9');
-      bg.addColorStop(0.80, '#cddcf0');
-      bg.addColorStop(1,    '#1A365D');
+      if (isDarkRef.current) {
+        bg.addColorStop(0,    '#0d1117');
+        bg.addColorStop(0.48, '#0a1020');
+        bg.addColorStop(0.80, '#07162e');
+        bg.addColorStop(1,    '#030810');
+      } else {
+        bg.addColorStop(0,    '#f5f8fc');
+        bg.addColorStop(0.48, '#eaf0f9');
+        bg.addColorStop(0.80, '#cddcf0');
+        bg.addColorStop(1,    '#1A365D');
+      }
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 

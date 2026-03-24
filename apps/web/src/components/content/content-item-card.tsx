@@ -21,11 +21,11 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 const TYPE_COLOR: Record<string, string> = {
-  proof: 'bg-purple-100 text-purple-700',
-  exam_question: 'bg-blue-100 text-blue-700',
-  exercise_question: 'bg-orange-100 text-orange-700',
-  algorithm: 'bg-teal-100 text-teal-700',
-  other: 'bg-gray-100 text-gray-600',
+  proof: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+  exam_question: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+  exercise_question: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
+  algorithm: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300',
+  other: 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400',
 };
 
 const TOPIC_STRIP_COLORS = [
@@ -47,7 +47,7 @@ const DIFFICULTY_COLOR: Record<string, string> = {
   hard: 'text-red-600',
 };
 
-const INPUT_CLS = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900';
+const INPUT_CLS = 'w-full border border-gray-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100';
 
 const HE_RE = /[\u0590-\u05FF]/;
 const hDir = (s?: string | null): 'rtl' | undefined => HE_RE.test(s ?? '') ? 'rtl' : undefined;
@@ -255,14 +255,14 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
     <Modal title="Edit Content Item" onClose={onClose} className="max-w-2xl">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
             {isCurrentAlgorithm ? 'Algorithm Name *' : 'Title *'}
           </label>
           <input autoFocus type="text" value={title} onChange={(e) => setTitle(e.target.value)} dir={hDir(title)} className={INPUT_CLS} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Type *</label>
           <select value={contentType} onChange={(e) => handleTypeChange(e.target.value)} className={INPUT_CLS}>
             {(activeTypes ?? Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label }))).map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -272,14 +272,14 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
 
         {isCurrentQuestion && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Question Format *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Question Format *</label>
             <div className="flex gap-2 flex-wrap">
               {formatOptions.map((f) => (
                 <button
                   key={f.value}
                   type="button"
                   onClick={() => handleFormatChange(f.value as QuestionFormat)}
-                  className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${questionFormat === f.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
+                  className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${questionFormat === f.value ? 'bg-gray-900 dark:bg-slate-100 text-white dark:text-slate-900 border-gray-900 dark:border-slate-100' : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-400 hover:border-gray-500 dark:hover:border-slate-400'}`}
                 >
                   {f.label}
                 </button>
@@ -290,7 +290,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
 
         {topics.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Topic</label>
             <select value={topicId} onChange={(e) => setTopicId(e.target.value)} className={INPUT_CLS}>
               <option value="">No topic</option>
               {topics.map((t) => (
@@ -301,15 +301,15 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Sections</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Sections</label>
           <div className="space-y-3">
             {sections.map((sec, i) => (
-              <div key={i} className="border border-gray-200 rounded-md p-3 space-y-2">
+              <div key={i} className="border border-gray-200 dark:border-slate-700 rounded-md p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   {!isCurrentQuestion && (
                     <div className="flex flex-col gap-0.5 shrink-0">
-                      <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▲</button>
-                      <button type="button" onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▼</button>
+                      <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} className="text-gray-300 dark:text-slate-600 hover:text-gray-600 dark:hover:text-slate-300 disabled:opacity-20 leading-none">▲</button>
+                      <button type="button" onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} className="text-gray-300 dark:text-slate-600 hover:text-gray-600 dark:hover:text-slate-300 disabled:opacity-20 leading-none">▼</button>
                     </div>
                   )}
                   <input
@@ -319,10 +319,10 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
                     placeholder="Section name"
                     dir={hDir(sec.label)}
                     readOnly={isCurrentQuestion}
-                    className={`flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 ${isCurrentQuestion ? 'bg-gray-50 text-gray-500 cursor-default' : ''}`}
+                    className={`flex-1 border border-gray-300 dark:border-slate-600 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${isCurrentQuestion ? 'bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-slate-400 cursor-default' : ''}`}
                   />
                   {(!isCurrentQuestion || (isMultipleChoice && i > 0)) && (
-                    <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 hover:text-red-500 shrink-0">
+                    <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 shrink-0">
                       Remove
                     </button>
                   )}
@@ -332,7 +332,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
                 <div className="flex flex-wrap gap-2 pt-1">
                   {(sec.images ?? []).map((url) => (
                     <div key={url} className="relative group w-16 h-16 shrink-0">
-                      <img src={url} alt="" className="w-16 h-16 object-cover rounded border border-gray-200" />
+                      <img src={url} alt="" className="w-16 h-16 object-cover rounded border border-gray-200 dark:border-slate-700" />
                       <button
                         type="button"
                         onClick={() => removeImageFromSection(i, url)}
@@ -347,7 +347,7 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
                       type="button"
                       onClick={() => triggerImageUpload(i)}
                       disabled={uploadingIdx === i}
-                      className="w-16 h-16 border-2 border-dashed border-gray-300 rounded text-gray-400 hover:border-gray-400 hover:text-gray-600 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors disabled:opacity-50"
+                      className="w-16 h-16 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded text-gray-400 dark:text-slate-500 hover:border-gray-400 dark:hover:border-slate-400 hover:text-gray-600 dark:hover:text-slate-300 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors disabled:opacity-50"
                     >
                       {uploadingIdx === i ? '...' : <><span className="text-lg leading-none">+</span><span>Image</span></>}
                     </button>
@@ -356,12 +356,12 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
               </div>
             ))}
             {isMultipleChoice && (
-              <button type="button" onClick={addMCQOption} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
+              <button type="button" onClick={addMCQOption} className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 border border-gray-300 dark:border-slate-600 rounded px-2 py-0.5 hover:border-gray-500 dark:hover:border-slate-400">
                 + Add Option
               </button>
             )}
             {!isCurrentQuestion && (
-              <button type="button" onClick={addSection} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
+              <button type="button" onClick={addSection} className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 border border-gray-300 dark:border-slate-600 rounded px-2 py-0.5 hover:border-gray-500 dark:hover:border-slate-400">
                 + Add Section
               </button>
             )}
@@ -370,14 +370,14 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
 
         {isMultipleChoice && availableOptions.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Correct Answer *</label>
             <div className="flex gap-2 flex-wrap">
               {availableOptions.map((opt) => (
                 <button
                   key={opt}
                   type="button"
                   onClick={() => setCorrectOptions((prev) => prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt])}
-                  className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${correctOptions.includes(opt) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
+                  className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${correctOptions.includes(opt) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-400 hover:border-gray-500 dark:hover:border-slate-400'}`}
                 >
                   {opt}
                 </button>
@@ -388,13 +388,13 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
 
         {isMultipleChoice && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Explanation (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Explanation (optional)</label>
             <LatexEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain why the answer is correct..." />
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Tags</label>
           <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="comma-separated" dir="auto" className={INPUT_CLS} />
         </div>
 
@@ -410,16 +410,16 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
                 setSavedDefault(true);
                 setTimeout(() => setSavedDefault(false), 2000);
               }}
-              className={`text-xs border rounded-md px-3 py-1.5 transition-colors ${savedDefault ? 'border-green-300 text-green-600 bg-green-50' : 'border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-400'}`}
+              className={`text-xs border rounded-md px-3 py-1.5 transition-colors ${savedDefault ? 'border-green-300 dark:border-green-700 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-slate-700 text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-400 dark:hover:border-slate-500'}`}
             >
               {savedDefault ? '✓ Saved as default' : 'Save sections as default for this type'}
             </button>
           )}
           <div className="flex gap-2 ml-auto">
-            <button type="button" onClick={onClose} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">
+            <button type="button" onClick={onClose} className="text-sm px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md hover:border-gray-500 dark:hover:border-slate-400 text-gray-700 dark:text-slate-300">
               Cancel
             </button>
-            <button type="submit" disabled={updateContent.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
+            <button type="submit" disabled={updateContent.isPending} className="text-sm px-4 py-2 bg-gray-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-md hover:bg-gray-700 dark:hover:bg-slate-200 disabled:opacity-50">
               {updateContent.isPending ? 'Saving...' : 'Save'}
             </button>
           </div>
@@ -486,7 +486,7 @@ function ViewModal({ item, onClose }: {
       <div className="flex flex-col gap-2 mb-3">
         {imgs.map((url) => (
           <img key={url} src={url} alt="" onClick={() => setLightboxUrl(url)}
-            className="w-full rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity" />
+            className="w-full rounded border border-gray-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition-opacity" />
         ))}
       </div>
     ) : null;
@@ -495,21 +495,21 @@ function ViewModal({ item, onClose }: {
     (content_item.metadata?.sections?.length ?? 0) > 0
       ? content_item.metadata!.sections!.map((s) => ({
           label: s.label,
-          content: <>{renderSectionImages(s.images)}<div className="text-gray-600" dir={hDir(s.content)}><LatexContent content={s.content} /></div></>,
+          content: <>{renderSectionImages(s.images)}<div className="text-gray-600 dark:text-slate-300" dir={hDir(s.content)}><LatexContent content={s.content} /></div></>,
         }))
       : isAlgorithm
         ? [
             ...(content_item.content && content_item.content !== content_item.title
-              ? [{ label: 'Problem', content: <div className="text-gray-600" dir={hDir(content_item.content)}><LatexContent content={content_item.content} /></div> }]
+              ? [{ label: 'Problem', content: <div className="text-gray-600 dark:text-slate-300" dir={hDir(content_item.content)}><LatexContent content={content_item.content} /></div> }]
               : []),
-            ...(meta?.algorithm ? [{ label: 'Algorithm', content: <div className="text-gray-600" dir={hDir(meta.algorithm)}><LatexContent content={meta.algorithm} /></div> }] : []),
-            ...(meta?.proof ? [{ label: 'Proof', content: <div className="text-gray-600" dir={hDir(meta.proof)}><LatexContent content={meta.proof} /></div> }] : []),
-            ...(meta?.runtime ? [{ label: 'Runtime', content: <span className="text-gray-700 font-mono text-xs"><LatexContent content={meta.runtime} /></span> }] : []),
+            ...(meta?.algorithm ? [{ label: 'Algorithm', content: <div className="text-gray-600 dark:text-slate-300" dir={hDir(meta.algorithm)}><LatexContent content={meta.algorithm} /></div> }] : []),
+            ...(meta?.proof ? [{ label: 'Proof', content: <div className="text-gray-600 dark:text-slate-300" dir={hDir(meta.proof)}><LatexContent content={meta.proof} /></div> }] : []),
+            ...(meta?.runtime ? [{ label: 'Runtime', content: <span className="text-gray-700 dark:text-slate-300 font-mono text-xs"><LatexContent content={meta.runtime} /></span> }] : []),
           ]
         : [
-            { label: 'Content', content: <div className="text-gray-600" dir={hDir(content_item.content)}><LatexContent content={content_item.content} /></div> },
+            { label: 'Content', content: <div className="text-gray-600 dark:text-slate-300" dir={hDir(content_item.content)}><LatexContent content={content_item.content} /></div> },
             ...(content_item.solution
-              ? [{ label: content_item.type === 'proof' ? 'Proof Sketch' : 'Solution', content: <div className="text-gray-600" dir={hDir(content_item.solution)}><LatexContent content={content_item.solution} /></div> }]
+              ? [{ label: content_item.type === 'proof' ? 'Proof Sketch' : 'Solution', content: <div className="text-gray-600 dark:text-slate-300" dir={hDir(content_item.solution)}><LatexContent content={content_item.solution} /></div> }]
               : []),
           ];
 
@@ -535,7 +535,7 @@ function ViewModal({ item, onClose }: {
       <div ref={contentRef} className="text-sm">
         {/* Type + difficulty */}
         <div className="flex items-center gap-2 mb-4">
-          <span className={`text-xs px-2 py-0.5 rounded-full ${TYPE_COLOR[content_item.type] ?? 'bg-gray-100 text-gray-600'}`}>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${TYPE_COLOR[content_item.type] ?? 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'}`}>
             {TYPE_LABEL[content_item.type] ?? content_item.type}
           </span>
           {content_item.difficulty && (
@@ -566,13 +566,13 @@ function ViewModal({ item, onClose }: {
                         <div
                           key={s.label}
                           className={`flex items-start gap-3 p-3 rounded-lg border text-sm transition-colors ${
-                            isCorrect ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                            isCorrect ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-slate-700'
                           }`}
                         >
-                          <span className={`font-semibold shrink-0 ${isCorrect ? 'text-green-600' : 'text-gray-500'}`}>
+                          <span className={`font-semibold shrink-0 ${isCorrect ? 'text-green-600' : 'text-gray-500 dark:text-slate-400'}`}>
                             {letter}.
                           </span>
-                          <div className={`flex-1 ${isCorrect ? 'text-green-700' : 'text-gray-600'}`} dir={hDir(s.content)}>
+                          <div className={`flex-1 ${isCorrect ? 'text-green-700 dark:text-green-300' : 'text-gray-600 dark:text-slate-300'}`} dir={hDir(s.content)}>
                             <LatexContent content={s.content} />
                           </div>
                         </div>
@@ -583,7 +583,7 @@ function ViewModal({ item, onClose }: {
                     <button
                       type="button"
                       onClick={() => setShowSolution(true)}
-                      className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                      className="w-full py-2 border border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-500 dark:text-slate-400 hover:border-gray-400 dark:hover:border-slate-400 hover:text-gray-700 dark:hover:text-slate-200 transition-colors"
                     >
                       Show solution
                     </button>
@@ -593,9 +593,9 @@ function ViewModal({ item, onClose }: {
                         Correct answer{correctOpts.length > 1 ? 's' : ''}: {correctOpts.join(', ')}
                       </p>
                       {meta?.explanation && (
-                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                          <p className="text-xs font-semibold text-blue-700 mb-1">Explanation</p>
-                          <div className="text-sm text-blue-800" dir={hDir(meta.explanation)}>
+                        <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                          <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">Explanation</p>
+                          <div className="text-sm text-blue-800 dark:text-blue-200" dir={hDir(meta.explanation)}>
                             <LatexContent content={meta.explanation} />
                           </div>
                         </div>
@@ -610,12 +610,12 @@ function ViewModal({ item, onClose }: {
           <>
             {/* Section tabs */}
             {total > 1 && (
-              <div className="relative flex items-end mb-4 border-b border-gray-100">
+              <div className="relative flex items-end mb-4 border-b border-gray-100 dark:border-slate-800">
                 {canScrollLeft && (
                   <button
                     type="button"
                     onClick={() => scrollTabs(-1)}
-                    className="absolute left-0 bottom-0 z-10 h-full px-1.5 bg-gradient-to-r from-white from-60% to-transparent text-gray-400 hover:text-gray-700 transition-colors"
+                    className="absolute left-0 bottom-0 z-10 h-full px-1.5 bg-gradient-to-r from-white dark:from-slate-900 from-60% to-transparent text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 transition-colors"
                   >
                     ‹
                   </button>
@@ -632,8 +632,8 @@ function ViewModal({ item, onClose }: {
                       onClick={() => setPage(i)}
                       className={`text-xs px-3 py-1.5 rounded-t-md border-b-2 transition-colors whitespace-nowrap shrink-0 ${
                         i === page
-                          ? 'border-gray-900 text-gray-900 font-medium'
-                          : 'border-transparent text-gray-400 hover:text-gray-600'
+                          ? 'border-gray-900 dark:border-slate-100 text-gray-900 dark:text-slate-100 font-medium'
+                          : 'border-transparent text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
                       }`}
                     >
                       {s.label}
@@ -644,7 +644,7 @@ function ViewModal({ item, onClose }: {
                   <button
                     type="button"
                     onClick={() => scrollTabs(1)}
-                    className="absolute right-0 bottom-0 z-10 h-full px-1.5 bg-gradient-to-l from-white from-60% to-transparent text-gray-400 hover:text-gray-700 transition-colors"
+                    className="absolute right-0 bottom-0 z-10 h-full px-1.5 bg-gradient-to-l from-white dark:from-slate-900 from-60% to-transparent text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 transition-colors"
                   >
                     ›
                   </button>
@@ -656,7 +656,7 @@ function ViewModal({ item, onClose }: {
             {total > 0 && (
               <div className="min-h-[120px]">
                 {total === 1 && (
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-2">
+                  <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide block mb-2">
                     {current.label}
                   </span>
                 )}
@@ -666,23 +666,23 @@ function ViewModal({ item, onClose }: {
 
             {/* Pagination nav */}
             {total > 1 && (
-              <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-3">
+              <div className="mt-6 flex items-center justify-between border-t border-gray-100 dark:border-slate-800 pt-3">
                 <button
                   type="button"
                   onClick={() => setPage((p) => p - 1)}
                   disabled={page === 0}
-                  className="text-xs px-3 py-1.5 border border-gray-200 rounded-md text-gray-500 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="text-xs px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-md text-gray-500 dark:text-slate-400 hover:border-gray-400 dark:hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   ← Back
                 </button>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-400 dark:text-slate-500">
                   {page + 1} / {total}
                 </span>
                 <button
                   type="button"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page === total - 1}
-                  className="text-xs px-3 py-1.5 border border-gray-200 rounded-md text-gray-500 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="text-xs px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-md text-gray-500 dark:text-slate-400 hover:border-gray-400 dark:hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   Next →
                 </button>
@@ -694,7 +694,7 @@ function ViewModal({ item, onClose }: {
         {content_item.tags.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-1">
             {content_item.tags.map((tag) => (
-              <span key={tag} className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+              <span key={tag} className="text-xs bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 px-1.5 py-0.5 rounded">
                 {tag}
               </span>
             ))}
@@ -753,7 +753,7 @@ export function ContentItemCard({
   return (
     <>
       <div
-        className="bg-white border border-gray-200 rounded-lg hover:shadow-sm hover:border-gray-300 transition-all flex flex-col overflow-hidden"
+        className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg hover:shadow-sm hover:border-gray-300 dark:hover:border-slate-600 transition-all flex flex-col overflow-hidden"
       >
         <div className="h-1" style={{ backgroundColor: stripColor }} />
         {/* Clickable area */}
@@ -762,11 +762,11 @@ export function ContentItemCard({
           onClick={() => setShowView(true)}
           className="text-start px-4 pt-4 pb-3 flex flex-col gap-2 flex-1"
         >
-          <span className="font-semibold text-gray-900 text-base leading-snug" dir={hDir(content_item.title)}>
+          <span className="font-semibold text-gray-900 dark:text-slate-100 text-base leading-snug" dir={hDir(content_item.title)}>
             <LatexContent content={content_item.title} />
           </span>
           {topicName && (
-            <span className="text-xs text-gray-400" dir={hDir(topicName)}>{topicName}</span>
+            <span className="text-xs text-gray-400 dark:text-slate-500" dir={hDir(topicName)}>{topicName}</span>
           )}
           <div className="flex items-end justify-between gap-2 mt-auto">
             <div className="flex items-center gap-1.5">
@@ -782,7 +782,7 @@ export function ContentItemCard({
             {content_item.tags.length > 0 && (
               <div className="flex flex-wrap justify-end gap-1">
                 {content_item.tags.map((tag) => (
-                  <span key={tag} className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                  <span key={tag} className="text-xs bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 px-1.5 py-0.5 rounded">
                     {tag}
                   </span>
                 ))}
@@ -798,7 +798,7 @@ export function ContentItemCard({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setShowEdit(true); }}
-                className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-200 transition-colors"
               >
                 Edit
               </button>
@@ -808,7 +808,7 @@ export function ContentItemCard({
                 type="button"
                 onClick={handleDelete}
                 disabled={deleteContent.isPending}
-                className="text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
+                className="text-xs text-gray-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-40"
               >
                 {deleteContent.isPending ? 'Removing...' : 'Remove'}
               </button>

@@ -22,7 +22,7 @@ const SEMESTER_LABEL: Record<string, string> = {
   'א': 'Semester A', 'ב': 'Semester B', 'קיץ': 'Summer',
 };
 
-const INPUT_CLS = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900';
+const INPUT_CLS = 'w-full border border-gray-300 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:bg-slate-800 dark:text-slate-100';
 
 function EditVersionModal({ version, onClose }: { version: CourseVersion; onClose: () => void }) {
   const updateVersion = useUpdateVersion();
@@ -62,16 +62,16 @@ function EditVersionModal({ version, onClose }: { version: CourseVersion; onClos
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Institution</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Institution</label>
             <input autoFocus type="text" value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="e.g. HUJI" className={INPUT_CLS} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Year</label>
             <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="2025" min={2000} max={2100} className={INPUT_CLS} />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Semester</label>
           <select value={semester} onChange={(e) => setSemester(e.target.value)} className={INPUT_CLS}>
             <option value="">—</option>
             <option value="A">Semester A</option>
@@ -81,20 +81,20 @@ function EditVersionModal({ version, onClose }: { version: CourseVersion; onClos
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Lecturer</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Lecturer</label>
             <input type="text" value={lecturerName} onChange={(e) => setLecturerName(e.target.value)} placeholder="e.g. Prof. Cohen" className={INPUT_CLS} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Course Number</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Course Number</label>
             <input type="text" value={courseNumber} onChange={(e) => setCourseNumber(e.target.value)} placeholder="e.g. 67101" className={INPUT_CLS} />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Description</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Optional" dir="auto" className={`${INPUT_CLS} resize-none`} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Visibility</label>
           <select value={visibility} onChange={(e) => setVisibility(e.target.value as 'public' | 'private')} className={INPUT_CLS}>
             <option value="public">Public</option>
             <option value="private">Private</option>
@@ -102,7 +102,7 @@ function EditVersionModal({ version, onClose }: { version: CourseVersion; onClos
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onClose} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">Cancel</button>
+          <button type="button" onClick={onClose} className="text-sm px-4 py-2 border border-gray-300 dark:border-slate-600 dark:text-slate-300 rounded-md hover:border-gray-500 dark:hover:border-slate-400">Cancel</button>
           <button type="submit" disabled={updateVersion.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
             {updateVersion.isPending ? 'Saving...' : 'Save'}
           </button>
@@ -120,10 +120,10 @@ function ProgressBar({ versionId, userId }: { versionId: string; userId: string 
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs text-gray-500">Course progress</span>
-        <span className="text-sm font-bold text-gray-900">{pct}%</span>
+        <span className="text-xs text-gray-500 dark:text-slate-400">Course progress</span>
+        <span className="text-sm font-bold text-gray-900 dark:text-white">{pct}%</span>
       </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-2 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
         <div className="h-full bg-[#1e3a8a] rounded-full transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -214,9 +214,9 @@ function ManageTopicsModal({
                 onDragStart={() => handleDragStart(i)}
                 onDragOver={(e) => handleDragOver(e, i)}
                 onDrop={handleDrop}
-                className="flex items-center gap-2 py-1.5 border-b border-gray-100 last:border-0 cursor-grab active:cursor-grabbing select-none"
+                className="flex items-center gap-2 py-1.5 border-b border-gray-100 dark:border-slate-800 last:border-0 cursor-grab active:cursor-grabbing select-none"
               >
-                <span className="text-gray-300 text-sm">⠿</span>
+                <span className="text-gray-300 dark:text-slate-600 text-sm">⠿</span>
                 {editingId === t.id ? (
                   <input
                     autoFocus
@@ -225,11 +225,11 @@ function ManageTopicsModal({
                     onBlur={() => handleRename(t.id)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleRename(t.id); } if (e.key === 'Escape') setEditingId(null); }}
                     dir="auto"
-                    className="flex-1 text-sm border border-gray-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-text select-text"
+                    className="flex-1 text-sm border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-text select-text"
                   />
                 ) : (
                   <span
-                    className="text-sm text-gray-700 flex-1"
+                    className="text-sm text-gray-700 dark:text-slate-300 flex-1"
                     onDoubleClick={() => { setEditingId(t.id); setEditingTitle(t.title); }}
                     title="Double-click to rename"
                   >{t.title}</span>
@@ -237,7 +237,7 @@ function ManageTopicsModal({
                 <button
                   onClick={() => deleteTopic.mutate(t.id)}
                   disabled={deleteTopic.isPending}
-                  className="text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
+                  className="text-xs text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors disabled:opacity-40"
                 >
                   Remove
                 </button>
@@ -245,9 +245,9 @@ function ManageTopicsModal({
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-gray-400">No topics yet.</p>
+          <p className="text-sm text-gray-400 dark:text-slate-500">No topics yet.</p>
         )}
-        <form onSubmit={handleAdd} className="flex gap-2 pt-2 border-t border-gray-100">
+        <form onSubmit={handleAdd} className="flex gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
           <input
             autoFocus
             type="text"
@@ -255,7 +255,7 @@ function ManageTopicsModal({
             onChange={(e) => setTitle(e.target.value)}
             placeholder="New topic title..."
             dir="auto"
-            className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="flex-1 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
           />
           <button
             type="submit"
@@ -383,9 +383,9 @@ function ManageTypesModal({
               onDragStart={() => handleDragStart(i)}
               onDragOver={(e) => handleDragOver(e, i)}
               onDrop={handleDrop}
-              className="flex items-center gap-2 py-1.5 border-b border-gray-100 last:border-0 cursor-grab active:cursor-grabbing select-none"
+              className="flex items-center gap-2 py-1.5 border-b border-gray-100 dark:border-slate-800 last:border-0 cursor-grab active:cursor-grabbing select-none"
             >
-              <span className="text-gray-300 text-sm">⠿</span>
+              <span className="text-gray-300 dark:text-slate-600 text-sm">⠿</span>
               {editingValue === t.value ? (
                 <input
                   autoFocus
@@ -393,22 +393,22 @@ function ManageTypesModal({
                   onChange={(e) => setEditingLabel(e.target.value)}
                   onBlur={() => handleRename(t.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleRename(t.value); } if (e.key === 'Escape') setEditingValue(null); }}
-                  className="flex-1 text-sm border border-gray-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-text select-text"
+                  className="flex-1 text-sm border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-text select-text"
                 />
               ) : (
                 <span
-                  className="text-sm text-gray-700 flex-1"
+                  className="text-sm text-gray-700 dark:text-slate-300 flex-1"
                   onDoubleClick={() => !PROTECTED_TYPES.has(t.value) && startEdit(t)}
                   title={PROTECTED_TYPES.has(t.value) ? undefined : 'Double-click to rename'}
                 >{t.label}</span>
               )}
               {PROTECTED_TYPES.has(t.value) ? (
-                <span className="text-xs text-gray-300">protected</span>
+                <span className="text-xs text-gray-300 dark:text-slate-600">protected</span>
               ) : (
                 <button
                   onClick={() => handleRemove(t.value)}
                   disabled={updateVersion.isPending}
-                  className="text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
+                  className="text-xs text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors disabled:opacity-40"
                 >
                   Remove
                 </button>
@@ -416,7 +416,7 @@ function ManageTypesModal({
             </li>
           ))}
         </ul>
-        <form onSubmit={handleAdd} className="flex gap-2 pt-2 border-t border-gray-100">
+        <form onSubmit={handleAdd} className="flex gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
           <input
             autoFocus
             type="text"
@@ -424,7 +424,7 @@ function ManageTypesModal({
             onChange={(e) => setLabel(e.target.value)}
             placeholder="New type label..."
             dir="auto"
-            className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="flex-1 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
           />
           <button
             type="submit"
@@ -648,13 +648,13 @@ function AddContentModal({
     }
   };
 
-  const INPUT_CLS = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900';
+  const INPUT_CLS = 'w-full border border-gray-300 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:bg-slate-800 dark:text-slate-100';
 
   return (
     <Modal title="Add Content Item" onClose={onClose} className="max-w-2xl">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Type *</label>
           <select value={type} onChange={(e) => setType(e.target.value)} className={INPUT_CLS}>
             {activeTypes.map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -664,14 +664,14 @@ function AddContentModal({
 
         {isQuestion && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Question Format *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Question Format *</label>
             <div className="flex gap-2 flex-wrap">
               {formatOptions.map((f) => (
                 <button
                   key={f.value}
                   type="button"
                   onClick={() => setQuestionFormat(f.value)}
-                  className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${questionFormat === f.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
+                  className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${questionFormat === f.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-gray-500 dark:hover:border-slate-400'}`}
                 >
                   {f.label}
                 </button>
@@ -681,7 +681,7 @@ function AddContentModal({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
             {isAlgorithm ? 'Algorithm Name *' : 'Title *'}
           </label>
           <input
@@ -697,7 +697,7 @@ function AddContentModal({
 
         {topics.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Topic</label>
             <select value={topicId} onChange={(e) => setTopicId(e.target.value)} className={INPUT_CLS}>
               <option value="">No topic</option>
               {topics.map((t) => (
@@ -708,15 +708,15 @@ function AddContentModal({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Sections</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Sections</label>
           <div className="space-y-3">
             {sections.map((sec, i) => (
-              <div key={i} className="border border-gray-200 rounded-md p-3 space-y-2">
+              <div key={i} className="border border-gray-200 dark:border-slate-700 rounded-md p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   {!isMultipleChoice && (
                     <div className="flex flex-col gap-0.5 shrink-0">
-                      <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▲</button>
-                      <button type="button" onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none">▼</button>
+                      <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} className="text-gray-300 dark:text-slate-600 hover:text-gray-600 dark:hover:text-slate-300 disabled:opacity-20 leading-none">▲</button>
+                      <button type="button" onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} className="text-gray-300 dark:text-slate-600 hover:text-gray-600 dark:hover:text-slate-300 disabled:opacity-20 leading-none">▼</button>
                     </div>
                   )}
                   <input
@@ -726,10 +726,10 @@ function AddContentModal({
                     placeholder="Section name"
                     dir="auto"
                     readOnly={isMultipleChoice}
-                    className={`flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 ${isMultipleChoice ? 'bg-gray-50 text-gray-500 cursor-default' : ''}`}
+                    className={`flex-1 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 ${isMultipleChoice ? 'bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-slate-400 cursor-default' : ''}`}
                   />
                   {(!isMultipleChoice || i > 0) && (
-                    <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 hover:text-red-500 shrink-0">
+                    <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 dark:text-slate-500 hover:text-red-500 shrink-0">
                       Remove
                     </button>
                   )}
@@ -738,7 +738,7 @@ function AddContentModal({
                 <div className="flex flex-wrap gap-2 pt-1">
                   {sec.imageFiles.map((f, fi) => (
                     <div key={fi} className="relative group w-16 h-16 shrink-0">
-                      <img src={URL.createObjectURL(f)} alt="" className="w-16 h-16 object-cover rounded border border-gray-200" />
+                      <img src={URL.createObjectURL(f)} alt="" className="w-16 h-16 object-cover rounded border border-gray-200 dark:border-slate-700" />
                       <button
                         type="button"
                         onClick={() => removeImageFile(i, fi)}
@@ -751,7 +751,7 @@ function AddContentModal({
                       type="button"
                       onClick={() => triggerImageUpload(i)}
                       disabled={uploadingIdx === i}
-                      className="w-16 h-16 border-2 border-dashed border-gray-300 rounded text-gray-400 hover:border-gray-400 hover:text-gray-600 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors disabled:opacity-50"
+                      className="w-16 h-16 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded text-gray-400 dark:text-slate-500 hover:border-gray-400 dark:hover:border-slate-400 hover:text-gray-600 dark:hover:text-slate-300 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors disabled:opacity-50"
                     >
                       {uploadingIdx === i ? '...' : <><span className="text-lg leading-none">+</span><span>Image</span></>}
                     </button>
@@ -761,12 +761,12 @@ function AddContentModal({
             ))}
             <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
             {isMultipleChoice && (
-              <button type="button" onClick={addMCQOption} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
+              <button type="button" onClick={addMCQOption} className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 border border-gray-300 dark:border-slate-600 rounded px-2 py-0.5 hover:border-gray-500 dark:hover:border-slate-400">
                 + Add Option
               </button>
             )}
             {!isMultipleChoice && (
-              <button type="button" onClick={addSection} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500">
+              <button type="button" onClick={addSection} className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 border border-gray-300 dark:border-slate-600 rounded px-2 py-0.5 hover:border-gray-500 dark:hover:border-slate-400">
                 + Add Section
               </button>
             )}
@@ -775,14 +775,14 @@ function AddContentModal({
 
         {isMultipleChoice && availableOptions.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Correct Answer *</label>
             <div className="flex gap-2 flex-wrap">
               {availableOptions.map((opt) => (
                 <button
                   key={opt}
                   type="button"
                   onClick={() => setCorrectOptions((prev) => prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt])}
-                  className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${correctOptions.includes(opt) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 text-gray-600 hover:border-gray-500'}`}
+                  className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${correctOptions.includes(opt) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-gray-500 dark:hover:border-slate-400'}`}
                 >
                   {opt}
                 </button>
@@ -793,13 +793,13 @@ function AddContentModal({
 
         {isMultipleChoice && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Explanation (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Explanation (optional)</label>
             <LatexEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain why the answer is correct..." />
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Tags</label>
           <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="induction, graphs, BFS (comma-separated)" dir="auto" className={INPUT_CLS} />
         </div>
 
@@ -813,13 +813,13 @@ function AddContentModal({
                 setSavedDefault(true);
                 setTimeout(() => setSavedDefault(false), 2000);
               }}
-              className={`text-xs border rounded-md px-3 py-1.5 transition-colors ${savedDefault ? 'border-green-300 text-green-600 bg-green-50' : 'border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-400'}`}
+              className={`text-xs border rounded-md px-3 py-1.5 transition-colors ${savedDefault ? 'border-green-300 text-green-600 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-slate-700 text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-400 dark:hover:border-slate-500'}`}
             >
               {savedDefault ? '✓ Saved as default' : 'Save sections as default for this type'}
             </button>
           )}
           <div className="flex gap-2 ml-auto">
-            <button type="button" onClick={onClose} className="text-sm px-4 py-2 border border-gray-300 rounded-md hover:border-gray-500">
+            <button type="button" onClick={onClose} className="text-sm px-4 py-2 border border-gray-300 dark:border-slate-600 dark:text-slate-300 rounded-md hover:border-gray-500 dark:hover:border-slate-400">
               Cancel
             </button>
             <button type="submit" disabled={createContent.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
@@ -836,9 +836,9 @@ function VersionAuthor({ authorId }: { authorId: string }) {
   const { data: author } = useUserProfileById(authorId);
   if (!author) return null;
   return (
-    <p className="mt-2 text-xs text-gray-400">
+    <p className="mt-2 text-xs text-gray-400 dark:text-slate-500">
       by{' '}
-      <Link href={`/profile/${author.username}`} className="hover:text-gray-600 underline underline-offset-2">
+      <Link href={`/profile/${author.username}`} className="hover:text-gray-600 dark:hover:text-slate-300 underline underline-offset-2">
         {author.display_name ?? author.username}
       </Link>
     </p>
@@ -918,27 +918,27 @@ export default function VersionPage({
     return sortDir === 'desc' ? -cmp : cmp;
   });
 
-  if (versionLoading) return <div className="text-sm text-gray-400">Loading...</div>;
+  if (versionLoading) return <div className="text-sm text-gray-400 dark:text-slate-500">Loading...</div>;
   if (!version) return <div className="text-sm text-red-500">Version not found.</div>;
 
   return (
     <div>
       {/* Breadcrumb */}
-      <div className="text-sm text-gray-400 mb-5">
-        <Link href="/" className="hover:text-gray-600">Home</Link>
+      <div className="text-sm text-gray-400 dark:text-slate-500 mb-5">
+        <Link href="/" className="hover:text-gray-600 dark:hover:text-slate-300">Home</Link>
         <span className="mx-2">/</span>
-        <Link href={`/courses/${courseId}`} className="hover:text-gray-600">{course?.title ?? 'Course'}</Link>
+        <Link href={`/courses/${courseId}`} className="hover:text-gray-600 dark:hover:text-slate-300">{course?.title ?? 'Course'}</Link>
         <span className="mx-2">/</span>
         <span>{[version.institution, version.year].filter(Boolean).join(' · ') || version.title}</span>
       </div>
 
       {/* Header + Tab bar card */}
-      <div className="mb-6 border border-gray-200 rounded-xl bg-white shadow-sm">
+      <div className="mb-6 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 shadow-sm">
         {/* Header */}
         <div className="px-6 pt-6 pb-5 relative">
           <div className="flex items-start gap-5">
             {/* Course icon */}
-            <div className="shrink-0 w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-500">
+            <div className="shrink-0 w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-gray-500 dark:text-slate-400">
               <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="4 17 10 11 4 5" />
                 <line x1="12" y1="19" x2="20" y2="19" />
@@ -947,21 +947,21 @@ export default function VersionPage({
 
             {/* Title, meta, stats */}
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-gray-400 mb-1">
+              <p className="text-sm text-gray-400 dark:text-slate-500 mb-1">
                 {[
                   version.institution,
                   version.year,
                   version.semester ? (SEMESTER_LABEL[version.semester] ?? `Semester ${version.semester}`) : null,
                 ].filter(Boolean).join(' · ')}
               </p>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2.5">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2.5">
                 {course?.title ?? version.title}
               </h1>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-slate-400">
                 {items && items.length > 0 && (
-                  <span className="text-sm text-gray-500">{items.length} items</span>
+                  <span className="text-sm text-gray-500 dark:text-slate-400">{items.length} items</span>
                 )}
-                <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${version.visibility === 'public' ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500'}`}>
+                <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${version.visibility === 'public' ? 'border-green-200 bg-green-50 dark:bg-green-900/20 text-green-700' : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400'}`}>
                   {version.visibility === 'public' ? 'Public' : 'Private'}
                 </span>
                 {version.is_recommended && (
@@ -971,7 +971,7 @@ export default function VersionPage({
                 )}
               </div>
               {(version.course_number || version.lecturer_name || version.description) && (
-                <p className="text-gray-500 text-sm whitespace-pre-wrap mt-2">
+                <p className="text-gray-500 dark:text-slate-400 text-sm whitespace-pre-wrap mt-2">
                   {[
                     version.course_number ?? null,
                     version.lecturer_name ? `Lectures by ${version.lecturer_name}` : null,
@@ -1005,12 +1005,12 @@ export default function VersionPage({
         </div>
 
         {/* Tab bar */}
-        <div className="border-t border-gray-100 flex items-center justify-between px-3">
+        <div className="border-t border-gray-100 dark:border-slate-800 flex items-center justify-between px-3">
           {/* Topic tabs */}
           <div className="flex flex-wrap">
             <button
               onClick={() => setSelectedTopic('')}
-              className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 -mb-px transition-colors ${selectedTopic === '' ? 'border-gray-900 text-gray-900 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 -mb-px transition-colors ${selectedTopic === '' ? 'border-gray-900 dark:border-slate-100 text-gray-900 dark:text-white font-medium' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300'}`}
             >
               All
             </button>
@@ -1018,7 +1018,7 @@ export default function VersionPage({
               <button
                 key={t.id}
                 onClick={() => setSelectedTopic(t.id)}
-                className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 -mb-px transition-colors ${selectedTopic === t.id ? 'border-gray-900 text-gray-900 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 -mb-px transition-colors ${selectedTopic === t.id ? 'border-gray-900 dark:border-slate-100 text-gray-900 dark:text-white font-medium' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300'}`}
               >
                 {t.title}
               </button>
@@ -1031,17 +1031,17 @@ export default function VersionPage({
               <>
                 <button
                   onClick={() => setShowAddContent(true)}
-                  className="text-sm text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap flex items-center gap-1"
+                  className="text-sm text-gray-600 dark:text-slate-300 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors whitespace-nowrap flex items-center gap-1"
                 >
                   <span className="text-base leading-none">+</span> Add Content
                 </button>
-                <div className="w-px h-4 bg-gray-200 mx-0.5" />
+                <div className="w-px h-4 bg-gray-200 dark:bg-slate-700 mx-0.5" />
               </>
             )}
             <button
               onClick={() => setViewMode('grid')}
               title="Grid view"
-              className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:bg-gray-100'}`}
+              className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
@@ -1051,7 +1051,7 @@ export default function VersionPage({
             <button
               onClick={() => setViewMode('list')}
               title="List view"
-              className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:bg-gray-100'}`}
+              className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
@@ -1059,12 +1059,12 @@ export default function VersionPage({
             </button>
             {isAuthor && (
               <>
-                <div className="w-px h-4 bg-gray-200 mx-0.5" />
+                <div className="w-px h-4 bg-gray-200 dark:bg-slate-700 mx-0.5" />
                 <div className="relative">
                   <button
                     onClick={() => setShowSettingsMenu((v) => !v)}
                     title="Settings"
-                    className={`p-1.5 rounded-lg transition-colors ${showSettingsMenu ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:bg-gray-100'}`}
+                    className={`p-1.5 rounded-lg transition-colors ${showSettingsMenu ? 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.92c.04-.34.07-.69.07-1.08s-.03-.73-.07-1.08l2.34-1.84c.2-.16.26-.46.13-.7l-2.22-3.86c-.12-.22-.39-.3-.61-.22l-2.77 1.12c-.57-.44-1.18-.81-1.86-1.09l-.42-2.95A.488.488 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.42 2.95c-.68.28-1.29.65-1.86 1.09L4.46 5.34c-.22-.08-.49 0-.61.22L1.63 9.42c-.13.24-.07.54.13.7l2.34 1.84c-.04.35-.07.7-.07 1.08s.03.73.07 1.08l-2.34 1.84c-.2.16-.26.46-.13.7l2.22 3.86c.12.22.39.3.61.22l2.77-1.12c.57.44 1.18.81 1.86 1.09l.42 2.95c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.42-2.95c.68-.28 1.29-.65 1.86-1.09l2.77 1.12c.22.08.49 0 .61-.22l2.22-3.86c.13-.24.07-.54-.13-.7l-2.34-1.84z" />
@@ -1073,26 +1073,26 @@ export default function VersionPage({
                   {showSettingsMenu && (
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setShowSettingsMenu(false)} />
-                      <div className="absolute right-0 top-full mt-1 z-20 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 text-sm">
+                      <div className="absolute right-0 top-full mt-1 z-20 w-48 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 text-sm">
                         <button
                           onClick={() => { setShowEditVersion(true); setShowSettingsMenu(false); }}
-                          className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="w-full text-left px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                         >
                           Edit version
                         </button>
                         <button
                           onClick={() => { setShowManageTopics(true); setShowSettingsMenu(false); }}
-                          className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="w-full text-left px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                         >
                           Manage topics
                         </button>
                         <button
                           onClick={() => { setShowManageTypes(true); setShowSettingsMenu(false); }}
-                          className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="w-full text-left px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                         >
                           Manage content types
                         </button>
-                        <div className="my-1 border-t border-gray-100" />
+                        <div className="my-1 border-t border-gray-100 dark:border-slate-800" />
                         <button
                           onClick={async () => {
                             setShowSettingsMenu(false);
@@ -1120,18 +1120,18 @@ export default function VersionPage({
         {/* Type + tag filters */}
         <div className="flex flex-wrap items-center gap-2 mb-5">
           {[{ value: '', label: 'All' }, ...getActiveTypes(version)].map((t) => (
-            <button key={t.value} onClick={() => { setSelectedType(t.value); setShowDrive(false); }} className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${!showDrive && selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+            <button key={t.value} onClick={() => { setSelectedType(t.value); setShowDrive(false); }} className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${!showDrive && selectedType === t.value ? 'bg-gray-900 text-white border-gray-900' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:border-gray-400 dark:hover:border-slate-500'}`}>
               {t.label}
             </button>
           ))}
           {allTags.length > 0 && (
             <>
-              <span className="text-gray-200 self-center">|</span>
+              <span className="text-gray-200 dark:text-slate-700 self-center">|</span>
               {allTags.map((tag) => (
                 <button
                   key={tag}
                   onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
-                  className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${selectedTag === tag ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-400'}`}
+                  className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${selectedTag === tag ? 'bg-gray-900 text-white border-gray-900' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400 dark:hover:border-slate-500'}`}
                 >
                   {tag}
                 </button>
@@ -1141,7 +1141,7 @@ export default function VersionPage({
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => setShowDrive(true)}
-              className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${showDrive ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${showDrive ? 'bg-gray-900 text-white border-gray-900' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:border-gray-400 dark:hover:border-slate-500'}`}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
@@ -1149,7 +1149,7 @@ export default function VersionPage({
               Study Materials
             </button>
             <div className="relative">
-              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
               <input
@@ -1157,14 +1157,14 @@ export default function VersionPage({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search..."
-                className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white w-40"
+                className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white dark:bg-slate-900 dark:text-slate-100 w-40"
               />
             </div>
             <div className="relative">
             <button
               onClick={() => setShowSortMenu((v) => !v)}
               title="Sort"
-              className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 text-xs px-2.5 ${showSortMenu || sortBy !== 'default' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}
+              className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 text-xs px-2.5 ${showSortMenu || sortBy !== 'default' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:border-gray-400 dark:hover:border-slate-500'}`}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6" /><line x1="6" y1="12" x2="18" y2="12" /><line x1="9" y1="18" x2="15" y2="18" />
@@ -1183,7 +1183,7 @@ export default function VersionPage({
             {showSortMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
-                <div className="absolute right-0 top-full mt-1 z-20 w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-1 text-sm">
+                <div className="absolute right-0 top-full mt-1 z-20 w-40 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 text-sm">
                   {([['default', 'Date added'], ['type', 'Type'], ['alpha', 'A–Z']] as const).map(([val, lbl]) => (
                     <button
                       key={val}
@@ -1196,16 +1196,16 @@ export default function VersionPage({
                         }
                         setShowSortMenu(false);
                       }}
-                      className={`w-full text-left px-4 py-2 transition-colors flex items-center justify-between ${sortBy === val ? 'text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+                      className={`w-full text-left px-4 py-2 transition-colors flex items-center justify-between ${sortBy === val ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
                     >
                       {lbl}
                       {sortBy === val && (
                         sortDir === 'asc' ? (
-                          <svg className="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <svg className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" />
                           </svg>
                         ) : (
-                          <svg className="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <svg className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" />
                           </svg>
                         )
@@ -1223,12 +1223,12 @@ export default function VersionPage({
           <VersionDrive versionId={versionId} isAuthor={isAuthor} />
         ) : (
           <>
-            {itemsLoading && <div className="text-sm text-gray-400">Loading content...</div>}
+            {itemsLoading && <div className="text-sm text-gray-400 dark:text-slate-500">Loading content...</div>}
             {!itemsLoading && visibleItems.length === 0 && (
-              <div className="text-center py-16 text-gray-400">
+              <div className="text-center py-16 text-gray-400 dark:text-slate-500">
                 <p className="text-sm">No content items yet.</p>
                 {isAuthor && (
-                  <button onClick={() => setShowAddContent(true)} className="mt-2 text-sm text-gray-600 hover:text-gray-900 underline underline-offset-2">
+                  <button onClick={() => setShowAddContent(true)} className="mt-2 text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white underline underline-offset-2">
                     Add the first item
                   </button>
                 )}

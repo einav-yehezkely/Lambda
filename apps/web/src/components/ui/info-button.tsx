@@ -32,18 +32,18 @@ function InfoIcon() {
 
 function LangToggle({ lang, onChange }: { lang: Lang; onChange: (l: Lang) => void }) {
   return (
-    <div className="flex items-center rounded-md border border-slate-200 overflow-hidden text-xs font-medium">
+    <div className="flex items-center rounded-md border border-slate-200 dark:border-slate-700 overflow-hidden text-xs font-medium">
       <button
         type="button"
         onClick={() => onChange('en')}
-        className={`px-2.5 py-1 transition-colors ${lang === 'en' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+        className={`px-2.5 py-1 transition-colors ${lang === 'en' ? 'bg-slate-800 dark:bg-slate-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
       >
         EN
       </button>
       <button
         type="button"
         onClick={() => onChange('he')}
-        className={`px-2.5 py-1 transition-colors ${lang === 'he' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+        className={`px-2.5 py-1 transition-colors ${lang === 'he' ? 'bg-slate-800 dark:bg-slate-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
       >
         HE
       </button>
@@ -110,11 +110,11 @@ export function InfoButton({ isAdmin }: { isAdmin: boolean }) {
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
-            <h2 className="text-base font-semibold text-slate-900">About Lambda</h2>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">About Lambda</h2>
             {!editing && <LangToggle lang={lang} onChange={setLang} />}
           </div>
           <div className="flex items-center gap-3">
@@ -140,7 +140,7 @@ export function InfoButton({ isAdmin }: { isAdmin: boolean }) {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="text-xs font-medium text-slate-600 hover:text-slate-900"
+                  className="text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                 >
                   Cancel
                 </button>
@@ -149,7 +149,7 @@ export function InfoButton({ isAdmin }: { isAdmin: boolean }) {
             <button
               type="button"
               onClick={handleClose}
-              className="text-slate-300 hover:text-slate-600 transition-colors text-xl leading-none"
+              className="text-slate-300 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-xl leading-none"
               aria-label="Close"
             >
               ×
@@ -162,14 +162,14 @@ export function InfoButton({ isAdmin }: { isAdmin: boolean }) {
           {editing ? (
             <div className="space-y-3">
               {sections.map((s, i) => (
-                <div key={s.id} className="border border-slate-200 rounded-lg p-3 space-y-3 bg-slate-50">
+                <div key={s.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-3 bg-slate-50 dark:bg-slate-800">
                   {/* Section header row */}
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Section {i + 1}</span>
+                    <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide">Section {i + 1}</span>
                     <button
                       type="button"
                       onClick={() => removeSection(s.id)}
-                      className="text-slate-300 hover:text-red-500 transition-colors text-xl leading-none"
+                      className="text-slate-300 dark:text-slate-600 hover:text-red-500 transition-colors text-xl leading-none"
                       aria-label="Remove section"
                     >
                       ×
@@ -178,33 +178,33 @@ export function InfoButton({ isAdmin }: { isAdmin: boolean }) {
 
                   {/* EN fields */}
                   <div className="space-y-1.5">
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">EN</span>
+                    <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">EN</span>
                     <input
                       type="text"
                       value={s.title.en}
                       onChange={(e) => updateSection(s.id, 'title', 'en', e.target.value)}
                       placeholder="Title (English)"
-                      className="w-full border border-slate-300 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                     />
                     <textarea
                       value={s.body.en}
                       onChange={(e) => updateSection(s.id, 'body', 'en', e.target.value)}
                       placeholder="Content (English)"
                       rows={2}
-                      className="w-full border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
+                      className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                     />
                   </div>
 
                   {/* HE fields */}
                   <div className="space-y-1.5">
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">HE</span>
+                    <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">HE</span>
                     <input
                       type="text"
                       value={s.title.he}
                       onChange={(e) => updateSection(s.id, 'title', 'he', e.target.value)}
                       placeholder="כותרת (עברית)"
                       dir="rtl"
-                      className="w-full border border-slate-300 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                     />
                     <textarea
                       value={s.body.he}
@@ -212,7 +212,7 @@ export function InfoButton({ isAdmin }: { isAdmin: boolean }) {
                       placeholder="תוכן (עברית)"
                       dir="rtl"
                       rows={2}
-                      className="w-full border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
+                      className="w-full border border-slate-300 dark:border-slate-600 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                     />
                   </div>
                 </div>
@@ -220,21 +220,21 @@ export function InfoButton({ isAdmin }: { isAdmin: boolean }) {
               <button
                 type="button"
                 onClick={addSection}
-                className="w-full py-2 border-2 border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                className="w-full py-2 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:border-blue-400 hover:text-blue-600 transition-colors"
               >
                 + Add section
               </button>
             </div>
           ) : viewSections.length === 0 ? (
-            <p className="text-sm text-slate-400 italic">No content yet</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 italic">No content yet</p>
           ) : (
             <div className={`space-y-5 ${lang === 'he' ? 'text-right' : ''}`} dir={lang === 'he' ? 'rtl' : 'ltr'}>
               {viewSections.map((s) => (
                 <div key={s.id}>
                   {s.title?.[lang] && (
-                    <h3 className="text-sm font-semibold text-slate-800 mb-1">{s.title[lang]}</h3>
+                    <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">{s.title[lang]}</h3>
                   )}
-                  <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                     {s.body?.[lang]}
                   </p>
                 </div>
@@ -251,7 +251,7 @@ export function InfoButton({ isAdmin }: { isAdmin: boolean }) {
       <button
         type="button"
         onClick={handleOpen}
-        className="p-1.5 text-slate-500 hover:text-slate-800 transition-colors"
+        className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
         aria-label="Site info"
       >
         <InfoIcon />

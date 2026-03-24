@@ -34,8 +34,8 @@ export function SuggestionBox() {
   };
 
   return (
-    <div className="glass-card rounded-xl border border-slate-200 p-4 mt-4">
-      <h2 className="text-sm font-bold text-slate-900 mb-1">Suggest an Improvement</h2>
+    <div className="glass-card rounded-xl border border-slate-200 dark:border-slate-700 p-4 mt-4">
+      <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">Suggest an Improvement</h2>
       <p className="text-[11px] text-slate-400 mb-3">
         Have an idea that could make the site better? We'd love to hear it.
       </p>
@@ -52,7 +52,7 @@ export function SuggestionBox() {
             placeholder="Write your idea here..."
             rows={3}
             dir="auto"
-            className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] resize-none bg-white text-slate-800 placeholder:text-slate-300"
+            className="w-full text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] resize-none bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600"
           />
           {status === 'error' && (
             <p className="text-[10px] text-red-500">Failed to send. Please try again.</p>

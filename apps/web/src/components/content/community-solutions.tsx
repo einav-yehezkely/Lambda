@@ -27,8 +27,8 @@ function AuthorAvatar({ solution }: { solution: Solution }) {
       className="rounded-full object-cover shrink-0"
     />
   ) : (
-    <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
-      <span className="text-[10px] font-bold text-gray-500">
+    <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center shrink-0">
+      <span className="text-[10px] font-bold text-gray-500 dark:text-slate-400">
         {(author.display_name ?? author.username)[0].toUpperCase()}
       </span>
     </div>
@@ -69,7 +69,7 @@ function SolutionRow({
   };
 
   return (
-    <div className="border border-gray-100 rounded-lg p-4">
+    <div className="border border-gray-100 dark:border-slate-800 rounded-lg p-4">
       {/* Author + meta */}
       <div className="flex items-center gap-2 mb-3">
         <AuthorAvatar solution={solution} />
@@ -77,7 +77,7 @@ function SolutionRow({
           {solution.author ? (
             <Link
               href={`/profile/${solution.author.username}`}
-              className="text-xs font-semibold text-gray-700 hover:text-gray-900"
+              className="text-xs font-semibold text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white"
             >
               {solution.author.display_name ?? solution.author.username}
             </Link>
@@ -93,7 +93,7 @@ function SolutionRow({
             className={`text-xs px-1.5 py-0.5 rounded transition-colors disabled:opacity-40 ${
               solution.user_vote === 1
                 ? 'text-green-600 font-bold'
-                : 'text-gray-400 hover:text-gray-600'
+                : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
             }`}
             title="Upvote"
           >
@@ -101,7 +101,7 @@ function SolutionRow({
           </button>
           <span className={`text-xs font-semibold w-5 text-center ${
             solution.vote_count > 0 ? 'text-green-600' :
-            solution.vote_count < 0 ? 'text-red-500' : 'text-gray-400'
+            solution.vote_count < 0 ? 'text-red-500' : 'text-gray-400 dark:text-slate-500'
           }`}>
             {solution.vote_count}
           </span>
@@ -111,7 +111,7 @@ function SolutionRow({
             className={`text-xs px-1.5 py-0.5 rounded transition-colors disabled:opacity-40 ${
               solution.user_vote === -1
                 ? 'text-red-500 font-bold'
-                : 'text-gray-400 hover:text-gray-600'
+                : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
             }`}
             title="Downvote"
           >
@@ -134,14 +134,14 @@ function SolutionRow({
             </button>
             <button
               onClick={() => { setEditing(false); setEditContent(solution.content); }}
-              className="text-xs px-3 py-1.5 border border-gray-300 rounded-md hover:border-gray-500"
+              className="text-xs px-3 py-1.5 border border-gray-300 dark:border-slate-600 dark:text-slate-300 rounded-md hover:border-gray-500 dark:hover:border-slate-400"
             >
               Cancel
             </button>
           </div>
         </div>
       ) : (
-        <div className="text-sm text-gray-700 leading-relaxed">
+        <div className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed">
           <LatexContent content={solution.content} />
         </div>
       )}
@@ -151,14 +151,14 @@ function SolutionRow({
         <div className="flex gap-3 mt-2">
           <button
             onClick={() => setEditing(true)}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
           >
             Edit
           </button>
           <button
             onClick={handleDelete}
             disabled={deleteSolution.isPending}
-            className="text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
+            className="text-xs text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors disabled:opacity-40"
           >
             Delete
           </button>
@@ -192,13 +192,13 @@ export function CommunitySolutions({ contentItemId }: { contentItemId: string })
   return (
     <div className="mt-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+        <h3 className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">
           Community Solutions {solutions && solutions.length > 0 && `(${solutions.length})`}
         </h3>
         {user && !showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="text-xs text-gray-500 hover:text-gray-900 border border-gray-300 rounded px-2 py-0.5 hover:border-gray-500 transition-colors"
+            className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100 border border-gray-300 dark:border-slate-600 rounded px-2 py-0.5 hover:border-gray-500 dark:hover:border-slate-400 transition-colors"
           >
             + Propose solution
           </button>
@@ -207,7 +207,7 @@ export function CommunitySolutions({ contentItemId }: { contentItemId: string })
 
       {/* Add solution form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="mb-4 border border-dashed border-gray-300 rounded-lg p-3 space-y-2">
+        <form onSubmit={handleSubmit} className="mb-4 border border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-3 space-y-2">
           <LatexEditor
             value={newContent}
             onChange={setNewContent}
@@ -226,7 +226,7 @@ export function CommunitySolutions({ contentItemId }: { contentItemId: string })
             <button
               type="button"
               onClick={() => { setShowForm(false); setNewContent(''); setFormError(''); }}
-              className="text-xs px-3 py-1.5 border border-gray-300 rounded-md hover:border-gray-500"
+              className="text-xs px-3 py-1.5 border border-gray-300 dark:border-slate-600 dark:text-slate-300 rounded-md hover:border-gray-500 dark:hover:border-slate-400"
             >
               Cancel
             </button>
@@ -235,7 +235,7 @@ export function CommunitySolutions({ contentItemId }: { contentItemId: string })
       )}
 
       {!user && (
-        <p className="text-xs text-gray-400 mb-3">
+        <p className="text-xs text-gray-400 dark:text-slate-500 mb-3">
           <Link href="/" className="underline hover:text-gray-600">Sign in</Link> to propose a solution.
         </p>
       )}
