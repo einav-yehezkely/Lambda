@@ -7,6 +7,16 @@ import { getSupabaseClient } from '../common/supabase.client';
 import { PracticeMode, VersionContentItem, ProgressStatus } from '@lambda/shared';
 import { SubmitAttemptDto } from './dto/submit-attempt.dto';
 
+export interface ProgressCounts { unseen: number; incorrect: number; needs_review: number; solved: number; easy: number; }
+export interface FormatCounts { flashcard: number; multiple_choice: number; open: number; }
+export interface TopicCounts {
+  total: number; exam_question: number; exercise_question: number;
+  flashcard: number; multiple_choice: number; open: number;
+  progress: ProgressCounts;
+  format_by_type: { exam_question: FormatCounts; exercise_question: FormatCounts };
+  progress_by_type: { exam_question: ProgressCounts; exercise_question: ProgressCounts };
+}
+
 @Injectable()
 export class PracticeService {
   private get db() {
@@ -54,15 +64,6 @@ export class PracticeService {
       });
     }
 
-    interface ProgressCounts { unseen: number; incorrect: number; needs_review: number; solved: number; easy: number; }
-    interface FormatCounts { flashcard: number; multiple_choice: number; open: number; }
-    interface TopicCounts {
-      total: number; exam_question: number; exercise_question: number;
-      flashcard: number; multiple_choice: number; open: number;
-      progress: ProgressCounts;
-      format_by_type: { exam_question: FormatCounts; exercise_question: FormatCounts };
-      progress_by_type: { exam_question: ProgressCounts; exercise_question: ProgressCounts };
-    }
     const emptyProgress = (): ProgressCounts => ({ unseen: 0, incorrect: 0, needs_review: 0, solved: 0, easy: 0 });
     const emptyFormatCounts = (): FormatCounts => ({ flashcard: 0, multiple_choice: 0, open: 0 });
     const emptyTopicCounts = (): TopicCounts => ({
