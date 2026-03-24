@@ -272,11 +272,8 @@ function ManageTopicsModal({
 }
 
 const BUILT_IN_TYPES = [
-  { value: 'proof', label: 'Proof' },
   { value: 'exam_question', label: 'Exam Question' },
   { value: 'exercise_question', label: 'Exercise' },
-  { value: 'algorithm', label: 'Algorithm' },
-  { value: 'other', label: 'Other' },
 ];
 
 const PROTECTED_TYPES = new Set(['exam_question', 'exercise_question']);

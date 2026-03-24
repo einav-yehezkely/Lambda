@@ -31,7 +31,9 @@
       "Bash(xargs grep -l \"useUser\\\\|useAuth\\\\|AuthProvider\\\\|currentUser\")",
       "Bash(npm install mathml-to-latex)",
       "Bash(xargs cat)",
-      "Bash(xargs grep -l \"create table.*announcements\")"
+      "Bash(xargs grep -l \"create table.*announcements\")",
+      "Bash(xargs grep -l \"Exam\\\\|Exercise\\\\|category\\\\|categories\")",
+      "Bash(cat apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)"
     ],
     "additionalDirectories": [
       "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",
