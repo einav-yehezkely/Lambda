@@ -44,3 +44,7 @@ body {
 .katex-display {
   margin: 0.1em 0 !important;
 }
+
+button, a {
+  touch-action: manipulation;
+}

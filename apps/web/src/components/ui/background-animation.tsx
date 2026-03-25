@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { useTheme } from '@/contexts/theme-context';
 
-const NODE_COUNT    = 90;
 const MAX_DIST      = 200;
 const CURSOR_RADIUS = 200;
 
@@ -37,6 +36,8 @@ export function BackgroundAnimation() {
       canvas.width = W; canvas.height = H;
     };
     resize();
+
+    const NODE_COUNT = W < 640 ? 30 : 90;
 
     const nodes: Node[] = Array.from({ length: NODE_COUNT }, () => {
       const depth = 0.3 + Math.random() * 0.7;

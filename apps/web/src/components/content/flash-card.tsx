@@ -31,19 +31,19 @@ export function FlashCard({ front, back, onFirstFlip }: FlashCardProps) {
       >
         {/* Front */}
         <div
-          className="flex flex-col items-center justify-center p-6 min-h-36 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+          className="flex flex-col items-center justify-center p-6 min-h-36 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden"
           style={{ backfaceVisibility: 'hidden', gridArea: '1/1' }}
         >
-          <div className="text-center text-slate-800 dark:text-slate-100 text-sm leading-relaxed" dir="auto">
+          <div className="text-center text-slate-800 dark:text-slate-100 text-sm leading-relaxed w-full overflow-x-auto" dir="auto">
             <LatexContent content={front} />
           </div>
         </div>
         {/* Back */}
         <div
-          className="flex flex-col items-center justify-center p-6 min-h-36 rounded-xl border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20"
+          className="flex flex-col items-center justify-center p-6 min-h-36 rounded-xl border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 overflow-hidden"
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', gridArea: '1/1' }}
         >
-          <div className="text-center text-slate-800 dark:text-slate-100 text-sm leading-relaxed" dir="auto">
+          <div className="text-center text-slate-800 dark:text-slate-100 text-sm leading-relaxed w-full overflow-x-auto" dir="auto">
             <LatexContent content={back} />
           </div>
         </div>
