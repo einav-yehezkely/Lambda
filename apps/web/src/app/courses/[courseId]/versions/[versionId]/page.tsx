@@ -933,56 +933,59 @@ export default function VersionPage({
       <div className="mb-6 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 shadow-sm">
         {/* Header */}
         <div className="px-6 pt-6 pb-5 relative">
-          <div className="flex items-start gap-5">
-            {/* Course icon */}
-            <div className="shrink-0 w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-gray-500 dark:text-slate-400">
-              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="4 17 10 11 4 5" />
-                <line x1="12" y1="19" x2="20" y2="19" />
-              </svg>
-            </div>
-
-            {/* Title, meta, stats */}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-gray-400 dark:text-slate-500 mb-1">
-                {[
-                  version.institution,
-                  version.year,
-                  version.semester ? (SEMESTER_LABEL[version.semester] ?? `Semester ${version.semester}`) : null,
-                ].filter(Boolean).join(' · ')}
-              </p>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2.5">
-                {course?.title ?? version.title}
-              </h1>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-slate-400">
-                {items && items.length > 0 && (
-                  <span className="text-sm text-gray-500 dark:text-slate-400">{items.length} items</span>
-                )}
-                <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${version.visibility === 'public' ? 'border-green-200 bg-green-50 dark:bg-green-900/20 text-green-700' : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400'}`}>
-                  {version.visibility === 'public' ? 'Public' : 'Private'}
-                </span>
-                {version.is_recommended && (
-                  <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700">
-                    Recommended
-                  </span>
-                )}
+          <div className="flex flex-wrap items-start gap-3 sm:gap-5">
+            {/* icon + title group */}
+            <div className="flex items-start gap-3 sm:gap-5 flex-1 min-w-0">
+              {/* Course icon */}
+              <div className="shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-gray-500 dark:text-slate-400">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="4 17 10 11 4 5" />
+                  <line x1="12" y1="19" x2="20" y2="19" />
+                </svg>
               </div>
-              {(version.course_number || version.lecturer_name || version.description) && (
-                <p className="text-gray-500 dark:text-slate-400 text-sm whitespace-pre-wrap mt-2">
+
+              {/* Title, meta, stats */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-400 dark:text-slate-500 mb-1">
                   {[
-                    version.course_number ?? null,
-                    version.lecturer_name ? `Lectures by ${version.lecturer_name}` : null,
-                    version.description ?? null,
-                  ].filter(Boolean).join('\n')}
+                    version.institution,
+                    version.year,
+                    version.semester ? (SEMESTER_LABEL[version.semester] ?? `Semester ${version.semester}`) : null,
+                  ].filter(Boolean).join(' · ')}
                 </p>
-              )}
-              <div className="mt-2">
-                <VersionAuthor authorId={version.author_id} />
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2.5">
+                  {course?.title ?? version.title}
+                </h1>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-slate-400">
+                  {items && items.length > 0 && (
+                    <span className="text-sm text-gray-500 dark:text-slate-400">{items.length} items</span>
+                  )}
+                  <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${version.visibility === 'public' ? 'border-green-200 bg-green-50 dark:bg-green-900/20 text-green-700' : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400'}`}>
+                    {version.visibility === 'public' ? 'Public' : 'Private'}
+                  </span>
+                  {version.is_recommended && (
+                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                      Recommended
+                    </span>
+                  )}
+                </div>
+                {(version.course_number || version.lecturer_name || version.description) && (
+                  <p className="text-gray-500 dark:text-slate-400 text-sm whitespace-pre-wrap mt-2">
+                    {[
+                      version.course_number ?? null,
+                      version.lecturer_name ? `Lectures by ${version.lecturer_name}` : null,
+                      version.description ?? null,
+                    ].filter(Boolean).join('\n')}
+                  </p>
+                )}
+                <div className="mt-2">
+                  <VersionAuthor authorId={version.author_id} />
+                </div>
               </div>
             </div>
 
             {/* Progress + CTA */}
-            <div className="shrink-0 flex flex-col gap-3 w-52">
+            <div className="flex flex-col gap-2 sm:gap-3 w-full sm:w-52">
               {user && <ProgressBar versionId={versionId} userId={user.id} />}
               <button
                 onClick={handlePractice}
@@ -1002,9 +1005,9 @@ export default function VersionPage({
         </div>
 
         {/* Tab bar */}
-        <div className="border-t border-gray-100 dark:border-slate-800 flex items-center justify-between px-3">
-          {/* Topic tabs */}
-          <div className="flex flex-wrap">
+        <div className="border-t border-gray-100 dark:border-slate-800 flex items-center justify-between px-3 overflow-hidden">
+          {/* Topic tabs - scrollable on mobile */}
+          <div className="flex overflow-x-auto flex-1 min-w-0 [&::-webkit-scrollbar]:hidden">
             <button
               onClick={() => setSelectedTopic('')}
               className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 -mb-px transition-colors ${selectedTopic === '' ? 'border-gray-900 dark:border-slate-100 text-gray-900 dark:text-white font-medium' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300'}`}

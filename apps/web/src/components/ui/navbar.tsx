@@ -60,7 +60,7 @@ export function Navbar() {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={toggle}
             aria-label="Toggle dark mode"
@@ -101,17 +101,17 @@ export function Navbar() {
               {profileUsername ? (
                 <Link
                   href={`/profile/${profileUsername}`}
-                  className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                  className="hidden sm:inline text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
                 >
                   {displayName}
                 </Link>
               ) : (
-                <span className="text-sm font-medium text-slate-600">{displayName}</span>
+                <span className="hidden sm:inline text-sm font-medium text-slate-600">{displayName}</span>
               )}
               {profile?.is_admin && (
                 <Link
                   href="/admin/course-requests"
-                  className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                  className="hidden sm:inline text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
                 >
                   Admin
                 </Link>

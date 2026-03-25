@@ -13,7 +13,7 @@ export function LeaderboardPanel() {
   });
 
   return (
-    <aside className="w-64 shrink-0 ml-auto">
+    <aside className="hidden lg:block w-64 shrink-0 ml-auto">
       <div className="glass-card rounded-xl border border-slate-200 dark:border-slate-700 p-4 sticky top-24">
         <div className="flex items-center gap-2 mb-4">
           <span className="text-lg">🏆</span>

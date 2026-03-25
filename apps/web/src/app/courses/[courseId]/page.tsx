@@ -324,35 +324,38 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
       {/* Course header card */}
       <div className="mb-6 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 shadow-sm">
         <div className="px-6 py-6">
-          <div className="flex items-start gap-5">
-            {/* Course icon */}
-            <div className="shrink-0 w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-gray-500 dark:text-slate-400">
-              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="4 17 10 11 4 5" />
-                <line x1="12" y1="19" x2="20" y2="19" />
-              </svg>
-            </div>
+          <div className="flex flex-wrap items-start gap-3 sm:gap-5">
+            {/* icon + title group */}
+            <div className="flex items-start gap-3 sm:gap-5 flex-1 min-w-0">
+              {/* Course icon */}
+              <div className="shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-gray-500 dark:text-slate-400">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="4 17 10 11 4 5" />
+                  <line x1="12" y1="19" x2="20" y2="19" />
+                </svg>
+              </div>
 
-            {/* Title + meta */}
-            <div className="flex-1 min-w-0">
-              {course.subject && (
-                <p className="text-sm text-gray-400 dark:text-slate-500 mb-1">{course.subject}</p>
-              )}
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{course.title}</h1>
-              {course.description && (
-                <p className="text-sm text-gray-500 dark:text-slate-400 mb-2" dir={/[\u0590-\u05FF]/.test(course.description) ? 'rtl' : undefined}>
-                  {course.description}
-                </p>
-              )}
-              {!versionsLoading && (
-                <p className="text-sm text-gray-400 dark:text-slate-500">
-                  {versions?.length ?? 0} {versions?.length === 1 ? 'version' : 'versions'}
-                </p>
-              )}
+              {/* Title + meta */}
+              <div className="flex-1 min-w-0">
+                {course.subject && (
+                  <p className="text-sm text-gray-400 dark:text-slate-500 mb-1">{course.subject}</p>
+                )}
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">{course.title}</h1>
+                {course.description && (
+                  <p className="text-sm text-gray-500 dark:text-slate-400 mb-2" dir={/[\u0590-\u05FF]/.test(course.description) ? 'rtl' : undefined}>
+                    {course.description}
+                  </p>
+                )}
+                {!versionsLoading && (
+                  <p className="text-sm text-gray-400 dark:text-slate-500">
+                    {versions?.length ?? 0} {versions?.length === 1 ? 'version' : 'versions'}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Actions */}
-            <div className="shrink-0 flex flex-col items-end gap-2">
+            <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto">
               {user && (
                 <button
                   onClick={openNewVersion}

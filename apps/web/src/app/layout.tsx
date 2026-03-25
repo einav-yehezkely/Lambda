@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Public_Sans } from 'next/font/google';
 import './globals.css';
 import 'katex/dist/katex.min.css';
@@ -13,6 +13,11 @@ export const metadata: Metadata = {
   description: 'Community-driven learning platform for CS & Math students',
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -23,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <BackgroundAnimation />
           <Navbar />
-          <main className="max-w-7xl mx-auto px-6 py-10">{children}</main>
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">{children}</main>
         </Providers>
       </body>
     </html>
