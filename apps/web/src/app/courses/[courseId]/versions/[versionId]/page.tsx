@@ -15,7 +15,7 @@ import { ReportVersionButton } from '@/components/content/report-version';
 import { VersionDrive } from '@/components/version-drive';
 import { Modal } from '@/components/ui/modal';
 import { LatexEditor } from '@/components/ui/latex-editor';
-import type { Topic, CourseVersion } from '@lambda/shared';
+import type { Topic, CourseVersion, QuestionFormat } from '@lambda/shared';
 
 const SEMESTER_LABEL: Record<string, string> = {
   A: 'Semester A', B: 'Semester B', Summer: 'Summer',
@@ -437,12 +437,12 @@ function ManageTypesModal({
   );
 }
 
-const EXAM_QUESTION_FORMATS = [
+const EXAM_QUESTION_FORMATS: { value: import('@lambda/shared').QuestionFormat; label: string }[] = [
   { value: 'open', label: 'Open-ended' },
   { value: 'multiple_choice', label: 'Multiple Choice' },
 ];
 
-const EXERCISE_QUESTION_FORMATS = [
+const EXERCISE_QUESTION_FORMATS: { value: import('@lambda/shared').QuestionFormat; label: string }[] = [
   { value: 'open', label: 'Open-ended' },
   { value: 'multiple_choice', label: 'Multiple Choice' },
   { value: 'flashcard', label: 'Flashcard' },
@@ -501,7 +501,7 @@ function AddContentModal({
   const createContent = useCreateContent();
   const updateContent = useUpdateContent();
   const [type, setType] = useState(() => activeTypes?.[0]?.value ?? 'proof');
-  const [questionFormat, setQuestionFormat] = useState('open');
+  const [questionFormat, setQuestionFormat] = useState<QuestionFormat>('open');
   const [correctOptions, setCorrectOptions] = useState<string[]>([]);
   const [explanation, setExplanation] = useState('');
   const [title, setTitle] = useState('');

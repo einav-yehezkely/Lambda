@@ -33,7 +33,11 @@
       "Bash(xargs cat)",
       "Bash(xargs grep -l \"create table.*announcements\")",
       "Bash(xargs grep -l \"Exam\\\\|Exercise\\\\|category\\\\|categories\")",
-      "Bash(cat apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)"
+      "Bash(cat apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
+      "Bash(npx tsc --noEmit -p apps/web/tsconfig.json)",
+      "Bash(npx tsc --noEmit -p apps/api/tsconfig.json)",
+      "Bash(node -e \"const {NextConfig} = require\\(''next''\\); \")",
+      "Bash(xargs grep -l \"eslint\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",
