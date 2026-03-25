@@ -37,7 +37,8 @@
       "Bash(npx tsc --noEmit -p apps/web/tsconfig.json)",
       "Bash(npx tsc --noEmit -p apps/api/tsconfig.json)",
       "Bash(node -e \"const {NextConfig} = require\\(''next''\\); \")",
-      "Bash(xargs grep -l \"eslint\")"
+      "Bash(xargs grep -l \"eslint\")",
+      "Bash(find \"c:\\\\Users\\\\einav\\\\clone_here\\\\Lambda\\\\apps\\\\web\\\\src\\\\app\\\\courses\\\\[courseId]\\\\versions\"\" -type f -name \"*.tsx\" -o -name \"*.ts \")"
     ],
     "additionalDirectories": [
       "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",

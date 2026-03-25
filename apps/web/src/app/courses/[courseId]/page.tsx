@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCourse, useCourseVersions, useCreateVersion, useDeleteCourse, useActiveVersions, useEnrollCourse, useUnenrollCourse, useRateVersion, useUpdateCourse } from '@/hooks/useCourses';
@@ -8,6 +8,7 @@ import { useCurrentUser } from '@/hooks/useUsers';
 import { useAuth } from '@/hooks/useAuth';
 import { Modal } from '@/components/ui/modal';
 import type { CourseVersion } from '@lambda/shared';
+import { INSTITUTIONS, getFullName } from '@/lib/institutions';
 
 const SEMESTER_LABEL: Record<string, string> = {
   A: 'Semester A', B: 'Semester B', Summer: 'Summer',
@@ -125,9 +126,10 @@ function VersionRow({
             </p>
           )}
 
-          {(version.course_number || version.lecturer_name || version.description) && (
+          {(version.institution || version.course_number || version.lecturer_name || version.description) && (
             <p className="text-sm text-gray-500 dark:text-slate-400 mt-1.5 whitespace-pre-line">
               {[
+                version.institution ? getFullName(version.institution) : null,
                 version.course_number ?? null,
                 version.lecturer_name ? `Lectures by ${version.lecturer_name}` : null,
                 version.description ?? null,
@@ -248,7 +250,12 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
   const [showModal, setShowModal] = useState(false);
   const [forkFrom, setForkFrom] = useState<CourseVersion | null>(null);
 
-  const [vInstitution, setVInstitution] = useState('');
+  const [vInstitution, setVInstitution] = useState(''); // abbreviation, or '' when Other
+  const [vInstIsOther, setVInstIsOther] = useState(false);
+  const [vInstCustom, setVInstCustom] = useState('');
+  const [vInstOpen, setVInstOpen] = useState(false);
+  const [vInstSearch, setVInstSearch] = useState('');
+  const vInstRef = useRef<HTMLDivElement>(null);
   const [vYear, setVYear] = useState('');
   const [vSemester, setVSemester] = useState('');
   const [vLecturer, setVLecturer] = useState('');
@@ -257,8 +264,22 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
   const [vVisibility, setVVisibility] = useState<'public' | 'private'>('public');
   const [formError, setFormError] = useState('');
 
+  // Close institution dropdown on outside click
+  useEffect(() => {
+    if (!vInstOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (vInstRef.current && !vInstRef.current.contains(e.target as Node)) {
+        setVInstOpen(false);
+        setVInstSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [vInstOpen]);
+
   const resetForm = () => {
-    setVInstitution(''); setVYear(''); setVSemester(''); setVLecturer(''); setVCourseNumber(''); setVDesc(''); setVVisibility('public');
+    setVInstitution(''); setVInstIsOther(false); setVInstCustom(''); setVInstOpen(false); setVInstSearch('');
+    setVYear(''); setVSemester(''); setVLecturer(''); setVCourseNumber(''); setVDesc(''); setVVisibility('public');
     setFormError('');
   };
 
@@ -266,7 +287,14 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
 
   const openFork = (v: CourseVersion) => {
     setForkFrom(v);
-    setVInstitution(v.institution ?? '');
+    const instAbbr = v.institution ?? '';
+    const knownInst = INSTITUTIONS.find((i) => i.abbr === instAbbr);
+    if (instAbbr && !knownInst) {
+      setVInstitution(''); setVInstIsOther(true); setVInstCustom(instAbbr);
+    } else {
+      setVInstitution(knownInst ? knownInst.full : ''); setVInstIsOther(false); setVInstCustom('');
+    }
+    setVInstOpen(false); setVInstSearch('');
     setVYear(v.year ? String(v.year) : '');
     setVSemester(v.semester ?? '');
     setVLecturer(v.lecturer_name ?? '');
@@ -280,8 +308,12 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
+    // vInstitution holds the full name; derive abbreviation for title and DB
+    const institutionAbbr = vInstIsOther
+      ? vInstCustom.trim()
+      : (INSTITUTIONS.find((i) => i.full === vInstitution)?.abbr ?? vInstitution);
     const autoTitle = [
-      vInstitution.trim(),
+      institutionAbbr,
       vYear,
       vSemester ? (SEMESTER_LABEL[vSemester] ?? `Semester ${vSemester}`) : '',
     ].filter(Boolean).join(' · ') || course?.title || 'Untitled';
@@ -289,7 +321,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
       const version = await createVersion.mutateAsync({
         template_id: courseId,
         title: autoTitle,
-        institution: vInstitution.trim() || undefined,
+        institution: institutionAbbr || undefined,
         year: vYear ? Number(vYear) : undefined,
         semester: vSemester || undefined,
         lecturer_name: vLecturer.trim() || undefined,
@@ -495,9 +527,65 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div ref={vInstRef} className="relative">
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Institution</label>
-                <input autoFocus type="text" value={vInstitution} onChange={(e) => setVInstitution(e.target.value)} placeholder="e.g. HUJI" className={INPUT_CLS} />
+                <button
+                  type="button"
+                  onClick={() => { setVInstOpen((v) => !v); setVInstSearch(''); }}
+                  className={`${INPUT_CLS} text-left flex justify-between items-center`}
+                >
+                  <span className={vInstIsOther || vInstitution ? '' : 'text-gray-400 dark:text-slate-500'}>
+                    {vInstIsOther ? (vInstCustom || 'Other') : vInstitution || 'Select...'}
+                  </span>
+                  <svg className={`w-4 h-4 flex-shrink-0 transition-transform ${vInstOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {vInstOpen && (
+                  <div className="absolute z-30 top-full mt-1 left-0 right-0 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md shadow-lg max-h-56 overflow-y-auto">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={vInstSearch}
+                      onChange={(e) => setVInstSearch(e.target.value)}
+                      placeholder="Search..."
+                      className="w-full px-3 py-2 text-sm border-b border-gray-200 dark:border-slate-600 focus:outline-none bg-transparent dark:text-slate-100"
+                    />
+                    {INSTITUTIONS.filter((i) =>
+                      !vInstSearch ||
+                      i.full.toLowerCase().includes(vInstSearch.toLowerCase()) ||
+                      i.abbr.toLowerCase().includes(vInstSearch.toLowerCase())
+                    ).map((inst) => (
+                      <button
+                        key={inst.abbr}
+                        type="button"
+                        onClick={() => { setVInstitution(inst.full); setVInstIsOther(false); setVInstCustom(''); setVInstOpen(false); setVInstSearch(''); }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 ${vInstitution === inst.full && !vInstIsOther ? 'font-semibold text-[#1e3a8a] dark:text-blue-400' : 'text-gray-700 dark:text-slate-300'}`}
+                      >
+                        {inst.full}
+                      </button>
+                    ))}
+                    {(!vInstSearch || 'other'.includes(vInstSearch.toLowerCase())) && (
+                      <button
+                        type="button"
+                        onClick={() => { setVInstitution(''); setVInstIsOther(true); setVInstOpen(false); setVInstSearch(''); }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 border-t border-gray-100 dark:border-slate-700 ${vInstIsOther ? 'font-semibold text-[#1e3a8a] dark:text-blue-400' : 'text-gray-500 dark:text-slate-400'}`}
+                      >
+                        Other
+                      </button>
+                    )}
+                  </div>
+                )}
+                {vInstIsOther && (
+                  <input
+                    autoFocus
+                    type="text"
+                    value={vInstCustom}
+                    onChange={(e) => setVInstCustom(e.target.value)}
+                    placeholder="Enter institution name"
+                    className={`${INPUT_CLS} mt-2`}
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Year</label>

@@ -33,7 +33,7 @@ export const coursesApi = {
     semester?: string;
     lecturer_name?: string;
     course_number?: string;
-    description?: string;
+    description?: string | null;
     visibility?: string;
     content_types?: { label: string; value: string }[];
   }) => api.put<CourseVersion>(`/api/courses/versions/${id}`, body),

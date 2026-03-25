@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect, useRef } from 'react';
+import { use, useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCourse, useVersion, useVersionProgress, useDeleteVersion, useUpdateVersion, useEnrollCourse, useActiveVersions } from '@/hooks/useCourses';
@@ -16,6 +16,7 @@ import { VersionDrive } from '@/components/version-drive';
 import { Modal } from '@/components/ui/modal';
 import { LatexEditor } from '@/components/ui/latex-editor';
 import type { Topic, CourseVersion, QuestionFormat } from '@lambda/shared';
+import { INSTITUTIONS, getFullName } from '@/lib/institutions';
 
 const SEMESTER_LABEL: Record<string, string> = {
   A: 'Semester A', B: 'Semester B', Summer: 'Summer',
@@ -26,7 +27,24 @@ const INPUT_CLS = 'w-full border border-gray-300 dark:border-slate-700 rounded-m
 
 function EditVersionModal({ version, onClose }: { version: CourseVersion; onClose: () => void }) {
   const updateVersion = useUpdateVersion();
-  const [institution, setInstitution] = useState(version.institution ?? '');
+
+  // Resolve stored institution (may be abbreviation or full name) to combobox state
+  const initInst = (() => {
+    const stored = version.institution ?? '';
+    const byAbbr = INSTITUTIONS.find((i) => i.abbr === stored);
+    const byFull = INSTITUTIONS.find((i) => i.full === stored);
+    if (byAbbr) return { full: byAbbr.full, abbr: byAbbr.abbr, isOther: false, custom: '' };
+    if (byFull) return { full: byFull.full, abbr: byFull.abbr, isOther: false, custom: '' };
+    return { full: '', abbr: '', isOther: !!stored, custom: stored };
+  })();
+
+  const [instFull, setInstFull] = useState(initInst.full); // full name of selected known institution
+  const [instIsOther, setInstIsOther] = useState(initInst.isOther);
+  const [instCustom, setInstCustom] = useState(initInst.custom);
+  const [instOpen, setInstOpen] = useState(false);
+  const [instSearch, setInstSearch] = useState('');
+  const instRef = useRef<HTMLDivElement>(null);
+
   const [year, setYear] = useState(version.year ? String(version.year) : '');
   const [semester, setSemester] = useState(version.semester ?? '');
   const [lecturerName, setLecturerName] = useState(version.lecturer_name ?? '');
@@ -35,19 +53,45 @@ function EditVersionModal({ version, onClose }: { version: CourseVersion; onClos
   const [visibility, setVisibility] = useState<'public' | 'private'>(version.visibility);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (!instOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (instRef.current && !instRef.current.contains(e.target as Node)) {
+        setInstOpen(false); setInstSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [instOpen]);
+
+  const selectInstitution = useCallback((full: string) => {
+    // Auto-update description if it was previously the institution full name or empty
+    setDescription((prev) => {
+      const prevFull = instFull;
+      if (prev === '' || prev === prevFull) return full;
+      return prev;
+    });
+    setInstFull(full);
+    setInstIsOther(false); setInstCustom(''); setInstOpen(false); setInstSearch('');
+  }, [instFull]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    const instFullName = instIsOther ? instCustom.trim() : instFull;
+    const instAbbr = instIsOther
+      ? instCustom.trim()
+      : (INSTITUTIONS.find((i) => i.full === instFull)?.abbr ?? instFull);
     try {
       await updateVersion.mutateAsync({
         id: version.id,
         body: {
-          institution: institution.trim() || undefined,
+          institution: instAbbr || undefined,
           year: year ? Number(year) : undefined,
           semester: semester || undefined,
           lecturer_name: lecturerName.trim() || undefined,
           course_number: courseNumber.trim() || undefined,
-          description: description.trim() || undefined,
+          description: description.trim() || null,
           visibility,
         },
       });
@@ -61,9 +105,65 @@ function EditVersionModal({ version, onClose }: { version: CourseVersion; onClos
     <Modal title="Edit Version" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div>
+          <div ref={instRef} className="relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Institution</label>
-            <input autoFocus type="text" value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="e.g. HUJI" className={INPUT_CLS} />
+            <button
+              type="button"
+              onClick={() => { setInstOpen((v) => !v); setInstSearch(''); }}
+              className={`${INPUT_CLS} text-left flex justify-between items-center`}
+            >
+              <span className={instIsOther || instFull ? '' : 'text-gray-400 dark:text-slate-500'}>
+                {instIsOther ? (instCustom || 'Other') : instFull || 'Select...'}
+              </span>
+              <svg className={`w-4 h-4 flex-shrink-0 transition-transform ${instOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {instOpen && (
+              <div className="absolute z-30 top-full mt-1 left-0 right-0 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md shadow-lg max-h-56 overflow-y-auto">
+                <input
+                  autoFocus
+                  type="text"
+                  value={instSearch}
+                  onChange={(e) => setInstSearch(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full px-3 py-2 text-sm border-b border-gray-200 dark:border-slate-600 focus:outline-none bg-transparent dark:text-slate-100"
+                />
+                {INSTITUTIONS.filter((i) =>
+                  !instSearch ||
+                  i.full.toLowerCase().includes(instSearch.toLowerCase()) ||
+                  i.abbr.toLowerCase().includes(instSearch.toLowerCase())
+                ).map((inst) => (
+                  <button
+                    key={inst.abbr}
+                    type="button"
+                    onClick={() => selectInstitution(inst.full)}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 ${instFull === inst.full && !instIsOther ? 'font-semibold text-[#1e3a8a] dark:text-blue-400' : 'text-gray-700 dark:text-slate-300'}`}
+                  >
+                    {inst.full}
+                  </button>
+                ))}
+                {(!instSearch || 'other'.includes(instSearch.toLowerCase())) && (
+                  <button
+                    type="button"
+                    onClick={() => { setInstIsOther(true); setInstFull(''); setInstOpen(false); setInstSearch(''); }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 border-t border-gray-100 dark:border-slate-700 ${instIsOther ? 'font-semibold text-[#1e3a8a] dark:text-blue-400' : 'text-gray-500 dark:text-slate-400'}`}
+                  >
+                    Other
+                  </button>
+                )}
+              </div>
+            )}
+            {instIsOther && (
+              <input
+                autoFocus
+                type="text"
+                value={instCustom}
+                onChange={(e) => setInstCustom(e.target.value)}
+                placeholder="Enter institution name"
+                className={`${INPUT_CLS} mt-2`}
+              />
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Year</label>
@@ -969,9 +1069,10 @@ export default function VersionPage({
                     </span>
                   )}
                 </div>
-                {(version.course_number || version.lecturer_name || version.description) && (
+                {(version.institution || version.course_number || version.lecturer_name || version.description) && (
                   <p className="text-gray-500 dark:text-slate-400 text-sm whitespace-pre-wrap mt-2">
                     {[
+                      version.institution ? getFullName(version.institution) : null,
                       version.course_number ?? null,
                       version.lecturer_name ? `Lectures by ${version.lecturer_name}` : null,
                       version.description ?? null,
@@ -1005,7 +1106,7 @@ export default function VersionPage({
         </div>
 
         {/* Tab bar */}
-        <div className="border-t border-gray-100 dark:border-slate-800 flex items-center justify-between px-3 overflow-hidden">
+        <div className="border-t border-gray-100 dark:border-slate-800 flex items-center justify-between px-3 overflow-x-clip">
           {/* Topic tabs - scrollable on mobile */}
           <div className="flex overflow-x-auto flex-1 min-w-0 [&::-webkit-scrollbar]:hidden">
             <button

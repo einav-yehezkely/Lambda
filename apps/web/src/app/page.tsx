@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCourses, useCourseSubjects, useCourseInstitutions, useCreateCourse, useActiveVersions } from '@/hooks/useCourses';
+import { getFullName } from '@/lib/institutions';
 import { useAuth } from '@/hooks/useAuth';
 import { CourseCard } from '@/components/course/course-card';
 import { Modal } from '@/components/ui/modal';
@@ -152,7 +153,7 @@ export default function HomePage() {
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-                {institution || 'University'}
+                {institution ? getFullName(institution) : 'University'}
                 <svg className={`w-3 h-3 transition-transform ${institutionOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -171,7 +172,7 @@ export default function HomePage() {
                       onClick={() => { setInstitution(inst); setInstitutionOpen(false); }}
                       className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${institution === inst ? 'font-semibold text-[#1e3a8a]' : 'text-slate-700 dark:text-slate-300'}`}
                     >
-                      {inst}
+                      {getFullName(inst)}
                     </button>
                   ))}
                 </div>

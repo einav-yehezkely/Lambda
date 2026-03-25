@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min, ValidateIf } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Visibility } from '@lambda/shared';
 
@@ -35,10 +35,11 @@ export class UpdateVersionDto {
   @IsOptional()
   course_number?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ nullable: true })
   @IsString()
   @IsOptional()
-  description?: string;
+  @ValidateIf((o) => o.description !== null)
+  description?: string | null;
 
   @ApiPropertyOptional({ enum: ['public', 'private'] })
   @IsEnum(['public', 'private'])
