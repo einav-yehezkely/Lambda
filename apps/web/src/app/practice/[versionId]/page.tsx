@@ -1131,17 +1131,19 @@ export default function PracticePage({
             ) : (
               <div>
                 {(() => {
+                  const solutionSection = ci.metadata?.sections?.find((s) => s.label === 'Solution');
+                  const solutionText = ci.solution || solutionSection?.content || '';
                   const solutionImages = (ci.metadata?.sections?.slice(1) ?? []).flatMap((s) => s.images ?? []);
-                  return ci.solution || solutionImages.length > 0 ? (
+                  return solutionText || solutionImages.length > 0 ? (
                     <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden mb-5">
                       <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-4 pt-4 mb-2">Solution</div>
                       {solutionImages.map((url) => (
                         <img key={url} src={url} alt="" onClick={() => setLightboxUrl(url)}
-                          className="w-full block cursor-pointer hover:opacity-90 transition-opacity" />
+                          className="max-w-full h-auto block cursor-pointer hover:opacity-90 transition-opacity" />
                       ))}
-                      {ci.solution && (
-                        <div className="px-4 pb-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed" dir={/[\u0590-\u05FF]/.test(ci.solution) ? 'rtl' : undefined}>
-                          <LatexContent content={ci.solution} />
+                      {solutionText && (
+                        <div className="px-4 pb-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed" dir={/[\u0590-\u05FF]/.test(solutionText) ? 'rtl' : undefined}>
+                          <LatexContent content={solutionText} />
                         </div>
                       )}
                     </div>
