@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCourse, useCourseVersions, useCreateVersion, useDeleteCourse, useActiveVersions, useEnrollCourse, useUnenrollCourse, useRateVersion, useUpdateCourse } from '@/hooks/useCourses';
 import { useCurrentUser } from '@/hooks/useUsers';
 import { useAuth } from '@/hooks/useAuth';
+import { useContentTitleSearch } from '@/hooks/useTopics';
 import { Modal } from '@/components/ui/modal';
 import type { CourseVersion } from '@lambda/shared';
 import { INSTITUTIONS, getFullName } from '@/lib/institutions';
@@ -339,10 +340,48 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
 
   const INPUT_CLS = 'w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500';
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [institutionFilter, setInstitutionFilter] = useState<string | null>(null);
+  const [institutionOpen, setInstitutionOpen] = useState(false);
+  const institutionRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!institutionOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (institutionRef.current && !institutionRef.current.contains(e.target as Node)) {
+        setInstitutionOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [institutionOpen]);
+  const { data: contentMatchVersionIds } = useContentTitleSearch(courseId, searchQuery);
+  const contentMatchSet = new Set(contentMatchVersionIds ?? []);
+
   if (courseLoading) return <div className="text-sm text-gray-400 dark:text-slate-500">Loading...</div>;
   if (!course) return <div className="text-sm text-red-500">Course not found.</div>;
 
   const versionsById = new Map((versions ?? []).map((v) => [v.id, v]));
+
+  const availableInstitutions = [...new Set((versions ?? []).map((v) => v.institution).filter(Boolean))] as string[];
+
+  const filteredVersions = (versions ?? []).filter((v) => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchesMetadata = !q || [
+      formatVersionLabel(v),
+      v.title,
+      v.institution,
+      v.institution ? getFullName(v.institution) : null,
+      v.description,
+      v.course_number,
+      v.lecturer_name,
+      v.lecturer_name ? `Lectures by ${v.lecturer_name}` : null,
+      v.year ? String(v.year) : null,
+      v.semester ? (SEMESTER_LABEL[v.semester] ?? v.semester) : null,
+    ].some((field) => field?.toLowerCase().includes(q));
+    const matchesContent = contentMatchSet.has(v.id);
+    const matchesInstitution = !institutionFilter || v.institution === institutionFilter;
+    return (matchesMetadata || matchesContent) && matchesInstitution;
+  });
 
   return (
     <div>
@@ -433,22 +472,89 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
       )}
 
       {versions && versions.length > 0 && (
-        <div className="space-y-2">
-          {versions.map((v) => (
-            <VersionRow
-              key={v.id}
-              version={v}
-              courseId={courseId}
-              onFork={openFork}
-              isLoggedIn={!!user}
-              isEnrolled={enrolledVersionIds.has(v.id)}
-              onEnroll={user ? () => handleEnroll(v.id) : undefined}
-              onUnenroll={user ? () => handleUnenroll(v.id) : undefined}
-              enrolling={enrollingId === v.id}
-              parentVersion={v.based_on_version_id ? versionsById.get(v.based_on_version_id) : undefined}
-            />
-          ))}
-        </div>
+        <>
+          {/* Search + institution filter */}
+          <div className="mb-3 flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" strokeWidth="2" />
+                <path d="M21 21l-4.35-4.35" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search versions..."
+                className="w-full border border-gray-300 dark:border-slate-600 rounded-md pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            {availableInstitutions.length >= 1 && (
+              <div ref={institutionRef} className="relative shrink-0">
+                <button
+                  onClick={() => setInstitutionOpen((v) => !v)}
+                  className={`flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                    institutionFilter
+                      ? 'bg-[#1e3a8a]/10 text-[#1e3a8a] border-[#1e3a8a]/20'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {institutionFilter ? getFullName(institutionFilter) : 'University'}
+                  <svg className={`w-3 h-3 transition-transform ${institutionOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {institutionOpen && (
+                  <div className="absolute top-full mt-1 left-0 z-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 min-w-[180px] max-h-64 overflow-y-auto">
+                    <button
+                      onClick={() => { setInstitutionFilter(null); setInstitutionOpen(false); }}
+                      className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${!institutionFilter ? 'font-semibold text-[#1e3a8a]' : 'text-slate-700 dark:text-slate-300'}`}
+                    >
+                      All universities
+                    </button>
+                    {availableInstitutions.map((inst) => (
+                      <button
+                        key={inst}
+                        onClick={() => { setInstitutionFilter(inst); setInstitutionOpen(false); }}
+                        className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${institutionFilter === inst ? 'font-semibold text-[#1e3a8a]' : 'text-slate-700 dark:text-slate-300'}`}
+                      >
+                        {getFullName(inst)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            {filteredVersions.length === 0 ? (
+              <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-8">No versions match your search.</p>
+            ) : (
+              filteredVersions.map((v) => (
+                <VersionRow
+                  key={v.id}
+                  version={v}
+                  courseId={courseId}
+                  onFork={openFork}
+                  isLoggedIn={!!user}
+                  isEnrolled={enrolledVersionIds.has(v.id)}
+                  onEnroll={user ? () => handleEnroll(v.id) : undefined}
+                  onUnenroll={user ? () => handleUnenroll(v.id) : undefined}
+                  enrolling={enrollingId === v.id}
+                  parentVersion={v.based_on_version_id ? versionsById.get(v.based_on_version_id) : undefined}
+                />
+              ))
+            )}
+          </div>
+        </>
       )}
 
       {/* Edit Course Modal */}

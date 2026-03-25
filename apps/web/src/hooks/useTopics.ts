@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { topicsApi, contentApi } from '@/lib/api/content';
 
 export function useTopics(versionId: string) {
@@ -73,6 +74,22 @@ export function useUpdateTopic(versionId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['topics', versionId] });
     },
+  });
+}
+
+export function useContentTitleSearch(courseId: string, q: string) {
+  const [debounced, setDebounced] = useState(q);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  return useQuery({
+    queryKey: ['content-title-search', courseId, debounced],
+    queryFn: () => contentApi.searchTitles(courseId, debounced),
+    enabled: !!courseId && debounced.trim().length >= 2,
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
   });
 }
 

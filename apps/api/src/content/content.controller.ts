@@ -51,6 +51,17 @@ export class ContentController {
     return this.contentService.listByVersion({ version_id, topic_id, type, difficulty });
   }
 
+  @Get('search')
+  @ApiOkResponse({ description: 'Return version IDs that have content items matching a title query' })
+  @ApiQuery({ name: 'course_id', required: true })
+  @ApiQuery({ name: 'q', required: true })
+  searchTitles(
+    @Query('course_id') courseId: string,
+    @Query('q') q: string,
+  ) {
+    return this.contentService.searchContentTitles(courseId, q);
+  }
+
   @Get(':id')
   @ApiOkResponse({ description: 'Get a content item by ID' })
   getItem(@Param('id', ParseUUIDPipe) id: string) {

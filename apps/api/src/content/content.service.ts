@@ -452,6 +452,36 @@ export class ContentService {
     await this.db.storage.from('content-images').remove([storagePath]);
   }
 
+  // ─── Search content titles across a course ──────────────────────────────────
+
+  async searchContentTitles(courseId: string, q: string): Promise<string[]> {
+    if (!q.trim()) return [];
+
+    const { data: versions } = await this.db
+      .from('course_versions')
+      .select('id')
+      .eq('template_id', courseId);
+
+    const versionIds = (versions ?? []).map((v) => v.id);
+    if (versionIds.length === 0) return [];
+
+    const { data: matchingItems } = await this.db
+      .from('content_items')
+      .select('id')
+      .ilike('title', `%${q}%`);
+
+    const matchingItemIds = (matchingItems ?? []).map((i) => i.id);
+    if (matchingItemIds.length === 0) return [];
+
+    const { data: junctions } = await this.db
+      .from('version_content_items')
+      .select('version_id')
+      .in('version_id', versionIds)
+      .in('content_item_id', matchingItemIds);
+
+    return [...new Set((junctions ?? []).map((j) => j.version_id))];
+  }
+
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
   private async assertVersionAuthorOrItemAuthor(

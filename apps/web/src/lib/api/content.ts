@@ -74,6 +74,9 @@ export const contentApi = {
 
   uploadImage: uploadContentImage,
 
+  searchTitles: (courseId: string, q: string) =>
+    api.get<string[]>(`/api/content/search?course_id=${encodeURIComponent(courseId)}&q=${encodeURIComponent(q)}`),
+
   deleteImage: async (contentItemId: string, url: string): Promise<void> => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     await fetch(`${API_URL}/api/content/${contentItemId}/images`, {
