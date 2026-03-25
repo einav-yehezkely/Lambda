@@ -546,7 +546,6 @@ const EXERCISE_QUESTION_FORMATS: { value: import('@lambda/shared').QuestionForma
   { value: 'open', label: 'Open-ended' },
   { value: 'multiple_choice', label: 'Multiple Choice' },
   { value: 'flashcard', label: 'Flashcard' },
-  { value: 'other', label: 'Other' },
 ];
 
 function getDefaultSections(type: string, format: string): Array<{ label: string; content: string }> {
@@ -810,7 +809,7 @@ function AddContentModal({
             {sections.map((sec, i) => (
               <div key={i} className="border border-gray-200 dark:border-slate-700 rounded-md p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  {!isMultipleChoice && (
+                  {!isQuestion && (
                     <div className="flex flex-col gap-0.5 shrink-0">
                       <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} className="text-gray-300 dark:text-slate-600 hover:text-gray-600 dark:hover:text-slate-300 disabled:opacity-20 leading-none">▲</button>
                       <button type="button" onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} className="text-gray-300 dark:text-slate-600 hover:text-gray-600 dark:hover:text-slate-300 disabled:opacity-20 leading-none">▼</button>
@@ -822,10 +821,10 @@ function AddContentModal({
                     onChange={(e) => updateSection(i, 'label', e.target.value)}
                     placeholder="Section name"
                     dir="auto"
-                    readOnly={isMultipleChoice}
-                    className={`flex-1 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 ${isMultipleChoice ? 'bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-slate-400 cursor-default' : ''}`}
+                    readOnly={isQuestion}
+                    className={`flex-1 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 ${isQuestion ? 'bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-slate-400 cursor-default' : ''}`}
                   />
-                  {(!isMultipleChoice || i > 0) && (
+                  {(!isQuestion || (isMultipleChoice && i > 0)) && (
                     <button type="button" onClick={() => removeSection(i)} className="text-xs text-gray-400 dark:text-slate-500 hover:text-red-500 shrink-0">
                       Remove
                     </button>
@@ -862,7 +861,7 @@ function AddContentModal({
                 + Add Option
               </button>
             )}
-            {!isMultipleChoice && (
+            {!isQuestion && (
               <button type="button" onClick={addSection} className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 border border-gray-300 dark:border-slate-600 rounded px-2 py-0.5 hover:border-gray-500 dark:hover:border-slate-400">
                 + Add Section
               </button>
