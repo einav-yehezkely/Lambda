@@ -75,9 +75,9 @@ export function Navbar() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
           </button>
+          <InfoButton isAdmin={!!profile?.is_admin} />
           {loading ? null : user ? (
             <>
-              <InfoButton isAdmin={!!profile?.is_admin} />
               <NotificationBell isAdmin={!!profile?.is_admin} />
               {user.user_metadata?.avatar_url && profileUsername ? (
                 <Link href={`/profile/${profileUsername}`} className="w-9 h-9 rounded-full border-2 border-white/20 overflow-hidden hover:opacity-80 transition-opacity">
