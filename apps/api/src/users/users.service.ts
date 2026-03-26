@@ -250,6 +250,46 @@ export class UsersService {
     return data ?? [];
   }
 
+  async sendMessageToAllUsers(subject: string, message: string): Promise<{ sent: number }> {
+    const { data: users } = await this.db
+      .from('users')
+      .select('id, username, display_name, email')
+      .not('email', 'is', null);
+
+    if (!users?.length) return { sent: 0 };
+
+    const apiKey = this.config.get<string>('RESEND_API_KEY');
+    const from = this.config.get<string>('RESEND_FROM') ?? 'Lambda <noreply@lambda-learn.com>';
+    const appUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+
+    if (apiKey) {
+      const resend = new Resend(apiKey);
+      const emails = users.map((u) => ({
+        from,
+        to: u.email as string,
+        subject: `Lambda – ${subject}`,
+        text: `Hi ${u.display_name ?? u.username},\n\n${message}\n\nThe Lambda team`,
+        html: this.buildAdminMessageHtml({ name: u.display_name ?? u.username, subject, message, appUrl }),
+      }));
+
+      // Resend batch limit is 100 per call
+      for (let i = 0; i < emails.length; i += 100) {
+        await resend.batch.send(emails.slice(i, i + 100));
+      }
+    }
+
+    // In-app notifications for all users
+    const notifications = users.map((u) => ({
+      title: subject,
+      content: message,
+      target_user_id: u.id,
+      created_by: null,
+    }));
+    await this.db.from('announcements').insert(notifications);
+
+    return { sent: users.length };
+  }
+
   async listAllUsers(): Promise<User[]> {
     const { data, error } = await this.db
       .from('users')

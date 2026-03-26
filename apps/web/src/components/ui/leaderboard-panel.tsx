@@ -80,14 +80,16 @@ export function LeaderboardPanel() {
     <>
       {/* ── Desktop only: sticky sidebar ── */}
       <aside className="hidden lg:block w-64 shrink-0 ml-auto">
-        <div className="glass-card rounded-xl border border-slate-200 dark:border-slate-700 p-4 sticky top-24">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">🏆</span>
-            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Top Contributors</h2>
+        <div className="sticky top-24 flex flex-col gap-4">
+          <div className="glass-card rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">🏆</span>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Top Contributors</h2>
+            </div>
+            <LeaderboardList data={data} isLoading={isLoading} />
           </div>
-          <LeaderboardList data={data} isLoading={isLoading} />
+          <SuggestionBox />
         </div>
-        <SuggestionBox />
       </aside>
     </>
   );

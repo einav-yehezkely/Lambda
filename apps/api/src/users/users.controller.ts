@@ -68,6 +68,13 @@ export class UsersController {
     return this.usersService.getSolutionsByUsername(username);
   }
 
+  @Post('send-message-all')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiOkResponse({ description: 'Send a message to all users (admin only)' })
+  async sendMessageToAll(@Body() body: { subject: string; message: string }) {
+    return this.usersService.sendMessageToAllUsers(body.subject, body.message);
+  }
+
   @Post(':username/send-message')
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiOkResponse({ description: 'Send a custom email to a user (admin only)' })

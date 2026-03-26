@@ -56,6 +56,9 @@ export const usersApi = {
   searchUsers: (query: string) =>
     api.get<User[]>(`/api/users/search?q=${encodeURIComponent(query)}`),
 
+  sendMessageToAll: (subject: string, message: string) =>
+    api.post<{ sent: number }>('/api/users/send-message-all', { subject, message }),
+
   sendMessage: (username: string, subject: string, message: string) =>
     api.post<{ success: boolean }>(`/api/users/${username}/send-message`, { subject, message }),
 };

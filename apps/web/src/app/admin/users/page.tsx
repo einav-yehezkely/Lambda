@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useCurrentUser, useAllUsers, useSearchUsers } from '@/hooks/useUsers';
+import { usersApi } from '@/lib/api/users';
+import { Modal } from '@/components/ui/modal';
 import type { User } from '@lambda/shared';
 
 export default function AdminUsersPage() {
@@ -12,6 +14,13 @@ export default function AdminUsersPage() {
   const { data: currentUser, isLoading: userLoading } = useCurrentUser();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  // Broadcast modal state
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [broadcastSubject, setBroadcastSubject] = useState('');
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcastError, setBroadcastError] = useState('');
+  const [broadcastSuccess, setBroadcastSuccess] = useState('');
 
   useEffect(() => {
     if (!userLoading && !currentUser?.is_admin) {
@@ -30,6 +39,32 @@ export default function AdminUsersPage() {
   const displayedUsers = debouncedQuery ? searchResults : allUsers;
   const isLoading = debouncedQuery ? searching : allLoading;
 
+  const broadcast = useMutation({
+    mutationFn: ({ subject, message }: { subject: string; message: string }) =>
+      usersApi.sendMessageToAll(subject, message),
+  });
+
+  const closeBroadcast = () => {
+    setBroadcastOpen(false);
+    setBroadcastSubject('');
+    setBroadcastMessage('');
+    setBroadcastError('');
+    setBroadcastSuccess('');
+  };
+
+  const handleBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!broadcastSubject.trim()) { setBroadcastError('Subject is required'); return; }
+    if (!broadcastMessage.trim()) { setBroadcastError('Message is required'); return; }
+    setBroadcastError('');
+    try {
+      const result = await broadcast.mutateAsync({ subject: broadcastSubject.trim(), message: broadcastMessage.trim() });
+      setBroadcastSuccess(`Sent to ${result.sent} users.`);
+    } catch (e) {
+      setBroadcastError(e instanceof Error ? e.message : 'Failed to send');
+    }
+  };
+
   if (userLoading || !currentUser?.is_admin) return null;
 
   return (
@@ -45,12 +80,20 @@ export default function AdminUsersPage() {
               : 'Loading...'}
           </p>
         </div>
-        <Link
-          href="/admin/course-requests"
-          className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
-        >
-          ← Course Requests
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setBroadcastOpen(true)}
+            className="text-sm px-3 py-1.5 bg-[#1e3a8a] text-white rounded-md hover:bg-blue-900 font-medium"
+          >
+            Send to all
+          </button>
+          <Link
+            href="/admin/course-requests"
+            className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+          >
+            ← Course Requests
+          </Link>
+        </div>
       </div>
 
       <div className="mb-4">
@@ -78,6 +121,55 @@ export default function AdminUsersPage() {
             <UserRow key={user.id} user={user} />
           ))}
         </div>
+      )}
+
+      {broadcastOpen && (
+        <Modal title="Send message to all users" onClose={closeBroadcast}>
+          {broadcastSuccess ? (
+            <div className="py-4 text-center space-y-4">
+              <p className="text-sm text-green-600 dark:text-green-400 font-medium">{broadcastSuccess}</p>
+              <button onClick={closeBroadcast} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700">
+                Close
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleBroadcast} className="space-y-4">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                This will send an email + in-app notification to all {allUsers?.length ?? '...'} users.
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Subject *</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={broadcastSubject}
+                  onChange={(e) => setBroadcastSubject(e.target.value)}
+                  dir="auto"
+                  className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Message *</label>
+                <textarea
+                  value={broadcastMessage}
+                  onChange={(e) => setBroadcastMessage(e.target.value)}
+                  rows={5}
+                  dir="auto"
+                  className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500 resize-none"
+                />
+              </div>
+              {broadcastError && <p className="text-sm text-red-500">{broadcastError}</p>}
+              <div className="flex justify-end gap-2 pt-1">
+                <button type="button" onClick={closeBroadcast} className="text-sm px-4 py-2 border border-gray-300 dark:border-slate-600 dark:text-slate-300 rounded-md hover:border-gray-500">
+                  Cancel
+                </button>
+                <button type="submit" disabled={broadcast.isPending} className="text-sm px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
+                  {broadcast.isPending ? 'Sending...' : 'Send to all'}
+                </button>
+              </div>
+            </form>
+          )}
+        </Modal>
       )}
     </div>
   );
