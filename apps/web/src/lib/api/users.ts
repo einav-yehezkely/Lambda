@@ -50,6 +50,12 @@ export const usersApi = {
   getUserSolutions: (username: string) =>
     api.get<UserSolution[]>(`/api/users/${username}/solutions`),
 
+  listAllUsers: () =>
+    api.get<User[]>('/api/users/all'),
+
+  searchUsers: (query: string) =>
+    api.get<User[]>(`/api/users/search?q=${encodeURIComponent(query)}`),
+
   sendMessage: (username: string, subject: string, message: string) =>
     api.post<{ success: boolean }>(`/api/users/${username}/send-message`, { subject, message }),
 };

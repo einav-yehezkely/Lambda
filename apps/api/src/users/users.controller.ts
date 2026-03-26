@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, UseGuards, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -15,6 +15,21 @@ export class UsersController {
   @ApiOkResponse({ description: 'Top 10 contributors by number of public course versions' })
   getLeaderboard() {
     return this.usersService.getLeaderboard(10);
+  }
+
+  @Get('all')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiOkResponse({ description: 'List all users (admin only)' })
+  listAllUsers() {
+    return this.usersService.listAllUsers();
+  }
+
+  @Get('search')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiOkResponse({ description: 'Search users by username, name, or email (admin only)' })
+  searchUsers(@Query('q') q: string) {
+    if (!q?.trim()) return [];
+    return this.usersService.searchUsers(q.trim());
   }
 
   @Get('by-id/:id')

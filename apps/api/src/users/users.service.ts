@@ -98,7 +98,7 @@ export class UsersService {
     if (!user.email) throw new NotFoundException('User has no email address');
 
     const name = user.display_name ?? user.username;
-    const appUrl = this.config.get<string>('APP_URL') ?? 'http://localhost:3000';
+    const appUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
 
     const plainText = `Hi ${name},\n\n${message}\n\nThe Lambda team`;
     const html = this.buildAdminMessageHtml({ name, subject, message, appUrl });
@@ -248,6 +248,29 @@ export class UsersService {
 
     if (error) return [];
     return data ?? [];
+  }
+
+  async listAllUsers(): Promise<User[]> {
+    const { data, error } = await this.db
+      .from('users')
+      .select('id, username, display_name, avatar_url, email, is_admin, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) return [];
+    return (data ?? []) as User[];
+  }
+
+  async searchUsers(query: string): Promise<User[]> {
+    const q = `%${query}%`;
+    const { data, error } = await this.db
+      .from('users')
+      .select('id, username, display_name, avatar_url, email, is_admin, created_at')
+      .or(`username.ilike.${q},display_name.ilike.${q},email.ilike.${q}`)
+      .order('username')
+      .limit(20);
+
+    if (error) return [];
+    return (data ?? []) as User[];
   }
 
   private async resolveUniqueUsername(base: string): Promise<string> {

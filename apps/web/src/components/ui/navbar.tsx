@@ -109,12 +109,20 @@ export function Navbar() {
                 <span className="hidden sm:inline text-sm font-medium text-slate-600">{displayName}</span>
               )}
               {profile?.is_admin && (
-                <Link
-                  href="/admin/course-requests"
-                  className="hidden sm:inline text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                >
-                  Admin
-                </Link>
+                <>
+                  <Link
+                    href="/admin/users"
+                    className="hidden sm:inline text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    Users
+                  </Link>
+                  <Link
+                    href="/admin/course-requests"
+                    className="hidden sm:inline text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    Requests
+                  </Link>
+                </>
               )}
               <button
                 onClick={signOut}

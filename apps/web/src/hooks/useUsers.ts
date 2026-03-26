@@ -51,3 +51,20 @@ export function useUserSolutions(username: string) {
     enabled: !!username,
   });
 }
+
+export function useAllUsers() {
+  return useQuery({
+    queryKey: ['all-users'],
+    queryFn: () => usersApi.listAllUsers(),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useSearchUsers(query: string) {
+  return useQuery({
+    queryKey: ['search-users', query],
+    queryFn: () => usersApi.searchUsers(query),
+    enabled: query.trim().length >= 1,
+    staleTime: 30 * 1000,
+  });
+}
