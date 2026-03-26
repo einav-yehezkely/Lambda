@@ -16,7 +16,7 @@ import { SiteInfoModule } from './site-info/site-info.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', 'apps/api/.env'] }),
     AuthModule,
     UsersModule,
     CoursesModule,

@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { getSupabaseClient } from '../common/supabase.client';
 import { CourseTemplate, CourseVersion, Topic } from '@lambda/shared';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -398,15 +398,13 @@ export class CoursesService {
   }
 
   private async sendMail(subject: string, text: string): Promise<void> {
-    const smtpUser = this.config.get<string>('SMTP_USER');
-    const smtpPass = this.config.get<string>('SMTP_PASS');
-    if (!smtpUser || !smtpPass) return;
+    const apiKey = this.config.get<string>('RESEND_API_KEY');
+    const from = this.config.get<string>('RESEND_FROM') ?? 'Lambda <noreply@lambda-learn.com>';
+    const adminEmail = this.config.get<string>('ADMIN_EMAIL') ?? this.config.get<string>('SMTP_USER');
+    if (!apiKey || !adminEmail) return;
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: smtpUser, pass: smtpPass },
-    });
-
-    await transporter.sendMail({ from: smtpUser, to: smtpUser, subject, text });
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({ from, to: adminEmail, subject, text });
+    if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`);
   }
 }

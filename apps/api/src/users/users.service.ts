@@ -1,6 +1,6 @@
 import { Injectable, ConflictException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { getSupabaseClient } from '../common/supabase.client';
 import { User } from '@lambda/shared';
 
@@ -20,16 +20,13 @@ export class UsersService {
   }
 
   private async sendMail(to: string, subject: string, text: string, html?: string): Promise<void> {
-    const smtpUser = this.config.get<string>('SMTP_USER');
-    const smtpPass = this.config.get<string>('SMTP_PASS');
-    if (!smtpUser || !smtpPass) return;
+    const apiKey = this.config.get<string>('RESEND_API_KEY');
+    const from = this.config.get<string>('RESEND_FROM') ?? 'Lambda <noreply@lambda-learn.com>';
+    if (!apiKey) return;
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: smtpUser, pass: smtpPass },
-    });
-
-    await transporter.sendMail({ from: smtpUser, to, subject, text, html });
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({ from, to, subject, text, html });
+    if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`);
   }
 
   private buildAdminMessageHtml(params: { name: string; subject: string; message: string; appUrl: string }): string {

@@ -42,7 +42,8 @@
       "Bash(ls -la /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/)",
       "Bash(cat /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
       "Bash(grep -n \"BUILT_IN_TYPES\\\\|EXAM_QUESTION_FORMATS\\\\|EXERCISE_QUESTION_FORMATS\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
-      "Bash(grep -n \"flashcard\\\\|flash.*card\\\\|open.*ended\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)"
+      "Bash(grep -n \"flashcard\\\\|flash.*card\\\\|open.*ended\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
+      "Bash(npm install resend)"
     ],
     "additionalDirectories": [
       "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",

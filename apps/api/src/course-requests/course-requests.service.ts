@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { getSupabaseClient } from '../common/supabase.client';
 import { createNotification } from '../common/create-notification';
 import { CreateCourseRequestDto } from './dto/create-course-request.dto';
@@ -16,16 +16,14 @@ export class CourseRequestsService {
   }
 
   private async sendMail(to: string, subject: string, text: string, html?: string): Promise<void> {
-    const smtpUser = this.config.get<string>('SMTP_USER');
-    const smtpPass = this.config.get<string>('SMTP_PASS');
-    if (!smtpUser || !smtpPass) return;
+    const apiKey = this.config.get<string>('RESEND_API_KEY');
+    const from = this.config.get<string>('RESEND_FROM') ?? 'Lambda <noreply@lambda-learn.com>';
+    console.log(`[sendMail] apiKey=${apiKey ? 'SET' : 'MISSING'}, from=${from}, to=${to}`);
+    if (!apiKey) return;
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: smtpUser, pass: smtpPass },
-    });
-
-    await transporter.sendMail({ from: smtpUser, to, subject, text, html });
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({ from, to, subject, text, html });
+    if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`);
   }
 
   private buildCourseFulfilledHtml(params: {
@@ -186,7 +184,9 @@ export class CourseRequestsService {
       const name = requester.display_name ?? requester.username ?? 'there';
       const plainText = `Hi ${name},\n\nYou requested: "${request.course_name}"\n\n${dto.message}\n\nThe Lambda team`;
       const html = this.buildRespondHtml({ name, courseName: request.course_name, message: dto.message });
-      await this.sendMail(requester.email, `Lambda – Update on your course request: "${request.course_name}"`, plainText, html);
+      this.sendMail(requester.email, `Lambda – Update on your course request: "${request.course_name}"`, plainText, html).catch((err) =>
+        console.warn('Failed to send respond email:', err),
+      );
 
       if (requester.id) {
         await createNotification({
@@ -221,7 +221,7 @@ export class CourseRequestsService {
     if (error) throw new InternalServerErrorException(error.message);
 
     // Plain-text email to admin
-    const adminEmail = this.config.get<string>('SMTP_USER');
+    const adminEmail = this.config.get<string>('ADMIN_EMAIL') ?? this.config.get<string>('SMTP_USER');
     if (adminEmail) {
       const lines = [
         `Course request from: ${requester?.display_name ?? requester?.username ?? 'unknown'} (${requester?.email ?? ''})`,
@@ -234,7 +234,9 @@ export class CourseRequestsService {
         `Manage requests: ${this.config.get('APP_URL') ?? 'http://localhost:3000'}/admin/course-requests`,
       ].filter((l) => l !== null);
 
-      await this.sendMail(adminEmail, `Lambda – New Course Request: ${dto.course_name}`, lines.join('\n'));
+      this.sendMail(adminEmail, `Lambda – New Course Request: ${dto.course_name}`, lines.join('\n')).catch((err) =>
+        console.warn('Failed to send admin notification email:', err),
+      );
     }
 
     return data;
@@ -304,12 +306,12 @@ export class CourseRequestsService {
         appUrl,
       });
 
-      await this.sendMail(
+      this.sendMail(
         requester.email,
         `Lambda – Your course "${request.course_name}" has been added!`,
         plainText,
         html,
-      );
+      ).catch((err) => console.warn('Failed to send fulfill email:', err));
 
       if (requester.id) {
         await createNotification({

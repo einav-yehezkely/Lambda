@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nest build",
     "dev": "ts-node -r tsconfig-paths/register src/main.ts",
-    "start": "node dist/main",
+    "start": "node dist/apps/api/src/main",
     "lint": "eslint \"{src,test}/**/*.ts\""
   },
   "dependencies": {
@@ -24,6 +24,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.0",
     "reflect-metadata": "^0.2.0",
+    "resend": "^6.9.4",
     "rxjs": "^7.8.0"
   },
   "devDependencies": {

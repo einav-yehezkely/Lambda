@@ -1,33 +1,33 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 @Injectable()
 export class FeedbackService {
   constructor(private readonly config: ConfigService) {}
 
   async sendSuggestion(text: string, username?: string): Promise<void> {
-    const smtpUser = this.config.get<string>('SMTP_USER');
-    const pass = this.config.get<string>('SMTP_PASS');
+    const apiKey = this.config.get<string>('RESEND_API_KEY');
+    const from = this.config.get<string>('RESEND_FROM') ?? 'Lambda <noreply@lambda-learn.com>';
+    const adminEmail = this.config.get<string>('ADMIN_EMAIL') ?? this.config.get<string>('SMTP_USER');
 
-    if (!smtpUser || !pass) {
+    if (!apiKey || !adminEmail) {
       throw new InternalServerErrorException('Email service not configured');
     }
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: smtpUser, pass },
-    });
+    const resend = new Resend(apiKey);
 
     const senderLine = username
       ? `From: ${username} (https://lambda-site.vercel.app/profile/${username})`
       : 'From: Anonymous';
 
-    await transporter.sendMail({
-      from: smtpUser,
-      to: 'simplifye.solutions@gmail.com',
+    const { error } = await resend.emails.send({
+      from,
+      to: adminEmail,
       subject: 'Lambda – New Site Suggestion',
       text: `${senderLine}\n\n${text}`,
     });
+
+    if (error) throw new InternalServerErrorException(`Failed to send email: ${JSON.stringify(error)}`);
   }
 }
