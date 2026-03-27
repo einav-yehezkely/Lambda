@@ -43,7 +43,13 @@
       "Bash(cat /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
       "Bash(grep -n \"BUILT_IN_TYPES\\\\|EXAM_QUESTION_FORMATS\\\\|EXERCISE_QUESTION_FORMATS\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
       "Bash(grep -n \"flashcard\\\\|flash.*card\\\\|open.*ended\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
-      "Bash(npm install resend)"
+      "Bash(npm install resend)",
+      "Bash(npm install @next/third-parties)",
+      "Bash(ls -la /c/Users/einav/clone_here/Lambda/apps/web/src/app/\\\\\\(auth\\\\\\)/)",
+      "Bash(ls -la /c/Users/einav/clone_here/Lambda/apps/web/src/app/\\\\\\(auth\\\\\\)/login/)",
+      "Bash(head -200 /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
+      "Bash(grep -n \"function CreateContentModal\\\\|function ContentForm\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
+      "Bash(grep -n \"function.*Modal\\\\|showAddContent\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)"
     ],
     "additionalDirectories": [
       "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",

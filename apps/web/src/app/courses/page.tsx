@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { sendGAEvent } from '@next/third-parties/google';
 import { useRouter } from 'next/navigation';
 import { useCourses, useCourseSubjects, useCreateCourse, useActiveVersions } from '@/hooks/useCourses';
 import { useAuth } from '@/hooks/useAuth';
@@ -99,6 +100,7 @@ export default function CoursesPage() {
         institution: reqInstitution.trim() || undefined,
         notes: reqNotes.trim() || undefined,
       });
+      sendGAEvent('event', 'requested_course', { course_name: reqName.trim() });
       setReqSuccess(true);
     } catch (e) {
       setReqError(e instanceof Error ? e.message : 'Failed to submit request');

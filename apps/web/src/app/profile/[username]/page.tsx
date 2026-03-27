@@ -1,7 +1,8 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { sendGAEvent } from '@next/third-parties/google';
 import { useUserProfile, useUserVersions, useUserStats, useUserSolutions, useCurrentUser } from '@/hooks/useUsers';
 import { LatexContent } from '@/components/content/latex-content';
 import { usersApi } from '@/lib/api/users';
@@ -141,6 +142,10 @@ export default function ProfilePage({
   const { data: stats } = useUserStats(username);
   const { data: solutions, isLoading: solutionsLoading } = useUserSolutions(username);
   const { data: currentUser } = useCurrentUser();
+
+  useEffect(() => {
+    if (profile) sendGAEvent('event', 'profile_viewed', { username: profile.username, is_own_profile: currentUser?.id === profile.id });
+  }, [profile?.id]);
 
   const [msgOpen, setMsgOpen] = useState(false);
   const [msgSubject, setMsgSubject] = useState('');

@@ -5,6 +5,7 @@ import 'katex/dist/katex.min.css';
 import { Providers } from '@/components/providers';
 import { Navbar } from '@/components/ui/navbar';
 import { BackgroundAnimation } from '@/components/ui/background-animation';
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 const publicSans = Public_Sans({ subsets: ['latin'], variable: '--font-display' });
 
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">{children}</main>
         </Providers>
+        <GoogleAnalytics gaId="G-YNCYSFSZYR" />
       </body>
     </html>
   );

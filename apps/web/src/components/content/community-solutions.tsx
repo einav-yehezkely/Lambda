@@ -13,6 +13,7 @@ import {
 import { LatexContent } from './latex-content';
 import { LatexEditor } from '@/components/ui/latex-editor';
 import type { Solution } from '@lambda/shared';
+import { sendGAEvent } from '@next/third-parties/google';
 
 function AuthorAvatar({ solution }: { solution: Solution }) {
   const author = solution.author;
@@ -55,6 +56,7 @@ function SolutionRow({
   const handleVote = (vote: 1 | -1) => {
     if (!currentUserId) return;
     voteSolution.mutate({ id: solution.id, vote, contentItemId });
+    sendGAEvent('event', vote === 1 ? 'solution_upvoted' : 'solution_downvoted', { solution_id: solution.id });
   };
 
   const handleSaveEdit = async () => {
@@ -182,6 +184,7 @@ export function CommunitySolutions({ contentItemId }: { contentItemId: string })
     setFormError('');
     try {
       await createSolution.mutateAsync({ content_item_id: contentItemId, content: newContent.trim() });
+      sendGAEvent('event', 'solution_submitted', { content_item_id: contentItemId });
       setNewContent('');
       setShowForm(false);
     } catch (err) {

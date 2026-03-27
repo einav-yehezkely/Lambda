@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
+import { sendGAEvent } from '@next/third-parties/google';
 
 export function useAuth() {
   const router = useRouter();
@@ -21,11 +22,16 @@ export function useAuth() {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.access_token) {
         localStorage.setItem('token', session.access_token);
+        if (event === 'SIGNED_IN') {
+          const createdAt = session.user?.created_at;
+          const isNewUser = !!createdAt && (Date.now() - new Date(createdAt).getTime()) < 60_000;
+          sendGAEvent('event', isNewUser ? 'signup' : 'login', { method: 'google' });
+        }
       } else {
         localStorage.removeItem('token');
       }

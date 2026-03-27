@@ -10,6 +10,7 @@ import { useContentTitleSearch } from '@/hooks/useTopics';
 import { Modal } from '@/components/ui/modal';
 import type { CourseVersion } from '@lambda/shared';
 import { INSTITUTIONS, getFullName } from '@/lib/institutions';
+import { sendGAEvent } from '@next/third-parties/google';
 
 const SEMESTER_LABEL: Record<string, string> = {
   A: 'Semester A', B: 'Semester B', Summer: 'Summer',
@@ -186,6 +187,10 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
   const deleteCourse = useDeleteCourse();
   const updateCourse = useUpdateCourse();
 
+  useEffect(() => {
+    if (course) sendGAEvent('event', 'course_viewed', { course_id: courseId, course_title: course.title });
+  }, [course?.id]);
+
   // Edit course modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -331,6 +336,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         visibility: vVisibility,
         based_on_version_id: forkFrom?.id,
       });
+      sendGAEvent('event', 'version_created', { course_id: courseId, is_fork: !!forkFrom });
       setShowModal(false);
       router.push(`/courses/${courseId}/versions/${version.id}`);
     } catch (e) {

@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTopics, useVersionContent, useCreateContent, useUpdateContent, useCreateTopic, useDeleteTopic } from '@/hooks/useTopics';
 import { topicsApi, contentApi } from '@/lib/api/content';
 import { compressImage } from '@/lib/compress-image';
+import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfileById, useCurrentUser } from '@/hooks/useUsers';
 import { ContentItemCard } from '@/components/content/content-item-card';
@@ -738,6 +739,7 @@ function AddContentModal({
         });
       }
 
+      sendGAEvent('event', 'content_item_added', { version_id: versionId, type });
       onClose();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Failed to create item');
@@ -982,6 +984,10 @@ export default function VersionPage({
   const { data: activeVersions } = useActiveVersions(!!user);
   const enrollCourse = useEnrollCourse();
   const isEnrolled = (activeVersions ?? []).some((v) => v.version_id === versionId && v.enrolled);
+
+  useEffect(() => {
+    if (version) sendGAEvent('event', 'version_viewed', { version_id: versionId, course_id: courseId });
+  }, [version?.id]);
 
   const handlePractice = async () => {
     if (user && !isEnrolled) {

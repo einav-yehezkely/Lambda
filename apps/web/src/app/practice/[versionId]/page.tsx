@@ -11,6 +11,7 @@ import { CommunitySolutions } from '@/components/content/community-solutions';
 import { ReportErrorButton } from '@/components/content/report-error';
 import type { VersionContentItem, PracticeMode, ProgressStatus } from '@lambda/shared';
 import type { TopicCounts } from '@/lib/api/practice';
+import { sendGAEvent } from '@next/third-parties/google';
 
 // ─── Content type definitions (what to practice) ──────────────────────────────
 
@@ -355,6 +356,7 @@ export default function PracticePage({
       setOriginalItemCount(data.length);
       setStartedAt(Date.now());
       setPhase('active');
+      sendGAEvent('event', 'practice_started', { version_id: versionId, content_type: selectedContentType, item_count: data.length });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load session');
       setPhase('setup');
@@ -368,6 +370,7 @@ export default function PracticePage({
     const timeSpent = Math.round((Date.now() - startedAt) / 1000);
 
     setResults((prev) => [...prev, { content_item_id: item.content_item_id, outcome }]);
+    sendGAEvent('event', 'question_answered', { version_id: versionId, outcome });
 
     // Fire-and-forget — don't await so the UI advances immediately
     practiceApi.submitAttempt({
@@ -390,6 +393,7 @@ export default function PracticePage({
       setMcqOutcome(null);
       setStartedAt(Date.now());
     } else if (index + 1 >= items.length) {
+      sendGAEvent('event', 'practice_completed', { version_id: versionId, items_completed: originalItemCount });
       setPhase('done');
     } else {
       setIndex((i) => i + 1);
@@ -405,6 +409,7 @@ export default function PracticePage({
 
   const advanceItem = () => {
     if (index + 1 >= items.length) {
+      sendGAEvent('event', 'practice_completed', { version_id: versionId, items_completed: originalItemCount });
       setPhase('done');
     } else {
       setIndex((i) => i + 1);
@@ -969,7 +974,7 @@ export default function PracticePage({
 
           {isFlashcard ? (
             <div>
-              <FlashCard key={index} front={flashcardFront} back={flashcardBack} onFirstFlip={() => setRevealed(true)} />
+              <FlashCard key={index} front={flashcardFront} back={flashcardBack} onFirstFlip={() => { setRevealed(true); sendGAEvent('event', 'solution_revealed', { version_id: versionId }); }} />
               {revealed ? (
                 <>
                   <ReportErrorButton contentItemId={ci.id} />
@@ -1025,6 +1030,8 @@ export default function PracticePage({
                           }).catch(() => {});
                           setMcqOutcome(outcome);
                           setRevealed(true);
+                          sendGAEvent('event', 'question_answered', { version_id: versionId, outcome });
+                          sendGAEvent('event', 'solution_revealed', { version_id: versionId });
                         }}
                         className="w-full mt-3 py-2.5 rounded-xl text-sm font-semibold bg-[#1e3a8a] text-white hover:bg-[#1e3a8a]/90 transition-colors"
                       >
@@ -1118,7 +1125,7 @@ export default function PracticePage({
             !revealed ? (
               <div>
                 <button
-                  onClick={() => setRevealed(true)}
+                  onClick={() => { setRevealed(true); sendGAEvent('event', 'solution_revealed', { version_id: versionId }); }}
                   className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-400 dark:text-slate-500 hover:border-[#1e3a8a]/40 hover:text-[#1e3a8a] hover:bg-[#1e3a8a]/5 transition-all font-medium"
                 >
                   Reveal solution

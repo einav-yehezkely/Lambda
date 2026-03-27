@@ -11,6 +11,7 @@ import { FlashCard } from './flash-card';
 import { useUpdateContent, useDeleteContent } from '@/hooks/useTopics';
 import { contentApi } from '@/lib/api/content';
 import { compressImage } from '@/lib/compress-image';
+import { sendGAEvent } from '@next/third-parties/google';
 
 const TYPE_LABEL: Record<string, string> = {
   proof: 'Proof',
@@ -759,7 +760,7 @@ export function ContentItemCard({
         {/* Clickable area */}
         <button
           type="button"
-          onClick={() => setShowView(true)}
+          onClick={() => { setShowView(true); sendGAEvent('event', 'content_item_viewed', { content_item_id: content_item.id }); }}
           className="text-start px-4 pt-4 pb-3 flex flex-col gap-2 flex-1"
         >
           <span className="font-semibold text-gray-900 dark:text-slate-100 text-base leading-snug" dir={hDir(content_item.title)}>
