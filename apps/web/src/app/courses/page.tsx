@@ -26,6 +26,7 @@ export default function CoursesPage() {
 
   const [search, setSearch] = useState('');
   const [subject, setSubject] = useState('');
+  const [subjectOpen, setSubjectOpen] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
   // Admin: create course modal state
@@ -131,31 +132,42 @@ export default function CoursesPage() {
           dir="auto"
           className="flex-1 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 dark:text-slate-100 dark:placeholder:text-slate-500 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500"
         />
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setSubject('')}
-            className={`text-sm px-3 py-2 rounded-md border transition-colors ${
-              subject === ''
-                ? 'bg-gray-900 text-white border-gray-900'
-                : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-gray-500 dark:hover:border-slate-400'
-            }`}
-          >
-            All
-          </button>
-          {uniqueSubjects.map((s) => (
+        {uniqueSubjects.length > 0 && (
+          <div className="relative">
             <button
-              key={s}
-              onClick={() => setSubject(s)}
-              className={`text-sm px-3 py-2 rounded-md border transition-colors ${
-                subject === s
-                  ? 'bg-gray-900 text-white border-gray-900'
-                  : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-gray-500 dark:hover:border-slate-400'
+              onClick={() => setSubjectOpen((v) => !v)}
+              className={`flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                subject
+                  ? 'bg-[#1e3a8a]/10 text-[#1e3a8a] border-[#1e3a8a]/20'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
-              {formatSubject(s)}
+              {subject ? formatSubject(subject) : 'Subject'}
+              <svg className={`w-3 h-3 transition-transform ${subjectOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
-          ))}
-        </div>
+            {subjectOpen && (
+              <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 min-w-[160px]">
+                <button
+                  onClick={() => { setSubject(''); setSubjectOpen(false); }}
+                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${!subject ? 'font-semibold text-[#1e3a8a]' : 'text-slate-700 dark:text-slate-300'}`}
+                >
+                  All subjects
+                </button>
+                {uniqueSubjects.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => { setSubject(s); setSubjectOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${subject === s ? 'font-semibold text-[#1e3a8a]' : 'text-slate-700 dark:text-slate-300'}`}
+                  >
+                    {formatSubject(s)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {isLoading && <div className="text-sm text-gray-400 dark:text-slate-500">Loading courses...</div>}

@@ -369,17 +369,14 @@ export default function PracticePage({
 
     setResults((prev) => [...prev, { content_item_id: item.content_item_id, outcome }]);
 
-    try {
-      await practiceApi.submitAttempt({
-        version_id: versionId,
-        content_item_id: item.content_item_id,
-        is_correct: outcome === 'solved' || outcome === 'easy',
-        status: outcome,
-        time_spent_seconds: timeSpent,
-      });
-    } catch {
-      // Non-blocking
-    }
+    // Fire-and-forget — don't await so the UI advances immediately
+    practiceApi.submitAttempt({
+      version_id: versionId,
+      content_item_id: item.content_item_id,
+      is_correct: outcome === 'solved' || outcome === 'easy',
+      status: outcome,
+      time_spent_seconds: timeSpent,
+    }).catch(() => {});
 
     // "Again" → re-add item to end of queue and continue
     const shouldRequeue = requeue ?? (outcome === 'incorrect');
