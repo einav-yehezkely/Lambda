@@ -284,6 +284,9 @@ export default function HomePage() {
           <>
             <div className="fixed inset-0 z-40" onClick={() => setDonateOpen(false)} />
             <div className="absolute bottom-14 right-0 w-44 rounded-xl shadow-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+              <div className="px-4 py-2.5 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-700">
+                Donate
+              </div>
               <a
                 href="https://www.bitpay.co.il/app/me/7255F29B-B884-D411-4FD8-1DAFC99F491FC4A6"
                 target="_blank"
