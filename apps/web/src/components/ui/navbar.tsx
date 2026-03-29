@@ -14,6 +14,7 @@ export function Navbar() {
   const { isDark, toggle } = useTheme();
   const [profile, setProfile] = useState<LambdaUser | null>(null);
   const [cachedUsername, setCachedUsername] = useState<string | null>(null);
+  const [donateOpen, setDonateOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -61,6 +62,41 @@ export function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2 sm:gap-4">
+          {/* Donate button */}
+          <div className="relative">
+            <button
+              onClick={() => setDonateOpen((o) => !o)}
+              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-[#1e3a8a] hover:bg-blue-900 text-white transition-colors"
+            >
+              Donate ♥
+            </button>
+            {donateOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setDonateOpen(false)} />
+                <div className="absolute left-0 mt-2 w-44 rounded-xl shadow-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+                  <a
+                    href="https://www.bitpay.co.il/app/me/7255F29B-B884-D411-4FD8-1DAFC99F491FC4A6"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setDonateOpen(false)}
+                    className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <span>💳</span> Bit
+                  </a>
+                  <a
+                    href="https://paypal.me/einavye?locale.x=he_IL&country.x=IL"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setDonateOpen(false)}
+                    className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <span>🅿️</span> PayPal
+                  </a>
+                </div>
+              </>
+            )}
+          </div>
+
           <button
             onClick={toggle}
             aria-label="Toggle dark mode"
