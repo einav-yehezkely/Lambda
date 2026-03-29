@@ -62,8 +62,8 @@ export function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Donate button */}
-          <div className="relative">
+          {/* Donate button – hidden on mobile (shown as FAB on homepage) */}
+          <div className="relative hidden sm:block">
             <button
               onClick={() => setDonateOpen((o) => !o)}
               className="text-sm font-medium px-3 py-1.5 rounded-lg bg-[#1e3a8a] hover:bg-blue-900 text-white transition-colors"

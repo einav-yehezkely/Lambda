@@ -29,6 +29,7 @@ export default function HomePage() {
   const [subjectOpen, setSubjectOpen] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
 
   const [courseTitle, setCourseTitle] = useState('');
   const [courseSubject, setCourseSubject] = useState('cs');
@@ -276,6 +277,42 @@ export default function HomePage() {
 
       {/* Leaderboard - right column */}
       <LeaderboardPanel />
+
+      {/* Donate FAB – mobile only */}
+      <div className="sm:hidden fixed bottom-6 right-6 z-50">
+        {donateOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setDonateOpen(false)} />
+            <div className="absolute bottom-14 right-0 w-44 rounded-xl shadow-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+              <a
+                href="https://www.bitpay.co.il/app/me/7255F29B-B884-D411-4FD8-1DAFC99F491FC4A6"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setDonateOpen(false)}
+                className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <span>💳</span> Bit
+              </a>
+              <a
+                href="https://paypal.me/einavye?locale.x=he_IL&country.x=IL"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setDonateOpen(false)}
+                className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <span>🅿️</span> PayPal
+              </a>
+            </div>
+          </>
+        )}
+        <button
+          onClick={() => setDonateOpen((o) => !o)}
+          className="w-12 h-12 rounded-full bg-[#1e3a8a] hover:bg-blue-900 text-white shadow-lg flex items-center justify-center text-lg transition-colors"
+          aria-label="Donate"
+        >
+          ♥
+        </button>
+      </div>
 
       {/* New Course Modal */}
       {showModal && (
