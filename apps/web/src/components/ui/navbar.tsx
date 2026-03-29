@@ -11,7 +11,7 @@ import { useTheme } from '@/contexts/theme-context';
 
 export function Navbar() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
-  const { isDark, toggle } = useTheme();
+  const { toggle } = useTheme();
   const [profile, setProfile] = useState<LambdaUser | null>(null);
   const [cachedUsername, setCachedUsername] = useState<string | null>(null);
   const [donateOpen, setDonateOpen] = useState(false);
@@ -68,7 +68,7 @@ export function Navbar() {
               onClick={() => setDonateOpen((o) => !o)}
               className="text-sm font-medium px-3 py-1.5 rounded-lg bg-[#1e3a8a] hover:bg-blue-900 text-white transition-colors"
             >
-              Donate ♥
+              <span className="hidden sm:inline">Donate </span>♥
             </button>
             {donateOpen && (
               <>
