@@ -419,7 +419,7 @@ export class CoursesService {
 
     const authorName = (author as any)?.username ?? authorId;
     const courseTitle = (template as any)?.title ?? 'Unknown course';
-    const appUrl = this.config.get<string>('APP_URL') ?? '';
+    const appUrl = this.config.get<string>('FRONTEND_URL') ?? '';
     const versionUrl = `${appUrl}/courses/${dto.template_id}/versions/${version.id}`;
 
     const lines = [
