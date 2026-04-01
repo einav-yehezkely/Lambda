@@ -363,6 +363,16 @@ export class CoursesService {
     if (insertError) throw new InternalServerErrorException(insertError.message);
   }
 
+  async listAllVersionsAdmin() {
+    const { data, error } = await this.db
+      .from('course_versions')
+      .select('*, course_templates(id, title, subject), author:users!course_versions_author_id_fkey(username, display_name, avatar_url)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new InternalServerErrorException(error.message);
+    return (data ?? []) as CourseVersion[];
+  }
+
   // ─── Version Reporting ──────────────────────────────────────────────────────
 
   async reportVersion(versionId: string, reason: string, reporterUsername: string, reporterEmail?: string): Promise<void> {

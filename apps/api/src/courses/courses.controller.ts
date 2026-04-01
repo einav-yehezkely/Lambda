@@ -25,6 +25,7 @@ import { CreateVersionDto } from './dto/create-version.dto';
 import { UpdateVersionDto } from './dto/update-version.dto';
 import { RateVersionDto } from './dto/rate-version.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { AdminGuard } from '../common/guards/admin.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '@lambda/shared';
 
@@ -86,6 +87,14 @@ export class CoursesController {
     @CurrentUser() user: User,
   ) {
     return this.coursesService.updateCourse(id, dto, user.id, user.is_admin);
+  }
+
+  @Get('admin/versions')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ description: 'List all versions across all courses (admin only)' })
+  listAllVersionsAdmin() {
+    return this.coursesService.listAllVersionsAdmin();
   }
 
   @Get(':id/versions')

@@ -48,6 +48,8 @@ export const coursesApi = {
   reportVersion: (id: string, reason: string) =>
     api.post<void>(`/api/courses/versions/${id}/report`, { reason }),
 
+  listAllVersions: () => api.get<CourseVersion[]>('/api/courses/admin/versions'),
+
   createVersion: (body: {
     template_id: string;
     title: string;

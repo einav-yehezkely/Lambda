@@ -158,6 +158,12 @@ export function Navbar() {
                   >
                     Requests
                   </Link>
+                  <Link
+                    href="/admin/versions"
+                    className="hidden sm:inline text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    Versions
+                  </Link>
                 </>
               )}
               <button

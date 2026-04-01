@@ -172,6 +172,13 @@ export function useRateVersion(courseId: string) {
   });
 }
 
+export function useAllVersions() {
+  return useQuery({
+    queryKey: ['all-versions-admin'],
+    queryFn: () => coursesApi.listAllVersions(),
+  });
+}
+
 export function useCreateVersion() {
   const queryClient = useQueryClient();
   return useMutation({
