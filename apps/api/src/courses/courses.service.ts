@@ -247,6 +247,10 @@ export class CoursesService {
       await this.forkTopicsAndContent(based_on_version_id, newVersion.id);
     }
 
+    this.notifyAdminNewVersion(newVersion, dto, userId).catch((err: unknown) =>
+      console.warn('Failed to send new-version email:', err),
+    );
+
     return newVersion;
   }
 
@@ -405,6 +409,31 @@ export class CoursesService {
     ].join('\n');
 
     await this.sendMail(subject, text);
+  }
+
+  private async notifyAdminNewVersion(version: CourseVersion, dto: CreateVersionDto, authorId: string): Promise<void> {
+    const [{ data: author }, { data: template }] = await Promise.all([
+      this.db.from('users').select('username').eq('id', authorId).single(),
+      this.db.from('course_templates').select('title').eq('id', dto.template_id).single(),
+    ]);
+
+    const authorName = (author as any)?.username ?? authorId;
+    const courseTitle = (template as any)?.title ?? 'Unknown course';
+    const appUrl = this.config.get<string>('APP_URL') ?? '';
+    const versionUrl = `${appUrl}/courses/${dto.template_id}/versions/${version.id}`;
+
+    const lines = [
+      `A user added a new course version.`,
+      ``,
+      `Author:      ${authorName}`,
+      `Course:      ${courseTitle}`,
+      `Version:     ${version.title}`,
+      `Visibility:  ${version.visibility ?? dto.visibility ?? 'public'}`,
+    ];
+    if (dto.description) lines.push(``, `Description:`, dto.description);
+    lines.push(``, `Link: ${versionUrl}`);
+
+    await this.sendMail(`Lambda – New Version: ${courseTitle} · ${version.title}`, lines.join('\n'));
   }
 
   private async sendMail(subject: string, text: string): Promise<void> {
