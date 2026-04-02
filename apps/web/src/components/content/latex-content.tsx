@@ -71,7 +71,7 @@ function parseSegments(text: string): Segment[] {
 
 // ── Inline formatting (Markdown-style) ───────────────────────────────────────
 // Order matters: longer tokens first to avoid partial matches.
-const INLINE_RE = /(\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*|_(.+?)_)/g;
+const INLINE_RE = /(\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*)/g;
 
 function renderInline(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
@@ -84,7 +84,6 @@ function renderInline(text: string): React.ReactNode[] {
     else if (m[3] !== undefined) parts.push(<u key={m.index}>{m[3]}</u>);
     else if (m[4] !== undefined) parts.push(<del key={m.index}>{m[4]}</del>);
     else if (m[5] !== undefined) parts.push(<em key={m.index}>{m[5]}</em>);
-    else if (m[6] !== undefined) parts.push(<em key={m.index}>{m[6]}</em>);
     last = m.index + m[0].length;
   }
   if (last < text.length) parts.push(text.slice(last));
