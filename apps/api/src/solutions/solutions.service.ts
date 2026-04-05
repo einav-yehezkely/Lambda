@@ -4,6 +4,8 @@ import {
   ForbiddenException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Resend } from 'resend';
 import { getSupabaseClient } from '../common/supabase.client';
 import { Solution } from '@lambda/shared';
 import { CreateSolutionDto } from './dto/create-solution.dto';
@@ -11,6 +13,8 @@ import { VoteSolutionDto } from './dto/vote-solution.dto';
 
 @Injectable()
 export class SolutionsService {
+  constructor(private readonly config: ConfigService) {}
+
   private get db() {
     return getSupabaseClient();
   }
@@ -47,6 +51,9 @@ export class SolutionsService {
       .single();
 
     if (error) throw new InternalServerErrorException(error.message);
+
+    this.notifyAdminNewSolution(dto.content_item_id, (data as any).author?.username ?? null, dto.content).catch(() => null);
+
     return { ...(data as any), vote_count: 0, user_vote: null } as Solution;
   }
 
@@ -94,6 +101,49 @@ export class SolutionsService {
       );
 
     if (error) throw new InternalServerErrorException(error.message);
+  }
+
+  // ─── Admin email notification ─────────────────────────────────────────────────
+
+  private async notifyAdminNewSolution(contentItemId: string, authorUsername: string | null, content: string): Promise<void> {
+    const apiKey = this.config.get<string>('RESEND_API_KEY');
+    const adminEmail = this.config.get<string>('ADMIN_EMAIL');
+    if (!apiKey || !adminEmail) return;
+
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'https://lambda-site.vercel.app';
+    const from = this.config.get<string>('RESEND_FROM') ?? 'Lambda <noreply@lambda-learn.com>';
+
+    const { data: item } = await this.db
+      .from('content_items')
+      .select('title')
+      .eq('id', contentItemId)
+      .single();
+
+    const { data: junction } = await this.db
+      .from('version_content_items')
+      .select('version_id, course_version:course_versions!version_content_items_version_id_fkey(template_id)')
+      .eq('content_item_id', contentItemId)
+      .limit(1)
+      .single();
+
+    const templateId = (junction?.course_version as any)?.template_id;
+    const versionId = junction?.version_id;
+    const itemLink = templateId && versionId
+      ? `${frontendUrl}/courses/${templateId}/versions/${versionId}`
+      : null;
+
+    const authorLine = authorUsername
+      ? `By: ${authorUsername} (${frontendUrl}/profile/${authorUsername})`
+      : 'By: Anonymous';
+    const linkLine = itemLink ? `\nLink: ${itemLink}` : '';
+
+    const resend = new Resend(apiKey);
+    await resend.emails.send({
+      from,
+      to: adminEmail,
+      subject: `Lambda – New Community Solution: "${item?.title ?? contentItemId}"`,
+      text: `${authorLine}\nQuestion: "${item?.title ?? contentItemId}"${linkLine}\n\nSolution:\n${content}`,
+    });
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────────
