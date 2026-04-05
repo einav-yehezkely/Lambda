@@ -139,16 +139,34 @@ export class UsersService {
   async findOrCreate(input: FindOrCreateInput): Promise<User> {
     const existing = await this.findById(input.id);
     if (existing) {
+      const updates: Record<string, unknown> = {};
+
       // Backfill display_name / avatar_url if they were missing (e.g. created by DB trigger)
       if (!existing.display_name && input.display_name) {
-        const { data } = await this.db
-          .from('users')
-          .update({ display_name: input.display_name, avatar_url: input.avatar_url })
-          .eq('id', input.id)
-          .select()
-          .single();
+        updates.display_name = input.display_name;
+        updates.avatar_url = input.avatar_url;
+      }
+
+      // First login: first_login_at is null → set it and notify admin
+      if (!(existing as any).first_login_at) {
+        updates.first_login_at = new Date().toISOString();
+
+        const adminEmail = this.config.get<string>('ADMIN_EMAIL');
+        const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'https://lambda-site.vercel.app';
+        if (adminEmail) {
+          this.sendMail(
+            adminEmail,
+            `Lambda – New User: ${existing.username}`,
+            `A new user signed up.\n\nUsername: ${existing.username}\nEmail: ${existing.email}\nProfile: ${frontendUrl}/profile/${existing.username}`,
+          ).catch(() => null);
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const { data } = await this.db.from('users').update(updates).eq('id', input.id).select().single();
         if (data) return data as User;
       }
+
       return existing;
     }
 
@@ -170,16 +188,6 @@ export class UsersService {
     if (error) {
       if (error.code === '23505') throw new ConflictException('User already exists');
       throw new InternalServerErrorException(`Failed to create user: ${error.message}`);
-    }
-
-    const adminEmail = this.config.get<string>('ADMIN_EMAIL');
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'https://lambda-site.vercel.app';
-    if (adminEmail) {
-      this.sendMail(
-        adminEmail,
-        `Lambda – New User: ${username}`,
-        `A new user signed up.\n\nUsername: ${username}\nEmail: ${input.email}\nProfile: ${frontendUrl}/profile/${username}`,
-      ).catch(() => null);
     }
 
     return data as User;
