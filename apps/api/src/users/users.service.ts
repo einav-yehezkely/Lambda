@@ -172,6 +172,16 @@ export class UsersService {
       throw new InternalServerErrorException(`Failed to create user: ${error.message}`);
     }
 
+    const adminEmail = this.config.get<string>('ADMIN_EMAIL');
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'https://lambda-site.vercel.app';
+    if (adminEmail) {
+      this.sendMail(
+        adminEmail,
+        `Lambda – New User: ${username}`,
+        `A new user signed up.\n\nUsername: ${username}\nEmail: ${input.email}\nProfile: ${frontendUrl}/profile/${username}`,
+      ).catch(() => null);
+    }
+
     return data as User;
   }
 
