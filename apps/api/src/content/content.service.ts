@@ -351,8 +351,9 @@ export class ContentService {
 
     const templateId = (junction?.course_version as any)?.template_id;
     const versionId = junction?.version_id;
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'https://lambda-site.vercel.app';
     const itemLink = templateId && versionId
-      ? `https://lambda-site.vercel.app/courses/${templateId}/versions/${versionId}`
+      ? `${frontendUrl}/courses/${templateId}/versions/${versionId}`
       : null;
 
     const { data: author } = await this.db
@@ -367,7 +368,7 @@ export class ContentService {
 
     if (!apiKey) throw new InternalServerErrorException('Email service not configured');
 
-    const appUrl = this.config.get<string>('APP_URL') ?? 'https://lambda-site.vercel.app';
+    const appUrl = frontendUrl;
 
     const reporterLine = reporterUsername
       ? `Reported by: ${reporterUsername} (${appUrl}/profile/${reporterUsername})`
