@@ -12,6 +12,7 @@ import { sendGAEvent } from '@next/third-parties/google';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfileById, useCurrentUser } from '@/hooks/useUsers';
 import { ContentItemCard } from '@/components/content/content-item-card';
+import { PdfImportModal } from '@/components/content/pdf-import-modal';
 import { ReportVersionButton } from '@/components/content/report-version';
 import { VersionDrive } from '@/components/version-drive';
 import { Modal } from '@/components/ui/modal';
@@ -962,6 +963,7 @@ export default function VersionPage({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showAddContent, setShowAddContent] = useState(false);
+  const [showPdfImport, setShowPdfImport] = useState(false);
   const [showManageTopics, setShowManageTopics] = useState(false);
   const [showManageTypes, setShowManageTypes] = useState(false);
   const [showEditVersion, setShowEditVersion] = useState(false);
@@ -1135,6 +1137,17 @@ export default function VersionPage({
           <div className="flex items-center gap-1 py-2 shrink-0">
             {isAuthor && (
               <>
+                <button
+                  onClick={() => setShowPdfImport(true)}
+                  className="text-sm text-gray-600 dark:text-slate-300 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors whitespace-nowrap flex items-center gap-1.5"
+                  title="Import content cards from a PDF using AI"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  Import PDF
+                </button>
                 <button
                   onClick={() => setShowAddContent(true)}
                   className="text-sm text-gray-600 dark:text-slate-300 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors whitespace-nowrap flex items-center gap-1"
@@ -1376,6 +1389,18 @@ export default function VersionPage({
       {showManageTypes && version && <ManageTypesModal version={version} onClose={() => setShowManageTypes(false)} />}
       {showAddContent && <AddContentModal versionId={versionId} topics={topics ?? []} activeTypes={getActiveTypes(version)} onSaveDefaultSections={async (type, sections) => { const current = getActiveTypes(version); await updateVersion.mutateAsync({ id: versionId, body: { content_types: current.map((t) => t.value === type ? { ...t, default_sections: sections } : t) } }); }} onClose={() => setShowAddContent(false)} />}
       {showEditVersion && version && <EditVersionModal version={version} onClose={() => setShowEditVersion(false)} />}
+      {showPdfImport && (
+        <PdfImportModal
+          versionId={versionId}
+          topics={topics ?? []}
+          onClose={() => setShowPdfImport(false)}
+          onImported={() => {
+            queryClient.invalidateQueries({ queryKey: ['content', { version_id: versionId }] });
+            queryClient.invalidateQueries({ queryKey: ['content'] });
+            setShowPdfImport(false);
+          }}
+        />
+      )}
     </div>
   );
 }

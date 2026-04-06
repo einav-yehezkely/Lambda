@@ -1,11 +1,17 @@
+import { createClient } from '@/lib/supabase/client';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token =
-    typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  let token: string | null = null;
+  if (typeof window !== 'undefined') {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    token = session?.access_token ?? null;
+  }
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,

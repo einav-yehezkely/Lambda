@@ -49,7 +49,21 @@
       "Bash(ls -la /c/Users/einav/clone_here/Lambda/apps/web/src/app/\\\\\\(auth\\\\\\)/login/)",
       "Bash(head -200 /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
       "Bash(grep -n \"function CreateContentModal\\\\|function ContentForm\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
-      "Bash(grep -n \"function.*Modal\\\\|showAddContent\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)"
+      "Bash(grep -n \"function.*Modal\\\\|showAddContent\" /c/Users/einav/clone_here/Lambda/apps/web/src/app/courses/[courseId]/versions/[versionId]/page.tsx)",
+      "Bash(npm install openai pdf-parse)",
+      "Bash(npm install -D @types/pdf-parse)",
+      "Bash(git diff HEAD apps/web/src/app/courses/\\\\[courseId\\\\]/versions/\\\\[versionId\\\\]/page.tsx)",
+      "Bash(node -e \"const m = require\\(''C:/Users/einav/clone_here/Lambda/node_modules/pdf-parse''\\); console.log\\(typeof m, typeof m.default, Object.keys\\(m\\).slice\\(0,10\\)\\)\")",
+      "Bash(node -e \"const m = require\\(''C:/Users/einav/clone_here/Lambda/node_modules/pdf-parse''\\); console.log\\(typeof m.PDFParse, Object.keys\\(m\\)\\)\")",
+      "Bash(node -e \"const { PDFParse } = require\\(''C:/Users/einav/clone_here/Lambda/node_modules/pdf-parse''\\); const p = new PDFParse\\(\\); console.log\\(typeof p.pdf, Object.getOwnPropertyNames\\(Object.getPrototypeOf\\(p\\)\\)\\)\")",
+      "Bash(node -e \":*)",
+      "Bash(npm uninstall pdf-parse @types/pdf-parse)",
+      "Bash(npm install pdf-parse@1.1.1)",
+      "Bash(node -e \"const m = require\\(''C:/Users/einav/clone_here/Lambda/node_modules/pdf-parse''\\); console.log\\(typeof m\\)\")",
+      "Bash(npm install pdfjs-dist @napi-rs/canvas)",
+      "Bash(npm install @anthropic-ai/sdk)",
+      "Bash(node -e \"require\\(''@anthropic-ai/sdk''\\); console.log\\(''OK''\\)\")",
+      "Bash(npx tsc --noEmit --project tsconfig.json)"
     ],
     "additionalDirectories": [
       "C:\\Users\\einav\\clone_here\\Lambda\\apps\\web\\src\\app\\courses\\[courseId]\\versions",

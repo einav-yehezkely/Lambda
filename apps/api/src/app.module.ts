@@ -13,6 +13,7 @@ import { AnnouncementsModule } from './announcements/announcements.module';
 import { VersionFilesModule } from './version-files/version-files.module';
 import { CourseRequestsModule } from './course-requests/course-requests.module';
 import { SiteInfoModule } from './site-info/site-info.module';
+import { PdfImportModule } from './pdf-import/pdf-import.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { SiteInfoModule } from './site-info/site-info.module';
     VersionFilesModule,
     CourseRequestsModule,
     SiteInfoModule,
+    PdfImportModule,
   ],
 })
 export class AppModule {}
