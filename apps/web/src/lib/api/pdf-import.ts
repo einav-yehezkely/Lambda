@@ -1,7 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export interface AiCardMetadata {
-  question_format?: 'open' | 'multiple_choice';
+  question_format?: 'open' | 'multiple_choice' | 'flashcard';
   correct_option?: string;
   explanation?: string;
   sections?: Array<{ label: string; content: string }>;
@@ -12,8 +12,6 @@ export interface AiCard {
   title: string;
   content: string;
   solution?: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  tags: string[];
   topic_index: number | null;
   metadata?: AiCardMetadata;
 }

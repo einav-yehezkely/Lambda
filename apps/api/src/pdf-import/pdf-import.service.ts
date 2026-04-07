@@ -9,7 +9,6 @@ import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { getSupabaseClient } from '../common/supabase.client';
 
-const MAX_CARDS = 25;
 
 const SYSTEM_PROMPT_BASE = `You are an AI that extracts structured academic content cards for Lambda, a CS/Math learning platform used by Hebrew-speaking university students.
 
@@ -22,7 +21,7 @@ Recognize these Hebrew section headings and map them to the correct card type:
 | Hebrew heading          | type               |
 |-------------------------|---------------------|
 | \u05de\u05e9\u05e4\u05d8, \u05d8\u05e2\u05e0\u05d4, \u05de\u05e1\u05e7\u05e0\u05d4, \u05dc\u05de\u05d4 | "proof"            |
-| \u05d4\u05d2\u05d3\u05e8\u05d4, \u05e1\u05d9\u05de\u05d5\u05df            | "other"            |
+| \u05d4\u05d2\u05d3\u05e8\u05d4, \u05e1\u05d9\u05de\u05d5\u05df            | "exercise_question" (flashcard) |
 | \u05ea\u05e8\u05d2\u05d9\u05dc, \u05d1\u05e2\u05d9\u05d4             | "exercise_question"|
 | \u05e9\u05d0\u05dc\u05d4 (exam context)     | "exam_question"    |
 | \u05d0\u05dc\u05d2\u05d5\u05e8\u05d9\u05ea\u05dd                | "algorithm"        |
@@ -40,6 +39,25 @@ When you see: [\u05de\u05e9\u05e4\u05d8/\u05d8\u05e2\u05e0\u05d4/\u05de\u05e1\u0
   - title: the theorem label from the document (e.g., "\u05de\u05e9\u05e4\u05d8 3.2", "\u05dc\u05de\u05d4 \u05d4\u05d0\u05d5\u05d9\u05dc\u05e8", "\u05d8\u05e2\u05e0\u05d4")
   - content: the theorem/claim statement
   - solution: everything under "\u05d4\u05d5\u05db\u05d7\u05d4" until the next heading
+
+\u2501\u2501\u2501 FLASHCARD CONSTRUCTION (for \u05d4\u05d2\u05d3\u05e8\u05d4 / \u05e1\u05d9\u05de\u05d5\u05df) \u2501\u2501\u2501
+Definitions and notations become flashcard exercise questions:
+\u2192 type: "exercise_question"
+\u2192 title: the document label (e.g., "\u05d4\u05d2\u05d3\u05e8\u05d4 1.3 \u2014 \u05d2\u05e8\u05e3 \u05e7\u05e9\u05d9\u05e8")
+\u2192 content: the definition with 1\u20133 strategic [ ? ] blanks replacing the key concept
+\u2192 solution: the COMPLETE original definition VERBATIM (no blanks)
+\u2192 metadata.question_format: "flashcard"
+
+Rules for [ ? ] placement:
+- Replace the KEY TERM being defined or its most critical formal condition
+- Prefer covering mathematical thresholds, quantifiers, or defining criteria
+- 1 to 3 blanks per card maximum — do NOT blank every term
+- Preserve all LaTeX around the blank
+
+Example:
+  Original: "\u05d2\u05e8\u05e3 $G=(V,E)$ \u05e0\u05e7\u05e8\u05d0 \u05e7\u05e9\u05d9\u05e8 \u05d0\u05dd \u05dc\u05db\u05dc \u05e9\u05e0\u05d9 \u05e6\u05de\u05ea\u05d9\u05dd $u,v \\in V$ \u05e7\u05d9\u05d9\u05dd \u05de\u05e1\u05dc\u05d5\u05dc \u05de-$u$ \u05dc-$v$."
+  content:  "\u05d2\u05e8\u05e3 $G=(V,E)$ \u05e0\u05e7\u05e8\u05d0 [ ? ] \u05d0\u05dd \u05dc\u05db\u05dc \u05e9\u05e0\u05d9 \u05e6\u05de\u05ea\u05d9\u05dd $u,v \\in V$ \u05e7\u05d9\u05d9\u05dd \u05de\u05e1\u05dc\u05d5\u05dc \u05de-$u$ \u05dc-$v$."
+  solution: "\u05d2\u05e8\u05e3 $G=(V,E)$ \u05e0\u05e7\u05e8\u05d0 \u05e7\u05e9\u05d9\u05e8 \u05d0\u05dd \u05dc\u05db\u05dc \u05e9\u05e0\u05d9 \u05e6\u05de\u05ea\u05d9\u05dd $u,v \\in V$ \u05e7\u05d9\u05d9\u05dd \u05de\u05e1\u05dc\u05d5\u05dc \u05de-$u$ \u05dc-$v$."
 
 \u2501\u2501\u2501 TITLE RULES \u2501\u2501\u2501
 - Use the document's exact label: "\u05de\u05e9\u05e4\u05d8 3.2", "\u05d4\u05d2\u05d3\u05e8\u05d4 1.4", "\u05ea\u05e8\u05d2\u05d9\u05dc 5", "\u05d0\u05dc\u05d2\u05d5\u05e8\u05d9\u05ea\u05dd \u05e4\u05d5\u05e8\u05d3-\u05e4\u05d5\u05dc\u05e7\u05e8\u05e1\u05d5\u05df"
@@ -60,11 +78,9 @@ When you see: [\u05de\u05e9\u05e4\u05d8/\u05d8\u05e2\u05e0\u05d4/\u05de\u05e1\u0
     "title": "string (document label, Hebrew preserved)",
     "content": "string (LaTeX-enabled, Hebrew preserved)",
     "solution": "string (omit if absent)",
-    "difficulty": "easy" | "medium" | "hard" (omit if unclear),
-    "tags": ["string"],
     "topic_index": number | null,
     "metadata": {
-      "question_format": "open" | "multiple_choice" (omit if not applicable),
+      "question_format": "open" | "multiple_choice" | "flashcard" (omit if not applicable),
       "correct_option": "A" | "B" | "C" | "D" (only for multiple_choice),
       "explanation": "string" (only for multiple_choice),
       "sections": [{ "label": "string", "content": "string" }] (for algorithms)
@@ -73,7 +89,7 @@ When you see: [\u05de\u05e9\u05e4\u05d8/\u05d8\u05e2\u05e0\u05d4/\u05de\u05e1\u0
 }
 
 \u2501\u2501\u2501 RULES \u2501\u2501\u2501
-- Max 25 cards. Prioritize complete, self-contained items.
+- Prioritize complete, self-contained items.
 - Skip: page numbers, running headers/footers, table of contents, bibliography.
 - Do NOT create a card for "\u05d4\u05d5\u05db\u05d7\u05d4" alone - it belongs in the previous card's "solution".
 - Copy content and solution text VERBATIM from the source - do not paraphrase, summarize, or rephrase.
@@ -102,7 +118,7 @@ function extractJson(text: string): string {
 }
 
 export interface AiCardMetadata {
-  question_format?: 'open' | 'multiple_choice';
+  question_format?: 'open' | 'multiple_choice' | 'flashcard';
   correct_option?: string;
   explanation?: string;
   sections?: Array<{ label: string; content: string }>;
@@ -113,8 +129,6 @@ export interface AiCard {
   title: string;
   content: string;
   solution?: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  tags: string[];
   topic_index: number | null;
   metadata?: AiCardMetadata;
 }
@@ -219,7 +233,6 @@ export class PdfImportService {
       'algorithm',
       'other',
     ]);
-    const VALID_DIFF = new Set(['easy', 'medium', 'hard']);
 
     return raw
       .filter((c): c is Record<string, unknown> => typeof c === 'object' && c !== null)
@@ -243,21 +256,12 @@ export class PdfImportService {
             typeof c['solution'] === 'string' && c['solution'].trim()
               ? c['solution'].trim()
               : undefined,
-          difficulty: VALID_DIFF.has(c['difficulty'] as string)
-            ? (c['difficulty'] as AiCard['difficulty'])
-            : undefined,
-          tags: Array.isArray(c['tags'])
-            ? (c['tags'] as unknown[])
-                .filter((t) => typeof t === 'string')
-                .slice(0, 10) as string[]
-            : [],
           topic_index,
           metadata:
             typeof c['metadata'] === 'object' && c['metadata'] !== null
               ? (c['metadata'] as AiCardMetadata)
               : undefined,
         };
-      })
-      .slice(0, MAX_CARDS);
+      });
   }
 }

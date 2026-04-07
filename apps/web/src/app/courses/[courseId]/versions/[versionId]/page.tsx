@@ -957,7 +957,6 @@ export default function VersionPage({
   const { data: currentUser } = useCurrentUser();
   const [selectedTopic, setSelectedTopic] = useState('');
   const [selectedType, setSelectedType] = useState('');
-  const [selectedTag, setSelectedTag] = useState('');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'default' | 'type' | 'alpha'>('default');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -970,6 +969,7 @@ export default function VersionPage({
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showDrive, setShowDrive] = useState(false);
+  const queryClient = useQueryClient();
   const deleteVersion = useDeleteVersion();
   const updateVersion = useUpdateVersion();
 
@@ -1000,12 +1000,10 @@ export default function VersionPage({
 
   const TYPE_ORDER: Record<string, number> = { exam_question: 0, exercise_question: 1, proof: 2, algorithm: 3, other: 4 };
 
-  const allTags = Array.from(new Set(items?.flatMap((i) => i.content_item.tags) ?? [])).sort();
   const searchLower = search.toLowerCase();
   const filteredItems = (items ?? []).filter((i) => {
     if (selectedTopic && i.topic_id !== selectedTopic) return false;
     if (selectedType && i.content_item.type !== selectedType) return false;
-    if (selectedTag && !i.content_item.tags.includes(selectedTag)) return false;
     if (searchLower && !i.content_item.title.toLowerCase().includes(searchLower) && !i.content_item.content.toLowerCase().includes(searchLower)) return false;
     return true;
   });
@@ -1243,20 +1241,6 @@ export default function VersionPage({
               {t.label}
             </button>
           ))}
-          {allTags.length > 0 && (
-            <>
-              <span className="text-gray-200 dark:text-slate-700 self-center">|</span>
-              {allTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
-                  className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${selectedTag === tag ? 'bg-gray-900 text-white border-gray-900' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400 dark:hover:border-slate-500'}`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </>
-          )}
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => setShowDrive(true)}
@@ -1394,7 +1378,16 @@ export default function VersionPage({
           versionId={versionId}
           topics={topics ?? []}
           onClose={() => setShowPdfImport(false)}
-          onImported={() => {
+          onImported={(newlySavedTypes) => {
+            if (version && newlySavedTypes.length > 0) {
+              const current = getActiveTypes(version);
+              const currentValues = new Set(current.map((t) => t.value));
+              const TYPE_LABELS: Record<string, string> = { proof: 'Proof', exam_question: 'Exam Question', exercise_question: 'Exercise', algorithm: 'Algorithm', other: 'Other' };
+              const missing = newlySavedTypes.filter((t) => !currentValues.has(t)).map((t) => ({ value: t, label: TYPE_LABELS[t] ?? t }));
+              if (missing.length > 0) {
+                updateVersion.mutate({ id: versionId, body: { content_types: [...current, ...missing] } });
+              }
+            }
             queryClient.invalidateQueries({ queryKey: ['content', { version_id: versionId }] });
             queryClient.invalidateQueries({ queryKey: ['content'] });
             setShowPdfImport(false);

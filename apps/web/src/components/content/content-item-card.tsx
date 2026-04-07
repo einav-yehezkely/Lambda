@@ -42,12 +42,6 @@ const TOPIC_STRIP_COLORS = [
   '#a98467', // Warm Taupe
 ];
 
-const DIFFICULTY_COLOR: Record<string, string> = {
-  easy: 'text-green-600',
-  medium: 'text-yellow-600',
-  hard: 'text-red-600',
-};
-
 const INPUT_CLS = 'w-full border border-gray-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100';
 
 const HE_RE = /[\u0590-\u05FF]/;
@@ -110,7 +104,6 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
 
   const [title, setTitle] = useState(ci.title);
   const [contentType, setContentType] = useState(ci.type);
-  const [tagsInput, setTagsInput] = useState(ci.tags.join(', '));
   const [topicId, setTopicId] = useState(item.topic_id ?? '');
   const [questionFormat, setQuestionFormat] = useState<QuestionFormat>((ci.metadata?.question_format ?? 'open') as QuestionFormat);
   const [correctOptions, setCorrectOptions] = useState<string[]>(() => {
@@ -236,7 +229,6 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
           type: contentType,
           title: title.trim(),
           content: sections[0]?.content || title.trim(),
-          tags: tagsInput ? tagsInput.split(',').map((t) => t.trim()).filter(Boolean) : [],
           topic_id: topicId || null,
           metadata: {
             ...(isCurrentQuestion ? { question_format: questionFormat } : {}),
@@ -394,11 +386,6 @@ function EditModal({ item, topics, activeTypes, onSaveDefaultSections, onClose }
           </div>
         )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Tags</label>
-          <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="comma-separated" dir="auto" className={INPUT_CLS} />
-        </div>
-
         <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageAdd} />
 
         {error && <p className="text-sm text-red-500">{error}</p>}
@@ -534,16 +521,10 @@ function ViewModal({ item, onClose }: {
         </div>
       )}
       <div ref={contentRef} className="text-sm">
-        {/* Type + difficulty */}
         <div className="flex items-center gap-2 mb-4">
           <span className={`text-xs px-2 py-0.5 rounded-full ${TYPE_COLOR[content_item.type] ?? 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'}`}>
             {TYPE_LABEL[content_item.type] ?? content_item.type}
           </span>
-          {content_item.difficulty && (
-            <span className={`text-xs font-medium ${DIFFICULTY_COLOR[content_item.difficulty]}`}>
-              {content_item.difficulty}
-            </span>
-          )}
         </div>
 
         {/* Flashcard layout */}
@@ -692,16 +673,6 @@ function ViewModal({ item, onClose }: {
           </>
         )}
 
-        {content_item.tags.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-1">
-            {content_item.tags.map((tag) => (
-              <span key={tag} className="text-xs bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 px-1.5 py-0.5 rounded">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
         {showCommunitySolutions && isSolutionTab(current?.label) && <CommunitySolutions contentItemId={item.content_item_id} />}
 
         <ReportErrorButton contentItemId={item.content_item_id} />
@@ -770,25 +741,9 @@ export function ContentItemCard({
             <span className="text-xs text-gray-400 dark:text-slate-500" dir={hDir(topicName)}>{topicName}</span>
           )}
           <div className="flex items-end justify-between gap-2 mt-auto">
-            <div className="flex items-center gap-1.5">
-              <span className={`text-xs px-2 py-0.5 rounded-full ${TYPE_COLOR[content_item.type]}`}>
-                {TYPE_LABEL[content_item.type]}
-              </span>
-              {content_item.difficulty && (
-                <span className={`text-xs font-medium ${DIFFICULTY_COLOR[content_item.difficulty]}`}>
-                  {content_item.difficulty}
-                </span>
-              )}
-            </div>
-            {content_item.tags.length > 0 && (
-              <div className="flex flex-wrap justify-end gap-1">
-                {content_item.tags.map((tag) => (
-                  <span key={tag} className="text-xs bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 px-1.5 py-0.5 rounded">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
+            <span className={`text-xs px-2 py-0.5 rounded-full ${TYPE_COLOR[content_item.type]}`}>
+              {TYPE_LABEL[content_item.type]}
+            </span>
           </div>
         </button>
 
